@@ -65,7 +65,7 @@ th { background: #f1f5f9; font-weight: 600; color: #475569; }
     <h1>🛒 نظام تسجيل الأوردرات</h1>
     <p>سجل دخولك للبدء</p>
   </div>
-  <div id="loginLoading" class="loading">جارٍ تحميل البيانات </div>
+  <div id="loginLoading" class="loading">جارٍ تحميل البيانات...</div>
   <div id="loginForm" class="hidden">
     <label class="label">اسم المستخدم</label>
     <input type="text" id="loginUser" class="input" placeholder="اكتب اسمك">
@@ -114,7 +114,7 @@ th { background: #f1f5f9; font-weight: 600; color: #475569; }
     <label class="label">الوجوه المتاحة لك</label>
     <div class="checkbox-group" id="facesGroup"></div>
     <label class="label">ملاحظات</label>
-    <textarea id="notes" class="input" rows="3" placeholder="أي ملاحظات إضافية "></textarea>
+    <textarea id="notes" class="input" rows="3" placeholder="أي ملاحظات إضافية..."></textarea>
     <button class="btn btn-success" onclick="submitOrder()">✅ حفظ الأوردر</button>
   </div>
 
@@ -160,37 +160,32 @@ th { background: #f1f5f9; font-weight: 600; color: #475569; }
     </div>
   </div>
 </div>
- 
-</div>
-
 
 <script>
-  const firebaseConfig = {
-  apiKey: "AIzaSyCikAWrMtiLw0WAYCH7I4iG6Wv2tMsEt9w",
-  authDomain: "customer-care-841fe.firebaseapp.com",
-  projectId: "customer-care-841fe",
-  storageBucket: "customer-care-841fe.firebasestorage.app",
-  messagingSenderId: "167461661789",
-  appId: "1:167461661789:web:a1141fccdf4650b84eb1b4",
-  measurementId: "G-EQ650CB20M"
-};
-
-
-const db = firebase.firestore();
-const auth = firebase.auth();
-let currentUser = null;
-let usersData = [];
-let ordersData = [];
- 
-
 // ============================================
 // ضع بيانات Firebase الخاصة بك هنا
 // ============================================
+const firebaseConfig = {
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_PROJECT_ID.appspot.com",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId: "YOUR_APP_ID"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+let currentUser = null;
+let usersData = [];
+let ordersData = [];
+const ALL_FACES = ['وجه 1','وجه 2','وجه 3','وجه 4','وجه 5','وجه 6','وجه 7','وجه 8'];
 
 function initApp() {
   db.collection('users').onSnapshot(snapshot => {
     usersData = [];
-    snapshot.forEach(doc => usersData.push({ id: doc.id,  doc.data() }));
+    snapshot.forEach(doc => usersData.push({ id: doc.id, ...doc.data() }));
     document.getElementById('loginLoading').classList.add('hidden');
     document.getElementById('loginForm').classList.remove('hidden');
     if (currentUser) renderUsers();
