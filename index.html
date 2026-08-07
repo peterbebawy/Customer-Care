@@ -6,6 +6,7 @@
 <title>نظام إدارة الأوردرات</title>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 * { box-sizing: border-box; }
 body { font-family: Tahoma, 'Segoe UI', sans-serif; direction: rtl; background: #f1f5f9; margin: 0; padding: 20px; }
@@ -63,7 +64,8 @@ th { background: #f1f5f9; font-weight: 600; color: #475569; }
 .user-row { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; padding: 14px; background: #f8fafc; border-radius: 12px; margin-bottom: 10px; }
 .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
-@media (max-width: 600px) { .grid-2, .grid-3 { grid-template-columns: 1fr; } }
+.grid-4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 12px; }
+@media (max-width: 600px) { .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; } }
 .loading { text-align: center; color: #64748b; padding: 40px; }
 .empty-state { text-align: center; color: #94a3b8; padding: 30px; }
 .delete-link { color: #dc2626; cursor: pointer; font-size: 13px; font-weight: 600; }
@@ -82,26 +84,31 @@ th { background: #f1f5f9; font-weight: 600; color: #475569; }
 .role-admin { background: #fee2e2; color: #991b1b; }
 .role-manager { background: #dbeafe; color: #1e40af; }
 .role-employee { background: #dcfce7; color: #166534; }
-
-/* Product search */
-.product-search-wrap { position: relative; margin-bottom: 12px; }
-.product-suggestions { position: absolute; top: 100%; left: 0; right: 0; background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); z-index: 100; max-height: 200px; overflow-y: auto; }
-.product-suggestion-item { padding: 10px 14px; cursor: pointer; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; }
-.product-suggestion-item:hover { background: #f1f5f9; }
-.product-suggestion-item:last-child { border-bottom: none; }
-
-/* Order items table */
+.search-wrap { position: relative; margin-bottom: 12px; }
+.suggestions { position: absolute; top: 100%; left: 0; right: 0; background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); z-index: 100; max-height: 200px; overflow-y: auto; }
+.suggestion-item { padding: 10px 14px; cursor: pointer; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center; }
+.suggestion-item:hover { background: #f1f5f9; }
+.suggestion-item:last-child { border-bottom: none; }
+.suggestion-item .sug-code { font-weight: 700; color: #2563eb; font-size: 12px; }
+.suggestion-item .sug-name { color: #374151; }
+.suggestion-item .sug-extra { color: #64748b; font-size: 12px; }
 .order-items-table { width: 100%; border-collapse: collapse; margin-bottom: 16px; }
 .order-items-table th, .order-items-table td { padding: 8px; border: 1px solid #e2e8f0; text-align: center; font-size: 13px; }
 .order-items-table th { background: #f8fafc; }
 .order-items-table input { width: 60px; padding: 6px; border: 1px solid #d1d5db; border-radius: 6px; text-align: center; }
-
-/* Urgent row */
 .urgent-row { background: #fef2f2 !important; }
 .urgent-row td { border-bottom-color: #fecaca; }
 .filter-bar { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; align-items: center; }
 .filter-btn { padding: 8px 16px; border-radius: 8px; border: 1px solid #e2e8f0; background: #fff; cursor: pointer; font-weight: 600; font-size: 13px; color: #475569; }
 .filter-btn.active { background: #2563eb; color: #fff; border-color: #2563eb; }
+.drop-zone { border: 2px dashed #d1d5db; border-radius: 12px; padding: 40px 20px; text-align: center; background: #f8fafc; color: #64748b; cursor: pointer; transition: all 0.2s; margin-bottom: 16px; }
+.drop-zone:hover, .drop-zone.dragover { border-color: #2563eb; background: #eff6ff; color: #2563eb; }
+.drop-zone .icon { font-size: 36px; margin-bottom: 8px; }
+.drop-zone .text { font-weight: 600; font-size: 15px; }
+.drop-zone .sub { font-size: 12px; margin-top: 4px; }
+.progress-bar { width: 100%; height: 8px; background: #e2e8f0; border-radius: 4px; overflow: hidden; margin-top: 12px; }
+.progress-fill { height: 100%; background: #16a34a; width: 0%; transition: width 0.3s; border-radius: 4px; }
+.progress-text { text-align: center; font-size: 13px; color: #64748b; margin-top: 6px; }
 </style>
 <base target="_blank">
 </head>
@@ -134,7 +141,10 @@ th { background: #f1f5f9; font-weight: 600; color: #475569; }
           <div style="color:#64748b; font-size:13px;" id="userRole">موظف</div>
         </div>
       </div>
-      <button class="btn btn-danger" onclick="doLogout()">تسجيل الخروج</button>
+      <div style="display:flex; gap:8px; flex-wrap:wrap;">
+        <button class="btn btn-secondary btn-sm" onclick="openChangePassModal()">🔐 تغيير الباسورد</button>
+        <button class="btn btn-danger btn-sm" onclick="doLogout()">تسجيل الخروج</button>
+      </div>
     </div>
   </div>
 
@@ -143,17 +153,27 @@ th { background: #f1f5f9; font-weight: 600; color: #475569; }
   <!-- تبويب أوردر جديد -->
   <div id="newOrder" class="card">
     <h2 style="margin-top:0; color:#1e293b;">تسجيل أوردر جديد</h2>
-    <label class="label">اسم العميل</label>
-    <input type="text" id="customerName" class="input" placeholder="اكتب اسم العميل">
+
+    <label class="label">العميل</label>
+    <div class="search-wrap">
+      <input type="text" id="customerSearch" class="input" placeholder="اكتب كود العميل أو الاسم..." oninput="searchCustomers()" autocomplete="off">
+      <div id="customerSuggestions" class="suggestions hidden"></div>
+    </div>
+    <div class="grid-3">
+      <div><label class="label">كود العميل</label><input type="text" id="customerCode" class="input" readonly placeholder="يتم التعبئة تلقائياً"></div>
+      <div><label class="label">رقم التليفون</label><input type="text" id="customerPhone" class="input" readonly placeholder="يتم التعبئة تلقائياً"></div>
+      <div><label class="label">العنوان</label><input type="text" id="customerAddress" class="input" readonly placeholder="يتم التعبئة تلقائياً"></div>
+    </div>
+
     <label class="label">الفرع</label>
     <select id="branch" class="input">
       <option value="">اختر الفرع</option>
     </select>
 
     <label class="label">الأصناف المطلوبة</label>
-    <div class="product-search-wrap">
+    <div class="search-wrap">
       <input type="text" id="productSearch" class="input" placeholder="اكتب كود الصنف أو الاسم..." oninput="searchProducts()" autocomplete="off">
-      <div id="productSuggestions" class="product-suggestions hidden"></div>
+      <div id="productSuggestions" class="suggestions hidden"></div>
     </div>
     <table class="order-items-table" id="orderItemsTable">
       <thead>
@@ -265,9 +285,9 @@ th { background: #f1f5f9; font-weight: 600; color: #475569; }
   <!-- تبويب الأصناف -->
   <div id="products" class="hidden">
     <div class="card">
-      <h2 style="margin-top:0; color:#1e293b;">إدارة الأصناف (Excel Data)</h2>
+      <h2 style="margin-top:0; color:#1e293b;">📦 إدارة الأصناف</h2>
       <div style="margin-bottom:24px; padding:20px; background:#f8fafc; border-radius:12px;">
-        <h3 style="margin-top:0; color:#374151; font-size:16px;">➕ إضافة صنف جديد</h3>
+        <h3 style="margin-top:0; color:#374151; font-size:16px;">➕ إضافة صنف يدوياً</h3>
         <div class="grid-3">
           <div><label class="label">كود الصنف</label><input type="text" id="newProductCode" class="input" placeholder="مثال: PRD001"></div>
           <div><label class="label">اسم الصنف</label><input type="text" id="newProductName" class="input" placeholder="اسم الصنف"></div>
@@ -275,10 +295,61 @@ th { background: #f1f5f9; font-weight: 600; color: #475569; }
         </div>
         <button class="btn btn-primary" onclick="addProduct()">💾 إضافة الصنف</button>
       </div>
-      <div class="table-wrap">
+      <hr style="border:0; border-top:1px solid #e2e8f0; margin:24px 0;">
+      <h3 style="margin-top:0; color:#374151; font-size:16px;">📤 رفع ملف Excel (Drag & Drop)</h3>
+      <p style="color:#64748b; font-size:13px; margin-bottom:12px;">الأعمدة المطلوبة: <strong>كود الصنف | اسم الصنف | السعر</strong> (من الشمال)</p>
+      <div class="drop-zone" id="productDropZone" onclick="document.getElementById('productFileInput').click()">
+        <div class="icon">📁</div>
+        <div class="text">اسحب ملف Excel هنا أو اضغط لاختياره</div>
+        <div class="sub">يدعم ملفات .xlsx و .xls</div>
+      </div>
+      <input type="file" id="productFileInput" class="hidden" accept=".xlsx,.xls" onchange="handleProductFile(this.files[0])">
+      <div id="productUploadProgress" class="hidden">
+        <div class="progress-bar"><div class="progress-fill" id="productProgressFill"></div></div>
+        <div class="progress-text" id="productProgressText">0%</div>
+      </div>
+      <div class="table-wrap" style="margin-top:24px;">
         <table>
           <thead><tr><th>كود الصنف</th><th>اسم الصنف</th><th>السعر</th><th>إجراءات</th></tr></thead>
           <tbody id="productsTable"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- تبويب العملاء -->
+  <div id="customers" class="hidden">
+    <div class="card">
+      <h2 style="margin-top:0; color:#1e293b;">👤 إدارة العملاء</h2>
+      <div style="margin-bottom:24px; padding:20px; background:#f8fafc; border-radius:12px;">
+        <h3 style="margin-top:0; color:#374151; font-size:16px;">➕ إضافة عميل يدوياً</h3>
+        <div class="grid-2">
+          <div><label class="label">كود العميل</label><input type="text" id="newCustomerCode" class="input" placeholder="مثال: CUST001"></div>
+          <div><label class="label">اسم العميل</label><input type="text" id="newCustomerName" class="input" placeholder="اسم العميل"></div>
+        </div>
+        <div class="grid-2">
+          <div><label class="label">رقم التليفون</label><input type="text" id="newCustomerPhone" class="input" placeholder="01xxxxxxxxx"></div>
+          <div><label class="label">العنوان</label><input type="text" id="newCustomerAddress" class="input" placeholder="عنوان العميل"></div>
+        </div>
+        <button class="btn btn-primary" onclick="addCustomer()">💾 إضافة العميل</button>
+      </div>
+      <hr style="border:0; border-top:1px solid #e2e8f0; margin:24px 0;">
+      <h3 style="margin-top:0; color:#374151; font-size:16px;">📤 رفع ملف Excel (Drag & Drop)</h3>
+      <p style="color:#64748b; font-size:13px; margin-bottom:12px;">الأعمدة المطلوبة: <strong>كود العميل | اسم العميل | رقم التليفون | العنوان</strong> (من الشمال)</p>
+      <div class="drop-zone" id="customerDropZone" onclick="document.getElementById('customerFileInput').click()">
+        <div class="icon">📁</div>
+        <div class="text">اسحب ملف Excel هنا أو اضغط لاختياره</div>
+        <div class="sub">يدعم ملفات .xlsx و .xls</div>
+      </div>
+      <input type="file" id="customerFileInput" class="hidden" accept=".xlsx,.xls" onchange="handleCustomerFile(this.files[0])">
+      <div id="customerUploadProgress" class="hidden">
+        <div class="progress-bar"><div class="progress-fill" id="customerProgressFill"></div></div>
+        <div class="progress-text" id="customerProgressText">0%</div>
+      </div>
+      <div class="table-wrap" style="margin-top:24px;">
+        <table>
+          <thead><tr><th>كود العميل</th><th>اسم العميل</th><th>رقم التليفون</th><th>العنوان</th><th>إجراءات</th></tr></thead>
+          <tbody id="customersTable"></tbody>
         </table>
       </div>
     </div>
@@ -330,10 +401,25 @@ th { background: #f1f5f9; font-weight: 600; color: #475569; }
   </div>
 </div>
 
+<!-- مودال تغيير الباسورد -->
+<div id="changePassModal" class="hidden modal-overlay">
+  <div class="modal-content" style="max-width:400px;">
+    <div class="modal-header">
+      <h3>🔐 تغيير كلمة المرور</h3>
+      <button class="close-btn" onclick="closeChangePassModal()">&times;</button>
+    </div>
+    <label class="label">كلمة المرور الحالية</label>
+    <input type="password" id="oldPass" class="input" placeholder="أدخل الباسورد الحالي">
+    <label class="label">كلمة المرور الجديدة</label>
+    <input type="password" id="newPass" class="input" placeholder="أدخل الباسورد الجديد">
+    <label class="label">تأكيد كلمة المرور الجديدة</label>
+    <input type="password" id="confirmPass" class="input" placeholder="أعد كتابة الباسورد الجديد">
+    <button class="btn btn-primary" style="width:100%;" onclick="saveNewPassword()">💾 حفظ التغيير</button>
+  </div>
+</div>
+
 <script>
-// ============================================
-// Firebase Config
-// ============================================
+
 const firebaseConfig = {
   apiKey: "AIzaSyCikAWrMtiLw0WAYCH7I4iG6Wv2tMsEt9w",
   authDomain: "customer-care-841fe.firebaseapp.com",
@@ -351,26 +437,14 @@ let usersData = [];
 let ordersData = [];
 let branchesData = [];
 let productsData = [];
-let orderItems = []; // items in current order
+let customersData = [];
+let orderItems = [];
+let selectedCustomer = null;
 let currentFilter = 'all';
 
-const ROLES = {
-  admin: 'أدمن',
-  manager: 'مانجر',
-  employee: 'موظف'
-};
-
-const STATUS_LABELS = {
-  pending: 'في الانتظار',
-  completed: 'تم',
-  outdelivery: 'Out of Delivery'
-};
-
-const STATUS_CLASSES = {
-  pending: 'status-pending',
-  completed: 'status-completed',
-  outdelivery: 'status-outdelivery'
-};
+const ROLES = { admin: 'أدمن', manager: 'مانجر', employee: 'موظف' };
+const STATUS_LABELS = { pending: 'في الانتظار', completed: 'تم', outdelivery: 'Out of Delivery' };
+const STATUS_CLASSES = { pending: 'status-pending', completed: 'status-completed', outdelivery: 'status-outdelivery' };
 
 function initApp() {
   db.collection('users').onSnapshot(snapshot => {
@@ -379,36 +453,31 @@ function initApp() {
     document.getElementById('loginLoading').classList.add('hidden');
     document.getElementById('loginForm').classList.remove('hidden');
     if (currentUser) renderUsers();
-  }, err => {
-    showToast('❌ خطأ في الاتصال بقاعدة البيانات', true);
-  });
+  }, err => showToast('❌ خطأ في الاتصال بقاعدة البيانات', true));
 
   db.collection('orders').orderBy('timestamp', 'desc').onSnapshot(snapshot => {
     ordersData = [];
     snapshot.forEach(doc => ordersData.push({ id: doc.id, ...doc.data() }));
     if (currentUser) { renderMyOrders(); renderAllOrders(); }
-  }, err => {
-    showToast('❌ خطأ في تحميل الأوردرات', true);
-  });
+  }, err => showToast('❌ خطأ في تحميل الأوردرات', true));
 
   db.collection('branches').orderBy('name').onSnapshot(snapshot => {
     branchesData = [];
     snapshot.forEach(doc => branchesData.push({ id: doc.id, ...doc.data() }));
-    if (currentUser) {
-      populateBranchSelect();
-      renderBranches();
-    }
-  }, err => {
-    showToast('❌ خطأ في تحميل الفروع', true);
-  });
+    if (currentUser) { populateBranchSelect(); renderBranches(); }
+  }, err => showToast('❌ خطأ في تحميل الفروع', true));
 
   db.collection('products').orderBy('code').onSnapshot(snapshot => {
     productsData = [];
     snapshot.forEach(doc => productsData.push({ id: doc.id, ...doc.data() }));
     if (currentUser) renderProducts();
-  }, err => {
-    showToast('❌ خطأ في تحميل الأصناف', true);
-  });
+  }, err => showToast('❌ خطأ في تحميل الأصناف', true));
+
+  db.collection('customers').orderBy('code').onSnapshot(snapshot => {
+    customersData = [];
+    snapshot.forEach(doc => customersData.push({ id: doc.id, ...doc.data() }));
+    if (currentUser) renderCustomers();
+  }, err => showToast('❌ خطأ في تحميل العملاء', true));
 }
 
 function populateBranchSelect() {
@@ -417,9 +486,7 @@ function populateBranchSelect() {
     if (!sel) return;
     const currentVal = sel.value;
     sel.innerHTML = '<option value="">اختر الفرع</option>';
-    branchesData.forEach(b => {
-      sel.innerHTML += `<option value="${b.name}">${b.name}</option>`;
-    });
+    branchesData.forEach(b => sel.innerHTML += `<option value="${b.name}">${b.name}</option>`);
     if (currentVal) sel.value = currentVal;
   });
 }
@@ -437,7 +504,6 @@ function doLogin() {
     document.getElementById('userAvatar').textContent = found.name.charAt(0);
     setupNavByRole();
     populateBranchSelect();
-    // Set default delivery date to today
     document.getElementById('deliveryDate').value = new Date().toISOString().split('T')[0];
     showTab('newOrder');
     showToast('👋 مرحباً ' + found.name);
@@ -457,30 +523,23 @@ function doLogout() {
 function setupNavByRole() {
   const nav = document.getElementById('mainNav');
   nav.innerHTML = '';
-
-  // Employee + Manager + Admin: new order
   nav.innerHTML += `<button class="nav-btn active" onclick="showTab('newOrder')" id="tab-newOrder">➕ أوردر جديد</button>`;
-
-  // Employee + Admin: my orders
   if (currentUser.role === 'employee' || currentUser.role === 'admin') {
     nav.innerHTML += `<button class="nav-btn" onclick="showTab('myOrders')" id="tab-myOrders">📋 أوردراتي</button>`;
   }
-
-  // Manager + Admin: all orders
   if (currentUser.role === 'manager' || currentUser.role === 'admin') {
     nav.innerHTML += `<button class="nav-btn" onclick="showTab('allOrders')" id="tab-allOrders">📊 كل الأوردرات</button>`;
   }
-
-  // Admin only
   if (currentUser.role === 'admin') {
     nav.innerHTML += `<button class="nav-btn" onclick="showTab('users')" id="tab-users">👥 المستخدمين</button>`;
     nav.innerHTML += `<button class="nav-btn" onclick="showTab('branches')" id="tab-branches">🏢 الفروع</button>`;
     nav.innerHTML += `<button class="nav-btn" onclick="showTab('products')" id="tab-products">📦 الأصناف</button>`;
+    nav.innerHTML += `<button class="nav-btn" onclick="showTab('customers')" id="tab-customers">👤 العملاء</button>`;
   }
 }
 
 function showTab(tab) {
-  ['newOrder','myOrders','allOrders','users','branches','products'].forEach(t => {
+  ['newOrder','myOrders','allOrders','users','branches','products','customers'].forEach(t => {
     const el = document.getElementById(t);
     const btn = document.getElementById('tab-'+t);
     if (el) el.classList.add('hidden');
@@ -490,12 +549,45 @@ function showTab(tab) {
   const targetBtn = document.getElementById('tab-'+tab);
   if (target) target.classList.remove('hidden');
   if (targetBtn) targetBtn.classList.add('active');
-
   if (tab === 'myOrders') renderMyOrders();
   if (tab === 'allOrders') renderAllOrders();
   if (tab === 'users') renderUsers();
   if (tab === 'branches') renderBranches();
   if (tab === 'products') renderProducts();
+  if (tab === 'customers') renderCustomers();
+}
+
+// ============================================
+// Customer Search
+// ============================================
+function searchCustomers() {
+  const input = document.getElementById('customerSearch');
+  const suggestions = document.getElementById('customerSuggestions');
+  const query = input.value.trim().toLowerCase();
+  if (!query) { suggestions.classList.add('hidden'); return; }
+  const matches = customersData.filter(c =>
+    (c.code && c.code.toLowerCase().includes(query)) ||
+    (c.name && c.name.toLowerCase().includes(query))
+  ).slice(0, 8);
+  if (matches.length === 0) { suggestions.classList.add('hidden'); return; }
+  suggestions.innerHTML = matches.map(c => `
+    <div class="suggestion-item" onclick="selectCustomer('${c.id}')">
+      <div><span class="sug-code">${c.code}</span> - <span class="sug-name">${c.name}</span></div>
+      <span class="sug-extra">${c.phone || ''}</span>
+    </div>
+  `).join('');
+  suggestions.classList.remove('hidden');
+}
+
+function selectCustomer(id) {
+  const c = customersData.find(x => x.id === id);
+  if (!c) return;
+  selectedCustomer = c;
+  document.getElementById('customerSearch').value = c.name;
+  document.getElementById('customerCode').value = c.code || '';
+  document.getElementById('customerPhone').value = c.phone || '';
+  document.getElementById('customerAddress').value = c.address || '';
+  document.getElementById('customerSuggestions').classList.add('hidden');
 }
 
 // ============================================
@@ -505,26 +597,16 @@ function searchProducts() {
   const input = document.getElementById('productSearch');
   const suggestions = document.getElementById('productSuggestions');
   const query = input.value.trim().toLowerCase();
-
-  if (!query) {
-    suggestions.classList.add('hidden');
-    return;
-  }
-
+  if (!query) { suggestions.classList.add('hidden'); return; }
   const matches = productsData.filter(p =>
     (p.code && p.code.toLowerCase().includes(query)) ||
     (p.name && p.name.toLowerCase().includes(query))
   ).slice(0, 8);
-
-  if (matches.length === 0) {
-    suggestions.classList.add('hidden');
-    return;
-  }
-
+  if (matches.length === 0) { suggestions.classList.add('hidden'); return; }
   suggestions.innerHTML = matches.map(p => `
-    <div class="product-suggestion-item" onclick="addItemToOrder('${p.id}')">
-      <span><strong>${p.code}</strong> - ${p.name}</span>
-      <span style="color:#16a34a; font-weight:700;">${p.price || 0} ج.م</span>
+    <div class="suggestion-item" onclick="addItemToOrder('${p.id}')">
+      <div><span class="sug-code">${p.code}</span> - <span class="sug-name">${p.name}</span></div>
+      <span class="sug-extra" style="color:#16a34a; font-weight:700;">${parseFloat(p.price||0).toFixed(2)} ج.م</span>
     </div>
   `).join('');
   suggestions.classList.remove('hidden');
@@ -533,21 +615,11 @@ function searchProducts() {
 function addItemToOrder(productId) {
   const product = productsData.find(p => p.id === productId);
   if (!product) return;
-
-  // Check if already added
   const existing = orderItems.find(i => i.productId === productId);
-  if (existing) {
-    existing.qty += 1;
-  } else {
-    orderItems.push({
-      productId: product.id,
-      code: product.code,
-      name: product.name,
-      price: parseFloat(product.price) || 0,
-      qty: 1
-    });
+  if (existing) { existing.qty += 1; }
+  else {
+    orderItems.push({ productId: product.id, code: product.code, name: product.name, price: parseFloat(product.price) || 0, qty: 1 });
   }
-
   document.getElementById('productSearch').value = '';
   document.getElementById('productSuggestions').classList.add('hidden');
   renderOrderItems();
@@ -572,71 +644,62 @@ function renderOrderItems() {
     document.getElementById('orderTotal').textContent = '0';
     return;
   }
-
   let total = 0;
   tbody.innerHTML = orderItems.map((item, i) => {
     const lineTotal = item.price * item.qty;
     total += lineTotal;
-    return `
-      <tr>
-        <td>${item.code}</td>
-        <td>${item.name}</td>
-        <td>${item.price.toFixed(2)}</td>
-        <td><input type="number" min="1" value="${item.qty}" onchange="updateItemQty(${i}, this.value)"></td>
-        <td>${lineTotal.toFixed(2)}</td>
-        <td><span class="delete-link" onclick="removeItem(${i})">🗑️</span></td>
-      </tr>
-    `;
+    return `<tr>
+      <td>${item.code}</td>
+      <td>${item.name}</td>
+      <td>${item.price.toFixed(2)}</td>
+      <td><input type="number" min="1" value="${item.qty}" onchange="updateItemQty(${i}, this.value)"></td>
+      <td>${lineTotal.toFixed(2)}</td>
+      <td><span class="delete-link" onclick="removeItem(${i})">🗑️</span></td>
+    </tr>`;
   }).join('');
-
   document.getElementById('orderTotal').textContent = total.toFixed(2);
 }
 
-function getOrderItemsText() {
-  if (orderItems.length === 0) return '';
-  return orderItems.map(i => `${i.code} - ${i.name} (x${i.qty}) = ${(i.price * i.qty).toFixed(2)} ج.م`).join('\n');
-}
-
-function getOrderTotal() {
-  return orderItems.reduce((sum, i) => sum + (i.price * i.qty), 0);
-}
+function getOrderTotal() { return orderItems.reduce((sum, i) => sum + (i.price * i.qty), 0); }
 
 // ============================================
 // Submit Order
 // ============================================
 function submitOrder() {
-  const customer = document.getElementById('customerName').value.trim();
+  const customer = selectedCustomer ? selectedCustomer.name : '';
+  const customerCode = selectedCustomer ? selectedCustomer.code : '';
   const branch = document.getElementById('branch').value;
   const notes = document.getElementById('notes').value.trim();
   const supplyType = document.querySelector('input[name="supplyType"]:checked')?.value || 'مقاصة';
   const deliveryDate = document.getElementById('deliveryDate').value;
 
-  if (!customer) { showToast('❌ أدخل اسم العميل', true); return; }
+  if (!customer) { showToast('❌ اختر العميل', true); return; }
   if (!branch) { showToast('❌ اختر الفرع', true); return; }
   if (orderItems.length === 0) { showToast('❌ أضف صنف واحد على الأقل', true); return; }
 
-  const itemsText = getOrderItemsText();
+  const itemsText = orderItems.map(i => `${i.code} - ${i.name} (x${i.qty}) = ${(i.price * i.qty).toFixed(2)} ج.م`).join('\n');
   const total = getOrderTotal();
 
   db.collection('orders').add({
-    customer, branch, items: itemsText, itemsArray: orderItems, total,
+    customer, customerCode, branch, items: itemsText, itemsArray: orderItems, total,
     supplyType, status: 'pending', deliveryDate,
     employee: currentUser.name, employeeId: currentUser.id,
     date: new Date().toISOString().split('T')[0],
     notes, timestamp: firebase.firestore.FieldValue.serverTimestamp()
   }).then(() => {
     showToast('✅ تم حفظ الأوردر');
-    document.getElementById('customerName').value = '';
+    document.getElementById('customerSearch').value = '';
+    document.getElementById('customerCode').value = '';
+    document.getElementById('customerPhone').value = '';
+    document.getElementById('customerAddress').value = '';
+    selectedCustomer = null;
     document.getElementById('branch').value = '';
     document.getElementById('notes').value = '';
     document.getElementById('deliveryDate').value = new Date().toISOString().split('T')[0];
     document.querySelector('input[name="supplyType"][value="مقاصة"]').checked = true;
     orderItems = [];
     renderOrderItems();
-  }).catch(err => {
-    showToast('❌ حدث خطأ أثناء الحفظ', true);
-    console.error(err);
-  });
+  }).catch(err => { showToast('❌ حدث خطأ أثناء الحفظ', true); console.error(err); });
 }
 
 // ============================================
@@ -646,10 +709,7 @@ function renderMyOrders() {
   const list = document.getElementById('myOrdersList');
   if (!list || !currentUser) return;
   const mine = ordersData.filter(o => o.employeeId === currentUser.id);
-  if (mine.length === 0) {
-    list.innerHTML = '<div class="empty-state">لا يوجد أوردرات مسجلة بعد</div>';
-    return;
-  }
+  if (mine.length === 0) { list.innerHTML = '<div class="empty-state">لا يوجد أوردرات مسجلة بعد</div>'; return; }
   list.innerHTML = mine.map(o => `
     <div class="order-card">
       <div style="display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px;">
@@ -687,19 +747,12 @@ function renderAllOrders() {
   const statsBox = document.getElementById('statsBox');
   const table = document.getElementById('allOrdersTable');
   if (!statsBox || !table) return;
-
   const today = new Date().toISOString().split('T')[0];
-
   let filtered = [...ordersData];
-  if (currentFilter === 'today') {
-    filtered = filtered.filter(o => o.deliveryDate === today);
-  } else if (currentFilter === 'pending') {
-    filtered = filtered.filter(o => o.status === 'pending');
-  } else if (currentFilter === 'completed') {
-    filtered = filtered.filter(o => o.status === 'completed');
-  } else if (currentFilter === 'outdelivery') {
-    filtered = filtered.filter(o => o.status === 'outdelivery');
-  }
+  if (currentFilter === 'today') filtered = filtered.filter(o => o.deliveryDate === today);
+  else if (currentFilter === 'pending') filtered = filtered.filter(o => o.status === 'pending');
+  else if (currentFilter === 'completed') filtered = filtered.filter(o => o.status === 'completed');
+  else if (currentFilter === 'outdelivery') filtered = filtered.filter(o => o.status === 'outdelivery');
 
   const totalOrders = ordersData.length;
   const completed = ordersData.filter(o => o.status === 'completed').length;
@@ -715,10 +768,7 @@ function renderAllOrders() {
     <div class="stat-card"><div class="stat-number" style="color:#7c3aed;">${todayOrders}</div><div class="stat-label">محتاجة تتحرك اليوم</div></div>
   `;
 
-  if (filtered.length === 0) {
-    table.innerHTML = `<tr><td colspan="11" class="empty-state">لا يوجد أوردرات</td></tr>`;
-    return;
-  }
+  if (filtered.length === 0) { table.innerHTML = `<tr><td colspan="11" class="empty-state">لا يوجد أوردرات</td></tr>`; return; }
 
   table.innerHTML = filtered.map((o, i) => {
     const statusClass = STATUS_CLASSES[o.status] || 'status-pending';
@@ -735,15 +785,12 @@ function renderAllOrders() {
         <option value="outdelivery" ${o.status === 'outdelivery' ? 'selected' : ''}>Out of Delivery</option>
       </select>`;
     }
-
     let actions = `<span class="view-link" onclick="openReviewOrder('${o.id}')">👁️ مراجعة</span>`;
     if (canEdit) {
       actions += `<span class="edit-link" onclick="openEditOrder('${o.id}')">✏️ تعديل</span>
                  <span class="delete-link" onclick="deleteOrder('${o.id}')">🗑️ حذف</span>`;
     }
-
-    return `
-    <tr class="${isUrgent ? 'urgent-row' : ''}">
+    return `<tr class="${isUrgent ? 'urgent-row' : ''}">
       <td>${i + 1}</td>
       <td><strong>${o.customer}</strong></td>
       <td><span class="badge badge-blue">${o.branch}</span></td>
@@ -755,28 +802,21 @@ function renderAllOrders() {
       <td><span class="badge badge-purple">${o.employee}</span></td>
       <td>${o.date || ''}</td>
       <td>${actions}</td>
-    </tr>
-  `;
+    </tr>`;
   }).join('');
 }
 
 function updateOrderStatus(id, newStatus) {
   db.collection('orders').doc(id).update({ status: newStatus })
     .then(() => showToast('✅ تم تحديث الحالة'))
-    .catch(err => {
-      showToast('❌ خطأ في التحديث', true);
-      console.error(err);
-    });
+    .catch(err => { showToast('❌ خطأ في التحديث', true); console.error(err); });
 }
 
 function deleteOrder(id) {
   if (!confirm('هل أنت متأكد من حذف هذا الأوردر؟')) return;
   db.collection('orders').doc(id).delete()
     .then(() => showToast('🗑️ تم حذف الأوردر'))
-    .catch(err => {
-      showToast('❌ خطأ في الحذف', true);
-      console.error(err);
-    });
+    .catch(err => { showToast('❌ خطأ في الحذف', true); console.error(err); });
 }
 
 // ============================================
@@ -787,23 +827,15 @@ function openReviewOrder(id) {
   if (!o) return;
   const statusLabel = STATUS_LABELS[o.status] || o.status;
   const statusClass = STATUS_CLASSES[o.status] || 'status-pending';
-
   let itemsHtml = '';
   if (o.itemsArray && o.itemsArray.length > 0) {
-    itemsHtml = `
-      <table class="order-items-table" style="margin:12px 0;">
-        <thead><tr><th>كود</th><th>اسم الصنف</th><th>سعر</th><th>كمية</th><th>إجمالي</th></tr></thead>
-        <tbody>
-          ${o.itemsArray.map(i => `
-            <tr><td>${i.code}</td><td>${i.name}</td><td>${i.price.toFixed(2)}</td><td>${i.qty}</td><td>${(i.price * i.qty).toFixed(2)}</td></tr>
-          `).join('')}
-        </tbody>
-      </table>
-    `;
+    itemsHtml = `<table class="order-items-table" style="margin:12px 0;">
+      <thead><tr><th>كود</th><th>اسم الصنف</th><th>سعر</th><th>كمية</th><th>إجمالي</th></tr></thead>
+      <tbody>${o.itemsArray.map(i => `<tr><td>${i.code}</td><td>${i.name}</td><td>${parseFloat(i.price).toFixed(2)}</td><td>${i.qty}</td><td>${(i.price * i.qty).toFixed(2)}</td></tr>`).join('')}</tbody>
+    </table>`;
   } else {
     itemsHtml = `<div style="white-space:pre-line; background:#f8fafc; padding:12px; border-radius:8px; margin:12px 0;">${o.items || '-'}</div>`;
   }
-
   document.getElementById('reviewContent').innerHTML = `
     <div style="margin-bottom:16px;">
       <div class="grid-2">
@@ -873,21 +905,52 @@ function saveEditOrder() {
   const deliveryDate = document.getElementById('editDeliveryDate').value;
   const status = document.getElementById('editStatus').value;
   const notes = document.getElementById('editNotes').value.trim();
+  if (!customer || !branch || !items) { showToast('❌ أكمل جميع الحقول المطلوبة', true); return; }
+  db.collection('orders').doc(id).update({ customer, branch, items, supplyType, deliveryDate, status, notes })
+    .then(() => { showToast('✅ تم حفظ التعديلات'); closeEditModal(); })
+    .catch(err => { showToast('❌ خطأ في الحفظ', true); console.error(err); });
+}
 
-  if (!customer || !branch || !items) {
-    showToast('❌ أكمل جميع الحقول المطلوبة', true);
-    return;
+
+// ============================================
+// Change Password
+// ============================================
+function openChangePassModal() {
+  document.getElementById('changePassModal').classList.remove('hidden');
+  document.getElementById('oldPass').value = '';
+  document.getElementById('newPass').value = '';
+  document.getElementById('confirmPass').value = '';
+}
+
+function closeChangePassModal() {
+  document.getElementById('changePassModal').classList.add('hidden');
+}
+
+function saveNewPassword() {
+  const oldPass = document.getElementById('oldPass').value.trim();
+  const newPass = document.getElementById('newPass').value.trim();
+  const confirmPass = document.getElementById('confirmPass').value.trim();
+
+  if (!oldPass || !newPass || !confirmPass) {
+    showToast('❌ أكمل جميع الحقول', true); return;
+  }
+  if (oldPass !== currentUser.pass) {
+    showToast('❌ كلمة المرور الحالية غير صحيحة', true); return;
+  }
+  if (newPass !== confirmPass) {
+    showToast('❌ كلمة المرور الجديدة غير متطابقة', true); return;
+  }
+  if (newPass.length < 3) {
+    showToast('❌ كلمة المرور قصيرة جداً', true); return;
   }
 
-  db.collection('orders').doc(id).update({ customer, branch, items, supplyType, deliveryDate, status, notes })
+  db.collection('users').doc(currentUser.id).update({ pass: newPass })
     .then(() => {
-      showToast('✅ تم حفظ التعديلات');
-      closeEditModal();
+      currentUser.pass = newPass;
+      showToast('✅ تم تغيير كلمة المرور بنجاح');
+      closeChangePassModal();
     })
-    .catch(err => {
-      showToast('❌ خطأ في الحفظ', true);
-      console.error(err);
-    });
+    .catch(err => { showToast('❌ خطأ في الحفظ', true); console.error(err); });
 }
 
 // ============================================
@@ -896,14 +959,10 @@ function saveEditOrder() {
 function renderUsers() {
   const list = document.getElementById('usersList');
   if (!list) return;
-  if (usersData.length === 0) {
-    list.innerHTML = '<div class="empty-state">لا يوجد مستخدمين بعد</div>';
-    return;
-  }
+  if (usersData.length === 0) { list.innerHTML = '<div class="empty-state">لا يوجد مستخدمين بعد</div>'; return; }
   list.innerHTML = usersData.map(u => {
     const roleClass = u.role === 'admin' ? 'role-admin' : u.role === 'manager' ? 'role-manager' : 'role-employee';
-    return `
-    <div class="user-row">
+    return `<div class="user-row">
       <div style="display:flex; align-items:center; gap:12px;">
         <div class="user-avatar">${(u.name || '?').charAt(0)}</div>
         <div>
@@ -915,8 +974,7 @@ function renderUsers() {
         <span class="edit-link" onclick="editUser('${u.id}')">✏️ تعديل</span>
         <span class="delete-link" onclick="deleteUser('${u.id}')">🗑️ حذف</span>
       </div>
-    </div>
-  `;
+    </div>`;
   }).join('');
 }
 
@@ -925,13 +983,10 @@ function addUser() {
   const name = document.getElementById('newUserName').value.trim();
   const pass = document.getElementById('newUserPass').value.trim();
   const role = document.getElementById('newUserRole').value;
-
   if (!name) { showToast('❌ أدخل اسم المستخدم', true); return; }
   if (!pass) { showToast('❌ أدخل كلمة المرور', true); return; }
   if (!role) { showToast('❌ اختر الدور', true); return; }
-
   const data = { name, pass, role };
-
   if (id) {
     db.collection('users').doc(id).update(data)
       .then(() => { showToast('✅ تم تعديل المستخدم'); cancelEditUser(); })
@@ -979,16 +1034,11 @@ function deleteUser(id) {
 function renderBranches() {
   const list = document.getElementById('branchesList');
   if (!list) return;
-  if (branchesData.length === 0) {
-    list.innerHTML = '<div class="empty-state">لا يوجد فروع بعد</div>';
-    return;
-  }
-  list.innerHTML = branchesData.map(b => `
-    <div class="user-row">
-      <div style="font-weight:700;">🏢 ${b.name}</div>
-      <span class="delete-link" onclick="deleteBranch('${b.id}')">🗑️ حذف</span>
-    </div>
-  `).join('');
+  if (branchesData.length === 0) { list.innerHTML = '<div class="empty-state">لا يوجد فروع بعد</div>'; return; }
+  list.innerHTML = branchesData.map(b => `<div class="user-row">
+    <div style="font-weight:700;">🏢 ${b.name}</div>
+    <span class="delete-link" onclick="deleteBranch('${b.id}')">🗑️ حذف</span>
+  </div>`).join('');
 }
 
 function addBranch() {
@@ -1007,33 +1057,26 @@ function deleteBranch(id) {
 }
 
 // ============================================
-// Products (Excel Data)
+// Products (Manual + Excel)
 // ============================================
 function renderProducts() {
   const tbody = document.getElementById('productsTable');
   if (!tbody) return;
-  if (productsData.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="4" class="empty-state">لا يوجد أصناف بعد</td></tr>';
-    return;
-  }
-  tbody.innerHTML = productsData.map(p => `
-    <tr>
-      <td><strong>${p.code}</strong></td>
-      <td>${p.name}</td>
-      <td style="color:#16a34a; font-weight:700;">${parseFloat(p.price).toFixed(2)} ج.م</td>
-      <td><span class="delete-link" onclick="deleteProduct('${p.id}')">🗑️ حذف</span></td>
-    </tr>
-  `).join('');
+  if (productsData.length === 0) { tbody.innerHTML = '<tr><td colspan="4" class="empty-state">لا يوجد أصناف بعد</td></tr>'; return; }
+  tbody.innerHTML = productsData.map(p => `<tr>
+    <td><strong>${p.code}</strong></td>
+    <td>${p.name}</td>
+    <td style="color:#16a34a; font-weight:700;">${parseFloat(p.price||0).toFixed(2)} ج.م</td>
+    <td><span class="delete-link" onclick="deleteProduct('${p.id}')">🗑️ حذف</span></td>
+  </tr>`).join('');
 }
 
 function addProduct() {
   const code = document.getElementById('newProductCode').value.trim();
   const name = document.getElementById('newProductName').value.trim();
   const price = parseFloat(document.getElementById('newProductPrice').value) || 0;
-
   if (!code) { showToast('❌ أدخل كود الصنف', true); return; }
   if (!name) { showToast('❌ أدخل اسم الصنف', true); return; }
-
   db.collection('products').add({ code, name, price })
     .then(() => {
       showToast('✅ تم إضافة الصنف');
@@ -1050,6 +1093,188 @@ function deleteProduct(id) {
     .then(() => showToast('🗑️ تم حذف الصنف'))
     .catch(err => { showToast('❌ خطأ في الحذف', true); console.error(err); });
 }
+
+// ============================================
+// Product Excel Upload
+// ============================================
+function handleProductFile(file) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const data = new Uint8Array(e.target.result);
+      const workbook = XLSX.read(data, { type: 'array' });
+      const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+      if (rows.length < 2) { showToast('❌ الملف فارغ أو غير صحيح', true); return; }
+      const products = [];
+      for (let i = 1; i < rows.length; i++) {
+        const row = rows[i];
+        if (!row || row.length < 2) continue;
+        const code = String(row[0] || '').trim();
+        const name = String(row[1] || '').trim();
+        const price = parseFloat(row[2]) || 0;
+        if (code && name) products.push({ code, name, price });
+      }
+      if (products.length === 0) { showToast('❌ لم يتم العثور على أصناف صالحة', true); return; }
+      uploadProductsBatch(products);
+    } catch (err) { showToast('❌ خطأ في قراءة الملف', true); console.error(err); }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+async function uploadProductsBatch(products) {
+  const progressBox = document.getElementById('productUploadProgress');
+  const progressFill = document.getElementById('productProgressFill');
+  const progressText = document.getElementById('productProgressText');
+  progressBox.classList.remove('hidden');
+
+  const batchSize = 450;
+  const total = products.length;
+  let uploaded = 0;
+
+  for (let i = 0; i < total; i += batchSize) {
+    const batch = db.batch();
+    const chunk = products.slice(i, i + batchSize);
+    chunk.forEach(p => {
+      const ref = db.collection('products').doc();
+      batch.set(ref, p);
+    });
+    await batch.commit();
+    uploaded += chunk.length;
+    const pct = Math.round((uploaded / total) * 100);
+    progressFill.style.width = pct + '%';
+    progressText.textContent = pct + '% (' + uploaded + ' / ' + total + ')';
+  }
+
+  showToast('✅ تم رفع ' + total + ' صنف بنجاح');
+  setTimeout(() => { progressBox.classList.add('hidden'); progressFill.style.width = '0%'; }, 2000);
+}
+
+// ============================================
+// Customers (Manual + Excel)
+// ============================================
+function renderCustomers() {
+  const tbody = document.getElementById('customersTable');
+  if (!tbody) return;
+  if (customersData.length === 0) { tbody.innerHTML = '<tr><td colspan="5" class="empty-state">لا يوجد عملاء بعد</td></tr>'; return; }
+  tbody.innerHTML = customersData.map(c => `<tr>
+    <td><strong>${c.code}</strong></td>
+    <td>${c.name}</td>
+    <td>${c.phone || '-'}</td>
+    <td>${c.address || '-'}</td>
+    <td><span class="delete-link" onclick="deleteCustomer('${c.id}')">🗑️ حذف</span></td>
+  </tr>`).join('');
+}
+
+function addCustomer() {
+  const code = document.getElementById('newCustomerCode').value.trim();
+  const name = document.getElementById('newCustomerName').value.trim();
+  const phone = document.getElementById('newCustomerPhone').value.trim();
+  const address = document.getElementById('newCustomerAddress').value.trim();
+  if (!code) { showToast('❌ أدخل كود العميل', true); return; }
+  if (!name) { showToast('❌ أدخل اسم العميل', true); return; }
+  db.collection('customers').add({ code, name, phone, address })
+    .then(() => {
+      showToast('✅ تم إضافة العميل');
+      document.getElementById('newCustomerCode').value = '';
+      document.getElementById('newCustomerName').value = '';
+      document.getElementById('newCustomerPhone').value = '';
+      document.getElementById('newCustomerAddress').value = '';
+    })
+    .catch(err => { showToast('❌ خطأ في الإضافة', true); console.error(err); });
+}
+
+function deleteCustomer(id) {
+  if (!confirm('هل أنت متأكد من حذف هذا العميل؟')) return;
+  db.collection('customers').doc(id).delete()
+    .then(() => showToast('🗑️ تم حذف العميل'))
+    .catch(err => { showToast('❌ خطأ في الحذف', true); console.error(err); });
+}
+
+// ============================================
+// Customer Excel Upload
+// ============================================
+function handleCustomerFile(file) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const data = new Uint8Array(e.target.result);
+      const workbook = XLSX.read(data, { type: 'array' });
+      const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+      if (rows.length < 2) { showToast('❌ الملف فارغ أو غير صحيح', true); return; }
+      const customers = [];
+      for (let i = 1; i < rows.length; i++) {
+        const row = rows[i];
+        if (!row || row.length < 2) continue;
+        const code = String(row[0] || '').trim();
+        const name = String(row[1] || '').trim();
+        const phone = String(row[2] || '').trim();
+        const address = String(row[3] || '').trim();
+        if (code && name) customers.push({ code, name, phone, address });
+      }
+      if (customers.length === 0) { showToast('❌ لم يتم العثور على عملاء صالحين', true); return; }
+      uploadCustomersBatch(customers);
+    } catch (err) { showToast('❌ خطأ في قراءة الملف', true); console.error(err); }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+async function uploadCustomersBatch(customers) {
+  const progressBox = document.getElementById('customerUploadProgress');
+  const progressFill = document.getElementById('customerProgressFill');
+  const progressText = document.getElementById('customerProgressText');
+  progressBox.classList.remove('hidden');
+
+  const batchSize = 450;
+  const total = customers.length;
+  let uploaded = 0;
+
+  for (let i = 0; i < total; i += batchSize) {
+    const batch = db.batch();
+    const chunk = customers.slice(i, i + batchSize);
+    chunk.forEach(c => {
+      const ref = db.collection('customers').doc();
+      batch.set(ref, c);
+    });
+    await batch.commit();
+    uploaded += chunk.length;
+    const pct = Math.round((uploaded / total) * 100);
+    progressFill.style.width = pct + '%';
+    progressText.textContent = pct + '% (' + uploaded + ' / ' + total + ')';
+  }
+
+  showToast('✅ تم رفع ' + total + ' عميل بنجاح');
+  setTimeout(() => { progressBox.classList.add('hidden'); progressFill.style.width = '0%'; }, 2000);
+}
+
+// ============================================
+// Drag & Drop Events
+// ============================================
+document.addEventListener('DOMContentLoaded', function() {
+  const productZone = document.getElementById('productDropZone');
+  if (productZone) {
+    productZone.addEventListener('dragover', e => { e.preventDefault(); productZone.classList.add('dragover'); });
+    productZone.addEventListener('dragleave', () => productZone.classList.remove('dragover'));
+    productZone.addEventListener('drop', e => {
+      e.preventDefault();
+      productZone.classList.remove('dragover');
+      if (e.dataTransfer.files.length > 0) handleProductFile(e.dataTransfer.files[0]);
+    });
+  }
+  const customerZone = document.getElementById('customerDropZone');
+  if (customerZone) {
+    customerZone.addEventListener('dragover', e => { e.preventDefault(); customerZone.classList.add('dragover'); });
+    customerZone.addEventListener('dragleave', () => customerZone.classList.remove('dragover'));
+    customerZone.addEventListener('drop', e => {
+      e.preventDefault();
+      customerZone.classList.remove('dragover');
+      if (e.dataTransfer.files.length > 0) handleCustomerFile(e.dataTransfer.files[0]);
+    });
+  }
+});
 
 // ============================================
 // Toast
