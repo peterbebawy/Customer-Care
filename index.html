@@ -200,7 +200,7 @@ function initApp() {
 
   db.collection('orders').orderBy('timestamp', 'desc').onSnapshot(snapshot => {
     ordersData = [];
-    snapshot.forEach(doc => ordersData.push({ id: doc.id,  doc.data() }));
+    snapshot.forEach(doc => ordersData.push({ id: doc.id, ...doc.data() }));
     if (currentUser) { renderMyOrders(); renderAllOrders(); }
   }, err => {
     showToast('❌ خطأ في تحميل الأوردرات', true);
