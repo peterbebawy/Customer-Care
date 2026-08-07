@@ -3,22 +3,27 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>نظام تسجيل الأوردرات</title>
+<title>نظام إدارة الأوردرات</title>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
 <style>
 * { box-sizing: border-box; }
 body { font-family: 'Segoe UI', Tahoma, sans-serif; direction: rtl; background: #f1f5f9; margin: 0; padding: 20px; }
 .hidden { display: none !important; }
-.card { background: #fff; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); padding: 28px; margin-bottom: 20px; max-width: 900px; margin-left: auto; margin-right: auto; }
+.card { background: #fff; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); padding: 28px; margin-bottom: 20px; max-width: 1100px; margin-left: auto; margin-right: auto; }
 .btn { padding: 12px 24px; border: none; border-radius: 10px; cursor: pointer; font-size: 15px; font-weight: 600; transition: all 0.2s; }
 .btn-primary { background: #2563eb; color: #fff; }
 .btn-primary:hover { background: #1d4ed8; }
 .btn-success { background: #16a34a; color: #fff; }
 .btn-success:hover { background: #15803d; }
 .btn-danger { background: #dc2626; color: #fff; }
+.btn-danger:hover { background: #b91c1c; }
+.btn-warning { background: #f59e0b; color: #fff; }
+.btn-warning:hover { background: #d97706; }
 .btn-secondary { background: #e5e7eb; color: #374151; }
+.btn-secondary:hover { background: #d1d5db; }
+.btn-info { background: #06b6d4; color: #fff; }
+.btn-info:hover { background: #0891b2; }
 .input { width: 100%; padding: 12px 16px; border: 1px solid #d1d5db; border-radius: 10px; font-size: 15px; margin-bottom: 12px; }
 .input:focus { outline: none; border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,0.15); }
 .label { display: block; margin-bottom: 6px; font-weight: 600; color: #374151; font-size: 14px; }
@@ -27,6 +32,9 @@ body { font-family: 'Segoe UI', Tahoma, sans-serif; direction: rtl; background: 
 .badge-blue { background: #dbeafe; color: #1e40af; }
 .badge-green { background: #dcfce7; color: #166534; }
 .badge-purple { background: #f3e8ff; color: #6b21a8; }
+.badge-orange { background: #ffedd5; color: #9a3412; }
+.badge-red { background: #fee2e2; color: #991b1b; }
+.badge-yellow { background: #fef9c3; color: #854d0e; }
 .header { text-align: center; margin-bottom: 24px; }
 .header h1 { color: #1e293b; margin: 0; font-size: 26px; }
 .header p { color: #64748b; margin: 8px 0 0; }
@@ -43,6 +51,9 @@ th { background: #f1f5f9; font-weight: 600; color: #475569; }
 .checkbox-group { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 16px; }
 .checkbox-item { display: flex; align-items: center; gap: 6px; background: #f1f5f9; padding: 8px 14px; border-radius: 8px; cursor: pointer; }
 .checkbox-item input { cursor: pointer; }
+.radio-group { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 16px; }
+.radio-item { display: flex; align-items: center; gap: 6px; background: #f1f5f9; padding: 8px 14px; border-radius: 8px; cursor: pointer; }
+.radio-item input { cursor: pointer; }
 .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 14px; margin-bottom: 24px; }
 .stat-card { background: #fff; border-radius: 12px; padding: 18px; text-align: center; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
 .stat-number { font-size: 26px; font-weight: 700; color: #2563eb; }
@@ -52,10 +63,25 @@ th { background: #f1f5f9; font-weight: 600; color: #475569; }
 @keyframes slideDown { from { opacity: 0; transform: translate(-50%, -20px); } to { opacity: 1; transform: translate(-50%, 0); } }
 .user-row { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; padding: 14px; background: #f8fafc; border-radius: 12px; margin-bottom: 10px; }
 .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-@media (max-width: 600px) { .grid-2 { grid-template-columns: 1fr; } }
+.grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+@media (max-width: 600px) { .grid-2, .grid-3 { grid-template-columns: 1fr; } }
 .loading { text-align: center; color: #64748b; padding: 40px; }
 .empty-state { text-align: center; color: #94a3b8; padding: 30px; }
 .delete-link { color: #dc2626; cursor: pointer; font-size: 13px; font-weight: 600; }
+.edit-link { color: #2563eb; cursor: pointer; font-size: 13px; font-weight: 600; margin-left: 8px; }
+.status-select { padding: 6px 12px; border-radius: 8px; border: 1px solid #d1d5db; font-size: 13px; font-weight: 600; cursor: pointer; }
+.status-pending { background: #fef9c3; color: #854d0e; }
+.status-completed { background: #dcfce7; color: #166534; }
+.status-outdelivery { background: #dbeafe; color: #1e40af; }
+.modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 2000; }
+.modal-content { background: #fff; border-radius: 16px; padding: 28px; max-width: 500px; width: 90%; max-height: 90vh; overflow-y: auto; }
+.modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+.modal-header h3 { margin: 0; color: #1e293b; }
+.close-btn { background: none; border: none; font-size: 24px; cursor: pointer; color: #64748b; }
+.role-badge { display: inline-block; padding: 3px 10px; border-radius: 6px; font-size: 12px; font-weight: 700; }
+.role-admin { background: #fee2e2; color: #991b1b; }
+.role-manager { background: #dbeafe; color: #1e40af; }
+.role-employee { background: #dcfce7; color: #166534; }
 </style>
 </head>
 <body>
@@ -63,7 +89,7 @@ th { background: #f1f5f9; font-weight: 600; color: #475569; }
 <!-- صفحة تسجيل الدخول -->
 <div id="loginPage" class="card login-box">
   <div class="header">
-    <h1>🛒 نظام تسجيل الأوردرات</h1>
+    <h1>🛒 نظام إدارة الأوردرات</h1>
     <p>سجل دخولك للبدء</p>
   </div>
   <div id="loginLoading" class="loading">جارٍ تحميل البيانات...</div>
@@ -84,18 +110,19 @@ th { background: #f1f5f9; font-weight: 600; color: #475569; }
         <div class="user-avatar" id="userAvatar">أ</div>
         <div>
           <div style="font-weight:700; font-size:18px;" id="userName">أحمد</div>
-          <div style="color:#64748b; font-size:13px;" id="userRole">موظف مبيعات</div>
+          <div style="color:#64748b; font-size:13px;" id="userRole">موظف</div>
         </div>
       </div>
       <button class="btn btn-danger" onclick="doLogout()">تسجيل الخروج</button>
     </div>
   </div>
 
-  <div class="nav">
+  <div class="nav" id="mainNav">
     <button class="nav-btn active" onclick="showTab('newOrder')" id="tab-newOrder">➕ أوردر جديد</button>
     <button class="nav-btn" onclick="showTab('myOrders')" id="tab-myOrders">📋 أوردراتي</button>
     <button class="nav-btn" onclick="showTab('allOrders')" id="tab-allOrders">📊 كل الأوردرات</button>
     <button class="nav-btn" onclick="showTab('users')" id="tab-users">👥 المستخدمين</button>
+    <button class="nav-btn" onclick="showTab('branches')" id="tab-branches">🏢 الفروع</button>
   </div>
 
   <!-- تبويب أوردر جديد -->
@@ -106,16 +133,17 @@ th { background: #f1f5f9; font-weight: 600; color: #475569; }
     <label class="label">الفرع</label>
     <select id="branch" class="input">
       <option value="">اختر الفرع</option>
-      <option value="القاهرة">القاهرة</option>
-      <option value="الإسكندرية">الإسكندرية</option>
-      <option value="المنصورة">المنصورة</option>
-      <option value="طنطا">طنطا</option>
-      <option value="أسيوط">أسيوط</option>
     </select>
-    <label class="label">الوجوه المتاحة لك</label>
-    <div class="checkbox-group" id="facesGroup"></div>
+    <label class="label">الأصناف المطلوبة</label>
+    <textarea id="items" class="input" rows="3" placeholder="اكتب الأصناف المطلوبة..."></textarea>
+    <label class="label">كيف سيتم توفير الأوردر؟</label>
+    <div class="radio-group">
+      <label class="radio-item"><input type="radio" name="supplyType" value="مقاصة" checked> مقاصة</label>
+      <label class="radio-item"><input type="radio" name="supplyType" value="مشتريات"> مشتريات</label>
+      <label class="radio-item"><input type="radio" name="supplyType" value="إبلاغ العميل"> عند توفير الصنف يتم إبلاغ العميل</label>
+    </div>
     <label class="label">ملاحظات</label>
-    <textarea id="notes" class="input" rows="3" placeholder="أي ملاحظات إضافية..."></textarea>
+    <textarea id="notes" class="input" rows="2" placeholder="أي ملاحظات إضافية..."></textarea>
     <button class="btn btn-success" onclick="submitOrder()">✅ حفظ الأوردر</button>
   </div>
 
@@ -134,7 +162,20 @@ th { background: #f1f5f9; font-weight: 600; color: #475569; }
       <div class="stats" id="statsBox"></div>
       <div class="table-wrap">
         <table>
-          <thead><tr><th>#</th><th>العميل</th><th>الفرع</th><th>الوجوه</th><th>الموظف</th><th>التاريخ</th><th>ملاحظات</th></tr></thead>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>العميل</th>
+              <th>الفرع</th>
+              <th>الأصناف</th>
+              <th>التوفير</th>
+              <th>الحالة</th>
+              <th>الموظف</th>
+              <th>التاريخ</th>
+              <th>ملاحظات</th>
+              <th>إجراءات</th>
+            </tr>
+          </thead>
           <tbody id="allOrdersTable"></tbody>
         </table>
       </div>
@@ -146,25 +187,75 @@ th { background: #f1f5f9; font-weight: 600; color: #475569; }
     <div class="card">
       <h2 style="margin-top:0; color:#1e293b;">إدارة المستخدمين</h2>
       <div style="margin-bottom:24px; padding:20px; background:#f8fafc; border-radius:12px;">
-        <h3 style="margin-top:0; color:#374151; font-size:16px;">➕ إضافة مستخدم جديد</h3>
+        <h3 style="margin-top:0; color:#374151; font-size:16px;">➕ إضافة / تعديل مستخدم</h3>
+        <input type="hidden" id="editUserId">
         <div class="grid-2">
           <div><label class="label">الاسم</label><input type="text" id="newUserName" class="input" placeholder="اسم المستخدم"></div>
           <div><label class="label">كلمة المرور</label><input type="text" id="newUserPass" class="input" placeholder="كلمة المرور"></div>
         </div>
         <label class="label">الدور / الوظيفة</label>
-        <input type="text" id="newUserRole" class="input" placeholder="مثال: موظف مبيعات">
-        <label class="label">الوجوه المتاحة له (افصل بينهم بفاصلة)</label>
-        <input type="text" id="newUserFaces" class="input" placeholder="مثال: وجه 1, وجه 2, وجه 3">
+        <select id="newUserRole" class="input">
+          <option value="">اختر الدور</option>
+          <option value="admin">Admin - أدمن</option>
+          <option value="manager">Manager - مانجر</option>
+          <option value="employee">Employee - موظف</option>
+        </select>
         <button class="btn btn-primary" onclick="addUser()">💾 حفظ المستخدم</button>
+        <button class="btn btn-secondary hidden" id="cancelEditBtn" onclick="cancelEditUser()">إلغاء التعديل</button>
       </div>
       <div id="usersList"></div>
     </div>
+  </div>
+
+  <!-- تبويب الفروع -->
+  <div id="branches" class="hidden">
+    <div class="card">
+      <h2 style="margin-top:0; color:#1e293b;">إدارة الفروع</h2>
+      <div style="margin-bottom:24px; padding:20px; background:#f8fafc; border-radius:12px;">
+        <h3 style="margin-top:0; color:#374151; font-size:16px;">➕ إضافة فرع جديد</h3>
+        <input type="text" id="newBranchName" class="input" placeholder="اسم الفرع">
+        <button class="btn btn-primary" onclick="addBranch()">💾 إضافة الفرع</button>
+      </div>
+      <div id="branchesList"></div>
+    </div>
+  </div>
+</div>
+
+<!-- مودال تعديل الأوردر -->
+<div id="editOrderModal" class="hidden modal-overlay">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3>✏️ تعديل الأوردر</h3>
+      <button class="close-btn" onclick="closeEditModal()">&times;</button>
+    </div>
+    <input type="hidden" id="editOrderId">
+    <label class="label">اسم العميل</label>
+    <input type="text" id="editCustomerName" class="input">
+    <label class="label">الفرع</label>
+    <select id="editBranch" class="input"></select>
+    <label class="label">الأصناف المطلوبة</label>
+    <textarea id="editItems" class="input" rows="3"></textarea>
+    <label class="label">كيف سيتم توفير الأوردر؟</label>
+    <div class="radio-group">
+      <label class="radio-item"><input type="radio" name="editSupplyType" value="مقاصة"> مقاصة</label>
+      <label class="radio-item"><input type="radio" name="editSupplyType" value="مشتريات"> مشتريات</label>
+      <label class="radio-item"><input type="radio" name="editSupplyType" value="إبلاغ العميل"> عند توفير الصنف يتم إبلاغ العميل</label>
+    </div>
+    <label class="label">الحالة</label>
+    <select id="editStatus" class="input">
+      <option value="pending">في الانتظار</option>
+      <option value="completed">تم</option>
+      <option value="outdelivery">Out of Delivery</option>
+    </select>
+    <label class="label">ملاحظات</label>
+    <textarea id="editNotes" class="input" rows="2"></textarea>
+    <button class="btn btn-primary" onclick="saveEditOrder()">💾 حفظ التعديلات</button>
   </div>
 </div>
 
 <script>
 // ============================================
-// ضع بيانات Firebase الخاصة بك هنا
+// Firebase Config
 // ============================================
 const firebaseConfig = {
   apiKey: "AIzaSyCikAWrMtiLw0WAYCH7I4iG6Wv2tMsEt9w",
@@ -172,17 +263,34 @@ const firebaseConfig = {
   projectId: "customer-care-841fe",
   storageBucket: "customer-care-841fe.firebasestorage.app",
   messagingSenderId: "167461661789",
-  appId: "1:167461661789:web:a1141fccdf4650b84eb1b4",
-  measurementId: "G-EQ650CB20M"
+  appId: "1:167461661789:web:a1141fccdf4650b84eb1b4"
 };
 
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
-const auth = firebase.auth();
+
 let currentUser = null;
 let usersData = [];
 let ordersData = [];
-const ALL_FACES = ['وجه 1','وجه 2','وجه 3','وجه 4','وجه 5','وجه 6','وجه 7','وجه 8'];
+let branchesData = [];
+
+const ROLES = {
+  admin: 'أدمن',
+  manager: 'مانجر',
+  employee: 'موظف'
+};
+
+const STATUS_LABELS = {
+  pending: 'في الانتظار',
+  completed: 'تم',
+  outdelivery: 'Out of Delivery'
+};
+
+const STATUS_CLASSES = {
+  pending: 'status-pending',
+  completed: 'status-completed',
+  outdelivery: 'status-outdelivery'
+};
 
 function initApp() {
   db.collection('users').onSnapshot(snapshot => {
@@ -202,9 +310,51 @@ function initApp() {
   }, err => {
     showToast('❌ خطأ في تحميل الأوردرات', true);
   });
+
+  db.collection('branches').orderBy('name').onSnapshot(snapshot => {
+    branchesData = [];
+    snapshot.forEach(doc => branchesData.push({ id: doc.id, ...doc.data() }));
+    if (currentUser) {
+      populateBranchSelect();
+      renderBranches();
+    }
+  }, err => {
+    showToast('❌ خطأ في تحميل الفروع', true);
+  });
 }
 
+function populateBranchSelect() {
+  const selects = [document.getElementById('branch'), document.getElementById('editBranch')];
+  selects.forEach(sel => {
+    if (!sel) return;
+    const currentVal = sel.value;
+    sel.innerHTML = '<option value="">اختر الفرع</option>';
+    branchesData.forEach(b => {
+      sel.innerHTML += `<option value="${b.name}">${b.name}</option>`;
+    });
+    if (currentVal) sel.value = currentVal;
+  });
+}
 
+function doLogin() {
+  const name = document.getElementById('loginUser').value.trim();
+  const pass = document.getElementById('loginPass').value.trim();
+  const found = usersData.find(u => u.name === name && u.pass === pass);
+  if (found) {
+    currentUser = found;
+    document.getElementById('loginPage').classList.add('hidden');
+    document.getElementById('dashboard').classList.remove('hidden');
+    document.getElementById('userName').textContent = found.name;
+    document.getElementById('userRole').textContent = ROLES[found.role] || found.role || 'موظف';
+    document.getElementById('userAvatar').textContent = found.name.charAt(0);
+    setupNavByRole();
+    populateBranchSelect();
+    showTab('newOrder');
+    showToast('👋 مرحباً ' + found.name);
+  } else {
+    showToast('❌ اسم المستخدم أو كلمة المرور غير صحيحة', true);
+  }
+}
 
 function doLogout() {
   currentUser = null;
@@ -214,38 +364,63 @@ function doLogout() {
   document.getElementById('loginPass').value = '';
 }
 
+function setupNavByRole() {
+  const nav = document.getElementById('mainNav');
+  nav.innerHTML = '';
+
+  // Employee: new order + my orders
+  if (currentUser.role === 'employee') {
+    nav.innerHTML += `<button class="nav-btn active" onclick="showTab('newOrder')" id="tab-newOrder">➕ أوردر جديد</button>`;
+    nav.innerHTML += `<button class="nav-btn" onclick="showTab('myOrders')" id="tab-myOrders">📋 أوردراتي</button>`;
+  }
+
+  // Manager: all orders (view + update status)
+  if (currentUser.role === 'manager') {
+    nav.innerHTML += `<button class="nav-btn active" onclick="showTab('allOrders')" id="tab-allOrders">📊 كل الأوردرات</button>`;
+  }
+
+  // Admin: everything
+  if (currentUser.role === 'admin') {
+    nav.innerHTML += `<button class="nav-btn active" onclick="showTab('newOrder')" id="tab-newOrder">➕ أوردر جديد</button>`;
+    nav.innerHTML += `<button class="nav-btn" onclick="showTab('myOrders')" id="tab-myOrders">📋 أوردراتي</button>`;
+    nav.innerHTML += `<button class="nav-btn" onclick="showTab('allOrders')" id="tab-allOrders">📊 كل الأوردرات</button>`;
+    nav.innerHTML += `<button class="nav-btn" onclick="showTab('users')" id="tab-users">👥 المستخدمين</button>`;
+    nav.innerHTML += `<button class="nav-btn" onclick="showTab('branches')" id="tab-branches">🏢 الفروع</button>`;
+  }
+}
+
 function showTab(tab) {
-  ['newOrder','myOrders','allOrders','users'].forEach(t => {
-    document.getElementById(t).classList.add('hidden');
-    document.getElementById('tab-'+t).classList.remove('active');
+  ['newOrder','myOrders','allOrders','users','branches'].forEach(t => {
+    const el = document.getElementById(t);
+    const btn = document.getElementById('tab-'+t);
+    if (el) el.classList.add('hidden');
+    if (btn) btn.classList.remove('active');
   });
-  document.getElementById(tab).classList.remove('hidden');
-  document.getElementById('tab-'+tab).classList.add('active');
+  const target = document.getElementById(tab);
+  const targetBtn = document.getElementById('tab-'+tab);
+  if (target) target.classList.remove('hidden');
+  if (targetBtn) targetBtn.classList.add('active');
+
   if (tab === 'myOrders') renderMyOrders();
   if (tab === 'allOrders') renderAllOrders();
   if (tab === 'users') renderUsers();
-}
-
-function renderFaces() {
-  const g = document.getElementById('facesGroup');
-  g.innerHTML = '';
-  if (!currentUser || !currentUser.faces) return;
-  currentUser.faces.forEach(f => {
-    g.innerHTML += `<label class="checkbox-item"><input type="checkbox" value="${f}" class="face-check"> ${f}</label>`;
-  });
+  if (tab === 'branches') renderBranches();
 }
 
 function submitOrder() {
   const customer = document.getElementById('customerName').value.trim();
   const branch = document.getElementById('branch').value;
+  const items = document.getElementById('items').value.trim();
   const notes = document.getElementById('notes').value.trim();
-  const checked = Array.from(document.querySelectorAll('.face-check:checked')).map(c => c.value);
+  const supplyType = document.querySelector('input[name="supplyType"]:checked')?.value || 'مقاصة';
+
   if (!customer) { showToast('❌ أدخل اسم العميل', true); return; }
   if (!branch) { showToast('❌ اختر الفرع', true); return; }
-  if (checked.length === 0) { showToast('❌ اختر وجه واحد على الأقل', true); return; }
+  if (!items) { showToast('❌ أدخل الأصناف المطلوبة', true); return; }
 
   db.collection('orders').add({
-    customer, branch, faces: checked,
+    customer, branch, items, supplyType,
+    status: 'pending',
     employee: currentUser.name, employeeId: currentUser.id,
     date: new Date().toISOString().split('T')[0],
     notes, timestamp: firebase.firestore.FieldValue.serverTimestamp()
@@ -253,8 +428,9 @@ function submitOrder() {
     showToast('✅ تم حفظ الأوردر');
     document.getElementById('customerName').value = '';
     document.getElementById('branch').value = '';
+    document.getElementById('items').value = '';
     document.getElementById('notes').value = '';
-    document.querySelectorAll('.face-check').forEach(c => c.checked = false);
+    document.querySelector('input[name="supplyType"][value="مقاصة"]').checked = true;
   }).catch(err => {
     showToast('❌ حدث خطأ أثناء الحفظ', true);
     console.error(err);
@@ -277,8 +453,10 @@ function renderMyOrders() {
       </div>
       <div style="margin:8px 0;">
         <span class="badge badge-blue">${o.branch}</span>
-        ${(o.faces || []).map(f => `<span class="badge badge-green">${f}</span>`).join('')}
+        <span class="badge badge-orange">${o.supplyType || 'مقاصة'}</span>
+        <span class="badge ${STATUS_CLASSES[o.status] || 'badge-yellow'}">${STATUS_LABELS[o.status] || o.status}</span>
       </div>
+      <div style="color:#374151; font-size:14px; margin-bottom:6px;"><strong>الأصناف:</strong> ${o.items || '-'}</div>
       ${o.notes ? `<div style="color:#64748b; font-size:14px;">📝 ${o.notes}</div>` : ''}
     </div>
   `).join('');
@@ -290,34 +468,124 @@ function renderAllOrders() {
   if (!statsBox || !table) return;
 
   const totalOrders = ordersData.length;
-  const branches = new Set(ordersData.map(o => o.branch)).size;
-  const employees = new Set(ordersData.map(o => o.employee)).size;
+  const completed = ordersData.filter(o => o.status === 'completed').length;
+  const pending = ordersData.filter(o => o.status === 'pending').length;
+  const outdelivery = ordersData.filter(o => o.status === 'outdelivery').length;
   const today = new Date().toISOString().split('T')[0];
   const todayOrders = ordersData.filter(o => o.date === today).length;
 
   statsBox.innerHTML = `
     <div class="stat-card"><div class="stat-number">${totalOrders}</div><div class="stat-label">إجمالي الأوردرات</div></div>
-    <div class="stat-card"><div class="stat-number">${branches}</div><div class="stat-label">الفروع</div></div>
-    <div class="stat-card"><div class="stat-number">${employees}</div><div class="stat-label">الموظفين</div></div>
-    <div class="stat-card"><div class="stat-number">${todayOrders}</div><div class="stat-label">أوردرات اليوم</div></div>
+    <div class="stat-card"><div class="stat-number" style="color:#16a34a;">${completed}</div><div class="stat-label">تم</div></div>
+    <div class="stat-card"><div class="stat-number" style="color:#f59e0b;">${pending}</div><div class="stat-label">في الانتظار</div></div>
+    <div class="stat-card"><div class="stat-number" style="color:#2563eb;">${outdelivery}</div><div class="stat-label">Out of Delivery</div></div>
+    <div class="stat-card"><div class="stat-number" style="color:#7c3aed;">${todayOrders}</div><div class="stat-label">أوردرات اليوم</div></div>
   `;
 
   if (ordersData.length === 0) {
-    table.innerHTML = `<tr><td colspan="7" class="empty-state">لا يوجد أوردرات بعد</td></tr>`;
+    table.innerHTML = `<tr><td colspan="10" class="empty-state">لا يوجد أوردرات بعد</td></tr>`;
     return;
   }
 
-  table.innerHTML = ordersData.map((o, i) => `
+  table.innerHTML = ordersData.map((o, i) => {
+    const statusClass = STATUS_CLASSES[o.status] || 'status-pending';
+    const statusLabel = STATUS_LABELS[o.status] || o.status;
+    const canEdit = currentUser.role === 'admin';
+    const canChangeStatus = currentUser.role === 'admin' || currentUser.role === 'manager';
+
+    let statusCell = `<span class="badge ${statusClass}">${statusLabel}</span>`;
+    if (canChangeStatus) {
+      statusCell = `<select class="status-select ${statusClass}" onchange="updateOrderStatus('${o.id}', this.value)">
+        <option value="pending" ${o.status === 'pending' ? 'selected' : ''}>في الانتظار</option>
+        <option value="completed" ${o.status === 'completed' ? 'selected' : ''}>تم</option>
+        <option value="outdelivery" ${o.status === 'outdelivery' ? 'selected' : ''}>Out of Delivery</option>
+      </select>`;
+    }
+
+    let actions = '';
+    if (canEdit) {
+      actions = `<span class="edit-link" onclick="openEditOrder('${o.id}')">✏️ تعديل</span>
+                 <span class="delete-link" onclick="deleteOrder('${o.id}')">🗑️ حذف</span>`;
+    }
+
+    return `
     <tr>
       <td>${i + 1}</td>
       <td>${o.customer}</td>
       <td><span class="badge badge-blue">${o.branch}</span></td>
-      <td>${(o.faces || []).map(f => `<span class="badge badge-green">${f}</span>`).join('')}</td>
+      <td>${o.items || '-'}</td>
+      <td><span class="badge badge-orange">${o.supplyType || 'مقاصة'}</span></td>
+      <td>${statusCell}</td>
       <td><span class="badge badge-purple">${o.employee}</span></td>
       <td>${o.date || ''}</td>
       <td>${o.notes || '-'}</td>
+      <td>${actions}</td>
     </tr>
-  `).join('');
+  `;
+  }).join('');
+}
+
+function updateOrderStatus(id, newStatus) {
+  db.collection('orders').doc(id).update({ status: newStatus })
+    .then(() => showToast('✅ تم تحديث الحالة'))
+    .catch(err => {
+      showToast('❌ خطأ في التحديث', true);
+      console.error(err);
+    });
+}
+
+function deleteOrder(id) {
+  if (!confirm('هل أنت متأكد من حذف هذا الأوردر؟')) return;
+  db.collection('orders').doc(id).delete()
+    .then(() => showToast('🗑️ تم حذف الأوردر'))
+    .catch(err => {
+      showToast('❌ خطأ في الحذف', true);
+      console.error(err);
+    });
+}
+
+function openEditOrder(id) {
+  const order = ordersData.find(o => o.id === id);
+  if (!order) return;
+  document.getElementById('editOrderId').value = id;
+  document.getElementById('editCustomerName').value = order.customer || '';
+  populateBranchSelect();
+  document.getElementById('editBranch').value = order.branch || '';
+  document.getElementById('editItems').value = order.items || '';
+  const supplyRadio = document.querySelector(`input[name="editSupplyType"][value="${order.supplyType}"]`);
+  if (supplyRadio) supplyRadio.checked = true;
+  document.getElementById('editStatus').value = order.status || 'pending';
+  document.getElementById('editNotes').value = order.notes || '';
+  document.getElementById('editOrderModal').classList.remove('hidden');
+}
+
+function closeEditModal() {
+  document.getElementById('editOrderModal').classList.add('hidden');
+}
+
+function saveEditOrder() {
+  const id = document.getElementById('editOrderId').value;
+  const customer = document.getElementById('editCustomerName').value.trim();
+  const branch = document.getElementById('editBranch').value;
+  const items = document.getElementById('editItems').value.trim();
+  const supplyType = document.querySelector('input[name="editSupplyType"]:checked')?.value || 'مقاصة';
+  const status = document.getElementById('editStatus').value;
+  const notes = document.getElementById('editNotes').value.trim();
+
+  if (!customer || !branch || !items) {
+    showToast('❌ أكمل جميع الحقول المطلوبة', true);
+    return;
+  }
+
+  db.collection('orders').doc(id).update({ customer, branch, items, supplyType, status, notes })
+    .then(() => {
+      showToast('✅ تم حفظ التعديلات');
+      closeEditModal();
+    })
+    .catch(err => {
+      showToast('❌ خطأ في الحفظ', true);
+      console.error(err);
+    });
 }
 
 function renderUsers() {
@@ -327,46 +595,79 @@ function renderUsers() {
     list.innerHTML = '<div class="empty-state">لا يوجد مستخدمين بعد</div>';
     return;
   }
-  list.innerHTML = usersData.map(u => `
+  list.innerHTML = usersData.map(u => {
+    const roleClass = u.role === 'admin' ? 'role-admin' : u.role === 'manager' ? 'role-manager' : 'role-employee';
+    return `
     <div class="user-row">
       <div style="display:flex; align-items:center; gap:12px;">
         <div class="user-avatar">${(u.name || '?').charAt(0)}</div>
         <div>
-          <div style="font-weight:700;">${u.name}</div>
-          <div style="color:#64748b; font-size:13px;">${u.role || 'موظف'}</div>
+          <div style="font-weight:700;">${u.name} <span class="role-badge ${roleClass}">${ROLES[u.role] || u.role}</span></div>
+          <div style="color:#64748b; font-size:13px;">${u.pass ? '🔑 ' + u.pass : ''}</div>
         </div>
       </div>
       <div>
-        ${(u.faces || []).map(f => `<span class="badge badge-green">${f}</span>`).join('')}
+        <span class="edit-link" onclick="editUser('${u.id}')">✏️ تعديل</span>
+        <span class="delete-link" onclick="deleteUser('${u.id}')">🗑️ حذف</span>
       </div>
-      <span class="delete-link" onclick="deleteUser('${u.id}')">🗑️ حذف</span>
     </div>
-  `).join('');
+  `;
+  }).join('');
 }
 
 function addUser() {
+  const id = document.getElementById('editUserId').value;
   const name = document.getElementById('newUserName').value.trim();
   const pass = document.getElementById('newUserPass').value.trim();
-  const role = document.getElementById('newUserRole').value.trim();
-  const facesRaw = document.getElementById('newUserFaces').value.trim();
-  const faces = facesRaw.split(',').map(f => f.trim()).filter(Boolean);
+  const role = document.getElementById('newUserRole').value;
 
   if (!name) { showToast('❌ أدخل اسم المستخدم', true); return; }
   if (!pass) { showToast('❌ أدخل كلمة المرور', true); return; }
-  if (faces.length === 0) { showToast('❌ أدخل وجه واحد على الأقل', true); return; }
+  if (!role) { showToast('❌ اختر الدور', true); return; }
 
-  db.collection('users').add({ name, pass, role: role || 'موظف', faces })
-    .then(() => {
-      showToast('✅ تم إضافة المستخدم');
-      document.getElementById('newUserName').value = '';
-      document.getElementById('newUserPass').value = '';
-      document.getElementById('newUserRole').value = '';
-      document.getElementById('newUserFaces').value = '';
-    })
-    .catch(err => {
-      showToast('❌ حدث خطأ أثناء الإضافة', true);
-      console.error(err);
-    });
+  const data = { name, pass, role };
+
+  if (id) {
+    db.collection('users').doc(id).update(data)
+      .then(() => {
+        showToast('✅ تم تعديل المستخدم');
+        cancelEditUser();
+      })
+      .catch(err => {
+        showToast('❌ خطأ في التعديل', true);
+        console.error(err);
+      });
+  } else {
+    db.collection('users').add(data)
+      .then(() => {
+        showToast('✅ تم إضافة المستخدم');
+        document.getElementById('newUserName').value = '';
+        document.getElementById('newUserPass').value = '';
+        document.getElementById('newUserRole').value = '';
+      })
+      .catch(err => {
+        showToast('❌ خطأ في الإضافة', true);
+        console.error(err);
+      });
+  }
+}
+
+function editUser(id) {
+  const u = usersData.find(x => x.id === id);
+  if (!u) return;
+  document.getElementById('editUserId').value = id;
+  document.getElementById('newUserName').value = u.name || '';
+  document.getElementById('newUserPass').value = u.pass || '';
+  document.getElementById('newUserRole').value = u.role || '';
+  document.getElementById('cancelEditBtn').classList.remove('hidden');
+}
+
+function cancelEditUser() {
+  document.getElementById('editUserId').value = '';
+  document.getElementById('newUserName').value = '';
+  document.getElementById('newUserPass').value = '';
+  document.getElementById('newUserRole').value = '';
+  document.getElementById('cancelEditBtn').classList.add('hidden');
 }
 
 function deleteUser(id) {
@@ -374,7 +675,46 @@ function deleteUser(id) {
   db.collection('users').doc(id).delete()
     .then(() => showToast('🗑️ تم حذف المستخدم'))
     .catch(err => {
-      showToast('❌ حدث خطأ أثناء الحذف', true);
+      showToast('❌ خطأ في الحذف', true);
+      console.error(err);
+    });
+}
+
+function renderBranches() {
+  const list = document.getElementById('branchesList');
+  if (!list) return;
+  if (branchesData.length === 0) {
+    list.innerHTML = '<div class="empty-state">لا يوجد فروع بعد</div>';
+    return;
+  }
+  list.innerHTML = branchesData.map(b => `
+    <div class="user-row">
+      <div style="font-weight:700;">🏢 ${b.name}</div>
+      <span class="delete-link" onclick="deleteBranch('${b.id}')">🗑️ حذف</span>
+    </div>
+  `).join('');
+}
+
+function addBranch() {
+  const name = document.getElementById('newBranchName').value.trim();
+  if (!name) { showToast('❌ أدخل اسم الفرع', true); return; }
+  db.collection('branches').add({ name })
+    .then(() => {
+      showToast('✅ تم إضافة الفرع');
+      document.getElementById('newBranchName').value = '';
+    })
+    .catch(err => {
+      showToast('❌ خطأ في الإضافة', true);
+      console.error(err);
+    });
+}
+
+function deleteBranch(id) {
+  if (!confirm('هل أنت متأكد من حذف هذا الفرع؟')) return;
+  db.collection('branches').doc(id).delete()
+    .then(() => showToast('🗑️ تم حذف الفرع'))
+    .catch(err => {
+      showToast('❌ خطأ في الحذف', true);
       console.error(err);
     });
 }
