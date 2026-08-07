@@ -542,15 +542,221 @@ const STATUS_LABELS = { pending: 'في الانتظار', completed: 'تم', out
 const STATUS_CLASSES = { pending: 'status-pending', completed: 'status-completed', outdelivery: 'status-outdelivery', cancelled: 'status-cancelled' };
 
 function initApp() {
-  db.collection('users').onSnapshot(snap => { usersData = []; snap.forEach(d => usersData.push({id:d.id,...d.data()})); document.getElementById('loginLoading').classList.add('hidden'); document.getElementById('loginForm').classList.remove('hidden'); if(currentUser) renderUsers(); }, err => showToast('❌ خطأ في الاتصال', true));
-  db.collection('orders').orderBy('timestamp','desc').onSnapshot(snap => { ordersData = []; snap.forEach(d => ordersData.push({id:d.id,...d.data()})); if(currentUser){renderMyOrders();renderAllOrders();} }, err => showToast('❌ خطأ في الأوردرات', true));
-  db.collection('branches').orderBy('name').onSnapshot(snap => { branchesData = []; snap.forEach(d => branchesData.push({id:d.id,...d.data()})); if(currentUser){populateBranchSelect();populateShortageBranch();populateCCBranch();renderBranches();} }, err => showToast('❌ خطأ في الفروع', true));
-  db.collection('products').orderBy('code').onSnapshot(snap => { productsData = []; snap.forEach(d => productsData.push({id:d.id,...d.data()})); if(currentUser) renderProducts(); }, err => showToast('❌ خطأ في الأصناف', true));
-  db.collection('customers').orderBy('code').onSnapshot(snap => { customersData = []; snap.forEach(d => customersData.push({id:d.id,...d.data()})); if(currentUser) renderCustomers(); }, err => showToast('❌ خطأ في العملاء', true));
-  db.collection('apps').orderBy('name').onSnapshot(snap => { appsData = []; snap.forEach(d => appsData.push({id:d.id,...d.data()})); if(currentUser){populateShortageApp();renderApps();} }, err => showToast('❌ خطأ في الأبلكيشنز', true));
-  db.collection('shortages').orderBy('timestamp','desc').onSnapshot(snap => { shortagesData = []; snap.forEach(d => shortagesData.push({id:d.id,...d.data()})); if(currentUser){renderShortages();renderShortagesReport();} }, err => showToast('❌ خطأ في النواقص', true));
-  db.collection('callcenter_shortages').orderBy('timestamp','desc').onSnapshot(snap => { ccShortagesData = []; snap.forEach(d => ccShortagesData.push({id:d.id,...d.data()})); if(currentUser){renderCCShortages();renderCCShortagesReport();} }, err => showToast('❌ خطأ في نواقص كول سنتر', true));
-  db.collection('archived_orders').orderBy('archivedAt','desc').onSnapshot(snap => { archiveData = []; snap.forEach(d => archiveData.push({id:d.id,...d.data()})); if(currentUser) renderArchive(); }, err => showToast('❌ خطأ في الأرشيف', true));
+
+  // المستخدمين
+  db.collection('users').get()
+    .then(snap => {
+      usersData = [];
+
+      snap.forEach(d => {
+        usersData.push({
+          id: d.id,
+          ...d.data()
+        });
+      });
+
+      document.getElementById('loginLoading').classList.add('hidden');
+      document.getElementById('loginForm').classList.remove('hidden');
+
+      if (currentUser) renderUsers();
+    })
+    .catch(err => {
+      console.error('Users:', err);
+      showToast('❌ خطأ في تحميل المستخدمين', true);
+    });
+
+
+  // الأوردرات
+  db.collection('orders')
+    .orderBy('timestamp', 'desc')
+    .get()
+    .then(snap => {
+      ordersData = [];
+
+      snap.forEach(d => {
+        ordersData.push({
+          id: d.id,
+          ...d.data()
+        });
+      });
+
+      if (currentUser) {
+        renderMyOrders();
+        renderAllOrders();
+      }
+    })
+    .catch(err => {
+      console.error('Orders:', err);
+      showToast('❌ خطأ في الأوردرات', true);
+    });
+
+
+  // الفروع
+  db.collection('branches')
+    .orderBy('name')
+    .get()
+    .then(snap => {
+      branchesData = [];
+
+      snap.forEach(d => {
+        branchesData.push({
+          id: d.id,
+          ...d.data()
+        });
+      });
+
+      if (currentUser) {
+        populateBranchSelect();
+        populateShortageBranch();
+        populateCCBranch();
+        renderBranches();
+      }
+    })
+    .catch(err => {
+      console.error('Branches:', err);
+      showToast('❌ خطأ في الفروع', true);
+    });
+
+
+  // الأصناف
+  db.collection('products')
+    .orderBy('code')
+    .get()
+    .then(snap => {
+      productsData = [];
+
+      snap.forEach(d => {
+        productsData.push({
+          id: d.id,
+          ...d.data()
+        });
+      });
+
+      if (currentUser) renderProducts();
+    })
+    .catch(err => {
+      console.error('Products:', err);
+      showToast('❌ خطأ في الأصناف', true);
+    });
+
+
+  // العملاء
+  db.collection('customers')
+    .orderBy('code')
+    .get()
+    .then(snap => {
+      customersData = [];
+
+      snap.forEach(d => {
+        customersData.push({
+          id: d.id,
+          ...d.data()
+        });
+      });
+
+      if (currentUser) renderCustomers();
+    })
+    .catch(err => {
+      console.error('Customers:', err);
+      showToast('❌ خطأ في العملاء', true);
+    });
+
+
+  // الأبلكيشنز
+  db.collection('apps')
+    .orderBy('name')
+    .get()
+    .then(snap => {
+      appsData = [];
+
+      snap.forEach(d => {
+        appsData.push({
+          id: d.id,
+          ...d.data()
+        });
+      });
+
+      if (currentUser) {
+        populateShortageApp();
+        renderApps();
+      }
+    })
+    .catch(err => {
+      console.error('Apps:', err);
+      showToast('❌ خطأ في الأبلكيشنز', true);
+    });
+
+
+  // النواقص
+  db.collection('shortages')
+    .orderBy('timestamp', 'desc')
+    .get()
+    .then(snap => {
+      shortagesData = [];
+
+      snap.forEach(d => {
+        shortagesData.push({
+          id: d.id,
+          ...d.data()
+        });
+      });
+
+      if (currentUser) {
+        renderShortages();
+        renderShortagesReport();
+      }
+    })
+    .catch(err => {
+      console.error('Shortages:', err);
+      showToast('❌ خطأ في النواقص', true);
+    });
+
+
+  // نواقص كول سنتر
+  db.collection('callcenter_shortages')
+    .orderBy('timestamp', 'desc')
+    .get()
+    .then(snap => {
+      ccShortagesData = [];
+
+      snap.forEach(d => {
+        ccShortagesData.push({
+          id: d.id,
+          ...d.data()
+        });
+      });
+
+      if (currentUser) {
+        renderCCShortages();
+        renderCCShortagesReport();
+      }
+    })
+    .catch(err => {
+      console.error('CC Shortages:', err);
+      showToast('❌ خطأ في نواقص كول سنتر', true);
+    });
+
+
+  // الأرشيف
+  db.collection('archived_orders')
+    .orderBy('archivedAt', 'desc')
+    .get()
+    .then(snap => {
+      archiveData = [];
+
+      snap.forEach(d => {
+        archiveData.push({
+          id: d.id,
+          ...d.data()
+        });
+      });
+
+      if (currentUser) renderArchive();
+    })
+    .catch(err => {
+      console.error('Archive:', err);
+      showToast('❌ خطأ في الأرشيف', true);
+    });
 }
 
 function populateBranchSelect() {
