@@ -65,7 +65,7 @@ th { background: #f1f5f9; font-weight: 600; color: #475569; }
     <h1>🛒 نظام تسجيل الأوردرات</h1>
     <p>سجل دخولك للبدء</p>
   </div>
-  <div id="loginLoading" class="loading">جارٍ تحميل البيانات...</div>
+  <div id="loginLoading" class="loading">جارٍ تحميل البيانات </div>
   <div id="loginForm" class="hidden">
     <label class="label">اسم المستخدم</label>
     <input type="text" id="loginUser" class="input" placeholder="اكتب اسمك">
@@ -114,7 +114,7 @@ th { background: #f1f5f9; font-weight: 600; color: #475569; }
     <label class="label">الوجوه المتاحة لك</label>
     <div class="checkbox-group" id="facesGroup"></div>
     <label class="label">ملاحظات</label>
-    <textarea id="notes" class="input" rows="3" placeholder="أي ملاحظات إضافية..."></textarea>
+    <textarea id="notes" class="input" rows="3" placeholder="أي ملاحظات إضافية "></textarea>
     <button class="btn btn-success" onclick="submitOrder()">✅ حفظ الأوردر</button>
   </div>
 
@@ -160,7 +160,7 @@ th { background: #f1f5f9; font-weight: 600; color: #475569; }
     </div>
   </div>
 </div>
-...
+ 
 </div>
 
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
@@ -184,7 +184,7 @@ const auth = firebase.auth();
 let currentUser = null;
 let usersData = [];
 let ordersData = [];
-...
+ 
 
 // ============================================
 // ضع بيانات Firebase الخاصة بك هنا
@@ -193,7 +193,7 @@ let ordersData = [];
 function initApp() {
   db.collection('users').onSnapshot(snapshot => {
     usersData = [];
-    snapshot.forEach(doc => usersData.push({ id: doc.id, ...doc.data() }));
+    snapshot.forEach(doc => usersData.push({ id: doc.id,  doc.data() }));
     document.getElementById('loginLoading').classList.add('hidden');
     document.getElementById('loginForm').classList.remove('hidden');
     if (currentUser) renderUsers();
@@ -203,7 +203,7 @@ function initApp() {
 
   db.collection('orders').orderBy('timestamp', 'desc').onSnapshot(snapshot => {
     ordersData = [];
-    snapshot.forEach(doc => ordersData.push({ id: doc.id, ...doc.data() }));
+    snapshot.forEach(doc => ordersData.push({ id: doc.id,  doc.data() }));
     if (currentUser) { renderMyOrders(); renderAllOrders(); }
   }, err => {
     showToast('❌ خطأ في تحميل الأوردرات', true);
