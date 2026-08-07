@@ -335,7 +335,35 @@ function populateBranchSelect() {
     if (currentVal) sel.value = currentVal;
   });
 }
+function doLogin() {
+  const name = document.getElementById('loginUser').value.trim();
+  const pass = document.getElementById('loginPass').value.trim();
 
+  const found = usersData.find(u => u.name === name && u.pass === pass);
+
+  if (found) {
+    currentUser = found;
+
+    document.getElementById('loginPage').classList.add('hidden');
+    document.getElementById('dashboard').classList.remove('hidden');
+
+    document.getElementById('userName').textContent = found.name;
+    document.getElementById('userRole').textContent = found.role || 'موظف';
+    document.getElementById('userAvatar').textContent = found.name.charAt(0);
+
+    renderFaces();
+    renderMyOrders();
+    renderAllOrders();
+    renderUsers();
+
+    showTab('newOrder');
+    showToast('👋 مرحباً ' + found.name);
+
+  } else {
+    showToast('❌ اسم المستخدم أو كلمة المرور غير صحيحة', true);
+  }
+}
+  
 function doLogin() {
   const name = document.getElementById('loginUser').value.trim();
   const pass = document.getElementById('loginPass').value.trim();
