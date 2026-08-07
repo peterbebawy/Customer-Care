@@ -190,7 +190,7 @@ let ordersData = [];
 function initApp() {
   db.collection('users').onSnapshot(snapshot => {
     usersData = [];
-    snapshot.forEach(doc => usersData.push({ id: doc.id,  doc.data() }));
+    snapshot.forEach(doc => usersData.push({ id: doc.id, ...doc.data() }));
     document.getElementById('loginLoading').classList.add('hidden');
     document.getElementById('loginForm').classList.remove('hidden');
     if (currentUser) renderUsers();
