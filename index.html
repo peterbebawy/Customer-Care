@@ -184,7 +184,7 @@ const auth = firebase.auth();
 let currentUser = null;
 let usersData = [];
 ...
-</script>
+
 // ============================================
 // ضع بيانات Firebase الخاصة بك هنا
 // ============================================
@@ -227,7 +227,7 @@ function doLogin() {
     showToast('❌ اسم المستخدم أو كلمة المرور غير صحيحة', true);
   }
 }
-
+</script>
 function doLogout() {
   currentUser = null;
   document.getElementById('dashboard').classList.add('hidden');
