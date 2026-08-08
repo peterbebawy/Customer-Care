@@ -530,9 +530,11 @@ const firebaseConfig = {
   messagingSenderId: "167461661789",
   appId: "1:167461661789:web:a1141fccdf4650b84eb1b4"
 };
-firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
+const db = firebase.firestore();
+const rtdb = firebase.database();
+
 window.db = db;
+window.rtdb = rtdb;
 
 let currentUser = null;
 let usersData = [], ordersData = [], branchesData = [], productsData = [], customersData = [], appsData = [], shortagesData = [], ccShortagesData = [], archiveData = [];
