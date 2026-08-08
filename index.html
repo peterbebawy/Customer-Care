@@ -149,17 +149,33 @@ th { background: #f1f5f9; font-weight: 600; color: #475569; }
 
 <!-- صفحة تسجيل الدخول -->
 <div id="loginPage" class="card login-box">
+
   <div class="header">
-    <h1>🛒 نظام إدارة الأوردرات</h1>
+    <h1>🛒 نظام تسجيل الأوردرات</h1>
     <p>سجل دخولك للبدء</p>
   </div>
-  <div id="loginLoading" class="loading">جارٍ تحميل البيانات...</div>
+
+  <div id="loginLoading" class="loading">
+    جارٍ تحميل البيانات...
+  </div>
+
   <div id="loginForm" class="hidden">
+
     <label class="label">اسم المستخدم</label>
-    <input type="text" id="loginUser" class="input" placeholder="اكتب اسمك" onkeydown="if(event.key==='Enter')doLogin()">
+    <input type="text" id="loginUser" class="input" placeholder="اكتب اسمك">
+
     <label class="label">كلمة المرور</label>
-    <input type="password" id="loginPass" class="input" placeholder="كلمة المرور" onkeydown="if(event.key==='Enter')doLogin()">
-    <button class="btn btn-primary" style="width:100%; margin-top:8px;" onclick="doLogin()">تسجيل الدخول</button>
+    <input type="password" id="loginPass" class="input" placeholder="كلمة المرور">
+
+    <button class="btn btn-primary"
+            style="width:100%; margin-top:8px;"
+            onclick="doLogin()">
+      تسجيل الدخول
+    </button>
+
+  </div>
+
+</div>
   </div>
 </div>
 
