@@ -546,11 +546,12 @@ let productSelIndex = -1, customerSelIndex = -1, shortageProductSelIndex = -1, c
 const ROLES = { admin: 'أدمن', manager: 'مانجر', employee: 'موظف', appuser: 'مستخدم أبلكيشن' };
 const STATUS_LABELS = { pending: 'في الانتظار', completed: 'تم', outdelivery: 'Out of Delivery', cancelled: 'ملغي' };
 const STATUS_CLASSES = { pending: 'status-pending', completed: 'status-completed', outdelivery: 'status-outdelivery', cancelled: 'status-cancelled' };
-
 function initApp() {
-
   console.log("🚀 initApp started");
 
+  // =========================
+  // USERS
+  // =========================
   rtdb.ref("users").on("value", snapshot => {
 
     usersData = [];
@@ -567,12 +568,48 @@ function initApp() {
     document.getElementById('loginLoading').classList.add('hidden');
     document.getElementById('loginForm').classList.remove('hidden');
 
+    if (currentUser) {
+      renderUsers();
+    }
+
   }, error => {
 
     console.error("❌ RTDB users error:", error);
 
     document.getElementById('loginLoading').classList.add('hidden');
     document.getElementById('loginForm').classList.remove('hidden');
+
+  });
+
+  // =========================
+  // ORDERS
+  // =========================
+  rtdb.ref("orders").on("value", snapshot => {
+
+    ordersData = [];
+
+    snapshot.forEach(child => {
+      ordersData.push({
+        id: child.key,
+        ...child.val()
+      });
+    });
+
+    ordersData.sort((a, b) =>
+      (b.timestamp || 0) - (a.timestamp || 0)
+    );
+
+    console.log("📦 orders:", ordersData.length);
+
+    if (currentUser) {
+      renderMyOrders();
+      renderAllOrders();
+    }
+
+  }, error => {
+
+    console.error("❌ Orders error:", error);
+    showToast('❌ خطأ في الأوردرات', true);
 
   });
 }
