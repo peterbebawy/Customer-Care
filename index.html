@@ -587,35 +587,7 @@ function ciIncludes(str, query) {
 }
 
 function initApp() {
-  // تحميل المستخدمين من Realtime Database
-  rtdb.ref('users').on('value', snap => {
-    usersData = [];
 
-    snap.forEach(child => {
-      usersData.push({
-        id: child.key,
-        ...child.val()
-      });
-    });
-
-    console.log('🔥 عدد المستخدمين:', usersData.length);
-    console.log('👥 المستخدمين:', usersData);
-
-    document.getElementById('loginLoading').classList.add('hidden');
-    document.getElementById('loginForm').classList.remove('hidden');
-
-    if (currentUser) {
-      renderUsers();
-    }
-  }, err => {
-    console.error('RTDB USERS ERROR:', err);
-    showToast('❌ خطأ في تحميل المستخدمين', true);
-
-    document.getElementById('loginLoading').classList.add('hidden');
-    document.getElementById('loginForm').classList.remove('hidden');
-  });
-}
-}
 
 function populateBranchSelect() {
   [document.getElementById('branch'), document.getElementById('editBranch')].forEach(sel => {
