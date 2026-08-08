@@ -545,9 +545,10 @@ const rtdb = firebase.database();
 
 window.db = db;
 window.rtdb = rtdb;
-firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
 
+let currentUser = null;
+let usersData = [];
+let ordersData = [];
 let currentUser = null;
 let usersData = [], ordersData = [], branchesData = [], productsData = [], customersData = [], appsData = [], shortagesData = [], ccShortagesData = [], archiveData = [];
 let orderItems = [], selectedCustomer = null, selectedShortageProduct = null, selectedCCProduct = null;
