@@ -550,28 +550,33 @@ const STATUS_CLASSES = { pending: 'status-pending', completed: 'status-completed
 
 function initApp() {
 
-  // المستخدمين
-  db.ref('users').once('value')
-    .then(snap => {
-      usersData = [];
+  console.log("🚀 initApp started");
 
-      snap.forEach(d => {
-        usersData.push({
-          id: d.key,
-          ...d.val()
-        });
+  rtdb.ref("users").on("value", snapshot => {
+
+    usersData = [];
+
+    snapshot.forEach(child => {
+      usersData.push({
+        id: child.key,
+        ...child.val()
       });
-
-      document.getElementById('loginLoading').classList.add('hidden');
-      document.getElementById('loginForm').classList.remove('hidden');
-
-      if (currentUser) renderUsers();
-    })
-    .catch(err => {
-      console.error('Users:', err);
-      showToast('❌ خطأ في تحميل المستخدمين', true);
     });
 
+    console.log("👥 users:", usersData);
+
+    document.getElementById('loginLoading').classList.add('hidden');
+    document.getElementById('loginForm').classList.remove('hidden');
+
+  }, error => {
+
+    console.error("❌ RTDB users error:", error);
+
+    document.getElementById('loginLoading').classList.add('hidden');
+    document.getElementById('loginForm').classList.remove('hidden');
+
+  });
+}
 
   // الأوردرات
   db.ref('orders')
