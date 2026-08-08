@@ -6,14 +6,13 @@
 <title>نظام إدارة الأوردرات</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 * { box-sizing: border-box; }
-body { font-family: 'Cairo', Tahoma, 'Segoe UI', sans-serif; direction: rtl; background: #eef2f7; margin: 0; padding: 20px; }
-button, input, select, textarea { font-family: 'Cairo', Tahoma, 'Segoe UI', sans-serif; }
+body { font-family: Tahoma, 'Segoe UI', Arial, sans-serif; direction: rtl; background: #eef2f7; margin: 0; padding: 20px; }
+button, input, select, textarea { font-family: Tahoma, 'Segoe UI', Arial, sans-serif; }
 .hidden { display: none !important; }
 .card { background: #fff; border-radius: 18px; box-shadow: 0 4px 24px rgba(15,23,42,0.07); padding: 28px; margin-bottom: 20px; max-width: 1100px; margin-left: auto; margin-right: auto; position: relative; overflow: hidden; }
 .card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 5px; background: linear-gradient(90deg, #2563eb, #06b6d4, #16a34a); }
@@ -50,7 +49,14 @@ button, input, select, textarea { font-family: 'Cairo', Tahoma, 'Segoe UI', sans
 .header p { color: #64748b; margin: 8px 0 0; }
 
 .nav-container { max-width: 1100px; margin: 0 auto 20px; }
-.nav { display: flex; gap: 6px; margin-bottom: 20px; flex-wrap: wrap; align-items: center; background: #fff; padding: 14px; border-radius: 18px; box-shadow: 0 4px 20px rgba(15,23,42,0.06); position: relative; overflow: hidden; }
+.nav-toggle-bar { display: flex; justify-content: space-between; align-items: center; background: #fff; padding: 13px 18px; border-radius: 14px; box-shadow: 0 4px 20px rgba(15,23,42,0.06); cursor: pointer; font-weight: 800; color: #1e293b; user-select: none; position: relative; overflow: hidden; margin-bottom: 8px; }
+.nav-toggle-bar::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, #2563eb, #06b6d4, #16a34a); }
+.nav-toggle-bar .nav-toggle-title { display: flex; align-items: center; gap: 10px; font-size: 14.5px; }
+.nav-toggle-bar .nav-toggle-title .cur-tab-label { color: #2563eb; }
+.nav-toggle-arrow { color: #94a3b8; transition: transform 0.2s; font-size: 13px; }
+.nav-toggle-arrow.open { transform: rotate(180deg); }
+.nav { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; background: #fff; border-radius: 18px; box-shadow: 0 4px 20px rgba(15,23,42,0.06); position: relative; max-height: 0; opacity: 0; padding: 0 14px; margin-bottom: 0; overflow: hidden; transition: max-height 0.25s ease, opacity 0.2s ease, padding 0.25s ease, margin 0.25s ease; }
+.nav.open { max-height: 900px; opacity: 1; padding: 14px; margin-bottom: 20px; }
 .nav::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, #2563eb, #06b6d4, #16a34a); }
 .nav-group-label { flex-basis: 100%; display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 800; color: #94a3b8; letter-spacing: .3px; text-transform: uppercase; margin: 10px 2px 2px; }
 .nav-group-label:first-child { margin-top: 2px; }
@@ -238,6 +244,10 @@ th { background: #f1f5f9; font-weight: 600; color: #475569; }
   </div>
 
   <div class="nav-container">
+    <div class="nav-toggle-bar" onclick="toggleNavPanel()">
+      <span class="nav-toggle-title">☰ <span class="cur-tab-label" id="curTabLabel">القائمة</span></span>
+      <span class="nav-toggle-arrow" id="navToggleArrow">▾</span>
+    </div>
     <div class="nav" id="mainNav"></div>
   </div>
 
@@ -475,7 +485,7 @@ th { background: #f1f5f9; font-weight: 600; color: #475569; }
       </div>
       <div class="table-wrap">
         <table>
-          <thead><tr><th>#</th><th>العميل</th><th>الفرع</th><th>الأصناف</th><th>الإجمالي</th><th>الحالة</th><th>الموظف</th><th>التاريخ</th><th>إجراءات</th></tr></thead>
+          <thead><tr><th>#</th><th>النوع</th><th>العميل</th><th>الفرع</th><th>الأصناف</th><th>الإجمالي</th><th>الحالة</th><th>الموظف</th><th>التاريخ</th><th>إجراءات</th></tr></thead>
           <tbody id="archiveTable"></tbody>
         </table>
       </div>
@@ -1411,6 +1421,15 @@ function clearAppOrderForm() {
   document.getElementById('appOrderProductSuggestions').classList.add('hidden');
 }
 
+function toggleNavPanel(forceOpen) {
+  const nav = document.getElementById('mainNav');
+  const arrow = document.getElementById('navToggleArrow');
+  if (!nav) return;
+  const shouldOpen = typeof forceOpen === 'boolean' ? forceOpen : !nav.classList.contains('open');
+  nav.classList.toggle('open', shouldOpen);
+  if (arrow) arrow.classList.toggle('open', shouldOpen);
+}
+
 function showTab(tab) {
   ['newOrder','myOrders','allOrders','allAppOrders','doneOrders','cancelOrders','shortages','shortagesReport','callcenterShortages','ccShortagesReport','archive','users','branches','apps','products','customers'].forEach(t => {
     const el = document.getElementById(t); 
@@ -1421,7 +1440,10 @@ function showTab(tab) {
   const target = document.getElementById(tab); 
   const targetBtn = document.getElementById('tab-'+tab);
   if(target) target.classList.remove('hidden'); 
-  if(targetBtn) targetBtn.classList.add('active');
+  if(targetBtn) { targetBtn.classList.add('active'); const lbl = document.getElementById('curTabLabel'); if (lbl) lbl.textContent = targetBtn.textContent.trim(); }
+
+  // تعديل: طي القائمة تلقائياً بعد اختيار القسم لترك كامل مساحة الشاشة للاستعراض
+  toggleNavPanel(false);
 
   // تعديل: مسح النموذج عند الذهاب لأوردر جديد
   if(tab==='newOrder') clearNewOrderForm();
@@ -1851,7 +1873,6 @@ function renderAllOrders() {
     let actions = `<span class="view-link" onclick="openReviewOrder('${o.id}')">👁️ مراجعة</span>`;
     if (canEdit) {
       actions += `<span class="edit-link" onclick="openEditOrder('${o.id}')">✏️ تعديل</span>
-                 <span class="archive-link" onclick="archiveOrder('${o.id}')">📦 أرشفة</span>
                  <span class="delete-link" onclick="deleteOrder('${o.id}')">🗑️ حذف</span>`;
     }
     return `<tr class="${isUrgent?'urgent-row':''}">
@@ -2061,7 +2082,9 @@ function renderDoneOrders() {
     let actions = `<span class="view-link" onclick="${reviewFn}('${o.id}')">👁️ مراجعة</span>`;
     if (canEdit) {
       const delFn = o._type === 'app' ? 'deleteAppOrder' : 'deleteOrder';
-      actions += `<span class="delete-link" onclick="${delFn}('${o.id}')">🗑️ حذف</span>`;
+      const archiveFn = o._type === 'app' ? 'archiveAppOrder' : 'archiveOrder';
+      actions += `<span class="archive-link" onclick="${archiveFn}('${o.id}')">📦 أرشفة</span>
+                 <span class="delete-link" onclick="${delFn}('${o.id}')">🗑️ حذف</span>`;
     }
     return `<tr>
       <td>${i+1}</td>
@@ -2141,7 +2164,9 @@ function renderCancelOrders() {
     let actions = `<span class="view-link" onclick="${reviewFn}('${o.id}')">👁️ مراجعة</span>`;
     if (canEdit) {
       const delFn = o._type === 'app' ? 'deleteAppOrder' : 'deleteOrder';
-      actions += `<span class="delete-link" onclick="${delFn}('${o.id}')">🗑️ حذف</span>`;
+      const archiveFn = o._type === 'app' ? 'archiveAppOrder' : 'archiveOrder';
+      actions += `<span class="archive-link" onclick="${archiveFn}('${o.id}')">📦 أرشفة</span>
+                 <span class="delete-link" onclick="${delFn}('${o.id}')">🗑️ حذف</span>`;
     }
     return `<tr>
       <td>${i+1}</td>
@@ -2204,11 +2229,24 @@ function archiveOrder(id) {
   if (!confirm('هل أنت متأكد من أرشفة هذا الأوردر؟')) return;
   const order = ordersData.find(o => o.id === id);
   if (!order) return;
-  const archived = { ...order, archivedAt: firebase.database.ServerValue.TIMESTAMP };
+  const archived = { ...order, archivedAt: firebase.database.ServerValue.TIMESTAMP, _sourceTable: 'orders' };
   delete archived.id;
   db.ref('archived_orders').push(archived)
     .then(() => db.ref('orders/' + id).remove())
-    .then(() => showToast('📦 تم أرشفة الأوردر'))
+    .then(() => { showToast('📦 تم أرشفة الأوردر'); renderDoneOrders(); renderCancelOrders(); })
+    .catch(err => { showToast('❌ خطأ في الأرشفة', true); console.error(err); });
+}
+
+// تعديل: أرشفة أوردرات الأبلكيشن أيضاً (متاحة من تبويبي Done و Cancel)
+function archiveAppOrder(id) {
+  if (!confirm('هل أنت متأكد من أرشفة هذا الأوردر؟')) return;
+  const order = appOrdersData.find(o => o.id === id);
+  if (!order) return;
+  const archived = { ...order, archivedAt: firebase.database.ServerValue.TIMESTAMP, _sourceTable: 'app_orders' };
+  delete archived.id;
+  db.ref('archived_orders').push(archived)
+    .then(() => db.ref('app_orders/' + id).remove())
+    .then(() => { showToast('📦 تم أرشفة الأوردر'); renderDoneOrders(); renderCancelOrders(); })
     .catch(err => { showToast('❌ خطأ في الأرشفة', true); console.error(err); });
 }
 
@@ -2218,8 +2256,10 @@ function restoreOrder(id) {
   if (!order) return;
   const restored = { ...order };
   delete restored.id; delete restored.archivedAt;
+  const targetTable = restored._sourceTable === 'app_orders' ? 'app_orders' : 'orders';
+  delete restored._sourceTable;
   restored.timestamp = firebase.database.ServerValue.TIMESTAMP;
-  db.ref('orders').push(restored)
+  db.ref(targetTable).push(restored)
     .then(() => db.ref('archived_orders/' + id).remove())
     .then(() => showToast('✅ تم إعادة الأوردر'))
     .catch(err => { showToast('❌ خطأ في الإرجاع', true); console.error(err); });
@@ -2240,12 +2280,14 @@ function renderArchive() {
     );
   }
   statsBox.innerHTML = `<div class="stat-card"><div class="stat-number" style="color:#7c3aed;">${archiveData.length}</div><div class="stat-label">الأوردرات المؤرشفة</div></div>`;
-  if (filtered.length === 0) { table.innerHTML = `<tr><td colspan="9" class="empty-state">لا يوجد أوردرات مؤرشفة</td></tr>`; return; }
+  if (filtered.length === 0) { table.innerHTML = `<tr><td colspan="10" class="empty-state">لا يوجد أوردرات مؤرشفة</td></tr>`; return; }
   table.innerHTML = filtered.map((o, i) => {
     const statusLabel = STATUS_LABELS[o.status] || o.status;
     const statusClass = STATUS_CLASSES[o.status] || 'status-pending';
+    const typeBadge = o._sourceTable === 'app_orders' ? `<span class="badge badge-purple">📱 أبلكيشن</span>` : `<span class="badge badge-blue">📊 عادي</span>`;
     return `<tr>
       <td>${i+1}</td>
+      <td>${typeBadge}</td>
       <td><strong>${o.customer}</strong>${o.customerCode?`<br><span style="font-size:11px;color:#64748b;">${o.customerCode}</span>`:''}</td>
       <td><span class="badge badge-blue">${o.branch}</span></td>
       <td style="max-width:200px;font-size:12px;white-space:pre-line;">${o.items||'-'}</td>
