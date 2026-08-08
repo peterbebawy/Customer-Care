@@ -835,7 +835,7 @@ function submitOrder() {
   if (orderItems.length === 0) { showToast('❌ أضف صنف واحد على الأقل', true); return; }
   const itemsText = orderItems.map(i => `${i.code} - ${i.name} (x${i.qty}) = ${(i.price * i.qty).toFixed(2)} ج.م`).join('\n');
   const total = getOrderTotal();
-  db.ref('orders').push({
+  rtdb.ref('orders').push({
     customer, customerCode, branch, items: itemsText, itemsArray: orderItems, total,
     supplyType, status: 'pending', deliveryDate,
     employee: currentUser.name, employeeId: currentUser.id,
