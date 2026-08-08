@@ -6,8 +6,6 @@
 <title>نظام إدارة الأوردرات</title>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <style>
 * { box-sizing: border-box; }
@@ -526,13 +524,14 @@ th { background: #f1f5f9; font-weight: 600; color: #475569; }
 const firebaseConfig = {
   apiKey: "AIzaSyCikAWrMtiLw0WAYCH7I4iG6Wv2tMsEt9w",
   authDomain: "customer-care-841fe.firebaseapp.com",
+  databaseURL: "https://customer-care-841fe-default-rtdb.firebaseio.com",
   projectId: "customer-care-841fe",
   storageBucket: "customer-care-841fe.firebasestorage.app",
   messagingSenderId: "167461661789",
   appId: "1:167461661789:web:a1141fccdf4650b84eb1b4"
 };
 firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
+const db = firebase.database();
 window.db = db;
 
 let currentUser = null;
@@ -548,14 +547,14 @@ const STATUS_CLASSES = { pending: 'status-pending', completed: 'status-completed
 function initApp() {
 
   // المستخدمين
-  db.collection('users').get()
+  db.ref('users').once('value')
     .then(snap => {
       usersData = [];
 
       snap.forEach(d => {
         usersData.push({
-          id: d.id,
-          ...d.data()
+          id: d.key,
+          ...d.val()
         });
       });
 
@@ -571,18 +570,18 @@ function initApp() {
 
 
   // الأوردرات
-  db.collection('orders')
-    .orderBy('timestamp', 'desc')
-    .get()
+  db.ref('orders')
+    .once('value')
     .then(snap => {
       ordersData = [];
 
       snap.forEach(d => {
         ordersData.push({
-          id: d.id,
-          ...d.data()
+          id: d.key,
+          ...d.val()
         });
       });
+      ordersData.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
 
       if (currentUser) {
         renderMyOrders();
@@ -596,18 +595,18 @@ function initApp() {
 
 
   // الفروع
-  db.collection('branches')
-    .orderBy('name')
-    .get()
+  db.ref('branches')
+    .once('value')
     .then(snap => {
       branchesData = [];
 
       snap.forEach(d => {
         branchesData.push({
-          id: d.id,
-          ...d.data()
+          id: d.key,
+          ...d.val()
         });
       });
+      branchesData.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
 
       if (currentUser) {
         populateBranchSelect();
@@ -623,18 +622,18 @@ function initApp() {
 
 
   // الأصناف
-  db.collection('products')
-    .orderBy('code')
-    .get()
+  db.ref('products')
+    .once('value')
     .then(snap => {
       productsData = [];
 
       snap.forEach(d => {
         productsData.push({
-          id: d.id,
-          ...d.data()
+          id: d.key,
+          ...d.val()
         });
       });
+      productsData.sort((a, b) => (a.code || '').localeCompare(b.code || ''));
 
       if (currentUser) renderProducts();
     })
@@ -645,18 +644,18 @@ function initApp() {
 
 
   // العملاء
-  db.collection('customers')
-    .orderBy('code')
-    .get()
+  db.ref('customers')
+    .once('value')
     .then(snap => {
       customersData = [];
 
       snap.forEach(d => {
         customersData.push({
-          id: d.id,
-          ...d.data()
+          id: d.key,
+          ...d.val()
         });
       });
+      customersData.sort((a, b) => (a.code || '').localeCompare(b.code || ''));
 
       if (currentUser) renderCustomers();
     })
@@ -667,18 +666,18 @@ function initApp() {
 
 
   // الأبلكيشنز
-  db.collection('apps')
-    .orderBy('name')
-    .get()
+  db.ref('apps')
+    .once('value')
     .then(snap => {
       appsData = [];
 
       snap.forEach(d => {
         appsData.push({
-          id: d.id,
-          ...d.data()
+          id: d.key,
+          ...d.val()
         });
       });
+      appsData.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
 
       if (currentUser) {
         populateShortageApp();
@@ -692,18 +691,18 @@ function initApp() {
 
 
   // النواقص
-  db.collection('shortages')
-    .orderBy('timestamp', 'desc')
-    .get()
+  db.ref('shortages')
+    .once('value')
     .then(snap => {
       shortagesData = [];
 
       snap.forEach(d => {
         shortagesData.push({
-          id: d.id,
-          ...d.data()
+          id: d.key,
+          ...d.val()
         });
       });
+      shortagesData.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
 
       if (currentUser) {
         renderShortages();
@@ -717,18 +716,18 @@ function initApp() {
 
 
   // نواقص كول سنتر
-  db.collection('callcenter_shortages')
-    .orderBy('timestamp', 'desc')
-    .get()
+  db.ref('callcenter_shortages')
+    .once('value')
     .then(snap => {
       ccShortagesData = [];
 
       snap.forEach(d => {
         ccShortagesData.push({
-          id: d.id,
-          ...d.data()
+          id: d.key,
+          ...d.val()
         });
       });
+      ccShortagesData.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
 
       if (currentUser) {
         renderCCShortages();
@@ -742,18 +741,18 @@ function initApp() {
 
 
   // الأرشيف
-  db.collection('archived_orders')
-    .orderBy('archivedAt', 'desc')
-    .get()
+  db.ref('archived_orders')
+    .once('value')
     .then(snap => {
       archiveData = [];
 
       snap.forEach(d => {
         archiveData.push({
-          id: d.id,
-          ...d.data()
+          id: d.key,
+          ...d.val()
         });
       });
+      archiveData.sort((a, b) => (b.archivedAt || 0) - (a.archivedAt || 0));
 
       if (currentUser) renderArchive();
     })
@@ -996,12 +995,12 @@ function submitOrder() {
   if (orderItems.length === 0) { showToast('❌ أضف صنف واحد على الأقل', true); return; }
   const itemsText = orderItems.map(i => `${i.code} - ${i.name} (x${i.qty}) = ${(i.price * i.qty).toFixed(2)} ج.م`).join('\n');
   const total = getOrderTotal();
-  db.collection('orders').add({
+  db.ref('orders').push({
     customer, customerCode, branch, items: itemsText, itemsArray: orderItems, total,
     supplyType, status: 'pending', deliveryDate,
     employee: currentUser.name, employeeId: currentUser.id,
     date: new Date().toISOString().split('T')[0],
-    notes, timestamp: firebase.firestore.FieldValue.serverTimestamp()
+    notes, timestamp: firebase.database.ServerValue.TIMESTAMP
   }).then(() => {
     showToast('✅ تم حفظ الأوردر');
     document.getElementById('customerSearch').value = '';
@@ -1137,14 +1136,14 @@ function renderAllOrders() {
 function updateOrderStatus(id, newStatus) {
   const updateData = { status: newStatus };
   if (newStatus !== 'cancelled') updateData.cancelReason = '';
-  db.collection('orders').doc(id).update(updateData)
+  db.ref('orders/' + id).update(updateData)
     .then(() => showToast('✅ تم تحديث الحالة'))
     .catch(err => { showToast('❌ خطأ في التحديث', true); console.error(err); });
 }
 
 function deleteOrder(id) {
   if (!confirm('هل أنت متأكد من حذف هذا الأوردر؟')) return;
-  db.collection('orders').doc(id).delete().then(() => showToast('🗑️ تم حذف الأوردر')).catch(err => { showToast('❌ خطأ في الحذف', true); console.error(err); });
+  db.ref('orders/' + id).remove().then(() => showToast('🗑️ تم حذف الأوردر')).catch(err => { showToast('❌ خطأ في الحذف', true); console.error(err); });
 }
 
 // ============================================
@@ -1154,10 +1153,10 @@ function archiveOrder(id) {
   if (!confirm('هل أنت متأكد من أرشفة هذا الأوردر؟')) return;
   const order = ordersData.find(o => o.id === id);
   if (!order) return;
-  const archived = { ...order, archivedAt: firebase.firestore.FieldValue.serverTimestamp() };
+  const archived = { ...order, archivedAt: firebase.database.ServerValue.TIMESTAMP };
   delete archived.id;
-  db.collection('archived_orders').add(archived)
-    .then(() => db.collection('orders').doc(id).delete())
+  db.ref('archived_orders').push(archived)
+    .then(() => db.ref('orders/' + id).remove())
     .then(() => showToast('📦 تم أرشفة الأوردر'))
     .catch(err => { showToast('❌ خطأ في الأرشفة', true); console.error(err); });
 }
@@ -1168,9 +1167,9 @@ function restoreOrder(id) {
   if (!order) return;
   const restored = { ...order };
   delete restored.id; delete restored.archivedAt;
-  restored.timestamp = firebase.firestore.FieldValue.serverTimestamp();
-  db.collection('orders').add(restored)
-    .then(() => db.collection('archived_orders').doc(id).delete())
+  restored.timestamp = firebase.database.ServerValue.TIMESTAMP;
+  db.ref('orders').push(restored)
+    .then(() => db.ref('archived_orders/' + id).remove())
     .then(() => showToast('✅ تم إعادة الأوردر'))
     .catch(err => { showToast('❌ خطأ في الإرجاع', true); console.error(err); });
 }
@@ -1210,7 +1209,7 @@ function renderArchive() {
 
 function deleteArchive(id) {
   if (!confirm('هل أنت متأكد من الحذف النهائي؟')) return;
-  db.collection('archived_orders').doc(id).delete().then(() => showToast('🗑️ تم الحذف')).catch(err => { showToast('❌ خطأ', true); console.error(err); });
+  db.ref('archived_orders/' + id).remove().then(() => showToast('🗑️ تم الحذف')).catch(err => { showToast('❌ خطأ', true); console.error(err); });
 }
 
 // ============================================
@@ -1276,7 +1275,7 @@ function saveEditOrder() {
   if (!customer || !branch || !items) { showToast('❌ أكمل جميع الحقول المطلوبة', true); return; }
   const data = { customer, branch, items, supplyType, deliveryDate, status, notes };
   if (status === 'cancelled') data.cancelReason = cancelReason; else data.cancelReason = '';
-  db.collection('orders').doc(id).update(data)
+  db.ref('orders/' + id).update(data)
     .then(() => { showToast('✅ تم حفظ التعديلات'); closeEditModal(); })
     .catch(err => { showToast('❌ خطأ في الحفظ', true); console.error(err); });
 }
@@ -1298,7 +1297,7 @@ function saveQuickProduct() {
   const price = parseFloat(document.getElementById('quickProductPrice').value) || 0;
   if (!code) { showToast('❌ أدخل كود الصنف', true); return; }
   if (!name) { showToast('❌ أدخل اسم الصنف', true); return; }
-  db.collection('products').add({ code, name, price })
+  db.ref('products').push({ code, name, price })
     .then(() => {
       showToast('✅ تم إضافة الصنف'); closeQuickProductModal();
       setTimeout(() => { const newProd = productsData.find(p => p.code === code); if (newProd) addItemToOrder(newProd.id); }, 800);
@@ -1325,7 +1324,7 @@ function saveQuickCustomer() {
   const address = document.getElementById('quickCustomerAddress').value.trim();
   if (!code) { showToast('❌ أدخل كود العميل', true); return; }
   if (!name) { showToast('❌ أدخل اسم العميل', true); return; }
-  db.collection('customers').add({ code, name, phone, address })
+  db.ref('customers').push({ code, name, phone, address })
     .then(() => {
       showToast('✅ تم إضافة العميل'); closeQuickCustomerModal();
       setTimeout(() => { const newCust = customersData.find(c => c.code === code); if (newCust) selectCustomer(newCust.id); }, 800);
@@ -1351,7 +1350,7 @@ function saveNewPassword() {
   if (oldPass !== currentUser.pass) { showToast('❌ كلمة المرور الحالية غير صحيحة', true); return; }
   if (newPass !== confirmPass) { showToast('❌ كلمة المرور الجديدة غير متطابقة', true); return; }
   if (newPass.length < 3) { showToast('❌ كلمة المرور قصيرة جداً', true); return; }
-  db.collection('users').doc(currentUser.id).update({ pass: newPass })
+  db.ref('users/' + currentUser.id).update({ pass: newPass })
     .then(() => { currentUser.pass = newPass; showToast('✅ تم تغيير كلمة المرور'); closeChangePassModal(); })
     .catch(err => { showToast('❌ خطأ في الحفظ', true); console.error(err); });
 }
@@ -1407,11 +1406,11 @@ function submitShortage() {
   if (!product) { showToast('❌ اختر الصنف', true); return; }
   if (!appName) { showToast('❌ اختر الأبلكيشن', true); return; }
   if (!branch) { showToast('❌ اختر الفرع', true); return; }
-  db.collection('shortages').add({
+  db.ref('shortages').push({
     productCode: product.code, productName: product.name, appName, branch, notes,
     employee: currentUser.name, employeeId: currentUser.id,
     date: new Date().toISOString().split('T')[0],
-    timestamp: firebase.firestore.FieldValue.serverTimestamp()
+    timestamp: firebase.database.ServerValue.TIMESTAMP
   }).then(() => {
     showToast('✅ تم تسجيل النقص');
     document.getElementById('shortageProductSearch').value = '';
@@ -1438,7 +1437,7 @@ function renderShortages() {
 }
 function deleteShortage(id) {
   if (!confirm('هل أنت متأكد؟')) return;
-  db.collection('shortages').doc(id).delete().then(() => showToast('🗑️ تم الحذف')).catch(err => { showToast('❌ خطأ', true); console.error(err); });
+  db.ref('shortages/' + id).remove().then(() => showToast('🗑️ تم الحذف')).catch(err => { showToast('❌ خطأ', true); console.error(err); });
 }
 function renderShortagesReport() {
   const tbody = document.getElementById('shortagesReportTable');
@@ -1515,11 +1514,11 @@ function submitCCShortage() {
   const notes = document.getElementById('ccNotes').value.trim();
   if (!product) { showToast('❌ اختر الصنف', true); return; }
   if (!branch) { showToast('❌ اختر الفرع', true); return; }
-  db.collection('callcenter_shortages').add({
+  db.ref('callcenter_shortages').push({
     productCode: product.code, productName: product.name, customerName, branch, notes,
     employee: currentUser.name, employeeId: currentUser.id,
     date: new Date().toISOString().split('T')[0],
-    timestamp: firebase.firestore.FieldValue.serverTimestamp()
+    timestamp: firebase.database.ServerValue.TIMESTAMP
   }).then(() => {
     showToast('✅ تم تسجيل النقص');
     document.getElementById('ccProductSearch').value = '';
