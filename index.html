@@ -538,6 +538,8 @@ console.log("🔥 بعد initializeApp:", firebase.apps.length);
 
 const rtdb = firebase.database();
 window.rtdb = rtdb;
+const db = rtdb;
+window.db = db;
 let currentUser = null;
 let usersData = [], ordersData = [], branchesData = [], productsData = [], customersData = [], appsData = [], shortagesData = [], ccShortagesData = [], archiveData = [];
 let orderItems = [], selectedCustomer = null, selectedShortageProduct = null, selectedCCProduct = null;
@@ -550,33 +552,120 @@ const STATUS_CLASSES = { pending: 'status-pending', completed: 'status-completed
 function initApp() {
   console.log("🚀 initApp started");
 
-  rtdb.ref("users").on("value", snapshot => {
+  // المستخدمين
+  rtdb.ref('users').on('value', snapshot => {
     usersData = [];
-
     snapshot.forEach(child => {
-      usersData.push({
-        id: child.key,
-        ...child.val()
-      });
+      usersData.push({ id: child.key, ...child.val() });
     });
 
-    console.log("👥 users:", usersData);
+    const loading = document.getElementById('loginLoading');
+    const form = document.getElementById('loginForm');
+    if (loading) loading.classList.add('hidden');
+    if (form) form.classList.remove('hidden');
 
-    const loading = document.getElementById("loginLoading");
-    const form = document.getElementById("loginForm");
-
-    if (loading) loading.classList.add("hidden");
-    if (form) form.classList.remove("hidden");
-
+    if (currentUser) renderUsers();
   }, error => {
-    console.error("❌ RTDB users error:", error);
-
-    const loading = document.getElementById("loginLoading");
-    const form = document.getElementById("loginForm");
-
-    if (loading) loading.classList.add("hidden");
-    if (form) form.classList.remove("hidden");
+    console.error('❌ RTDB users error:', error);
+    const loading = document.getElementById('loginLoading');
+    if (loading) loading.innerHTML = '❌ فشل تحميل المستخدمين. تأكد من databaseURL وصلاحيات القراءة (Rules).<br><span style="font-size:12px;color:#94a3b8;">' + (error && error.message ? error.message : error) + '</span>';
   });
+
+  // الأوردرات
+  rtdb.ref('orders').on('value', snapshot => {
+    ordersData = [];
+    snapshot.forEach(child => {
+      ordersData.push({ id: child.key, ...child.val() });
+    });
+    ordersData.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+
+    if (currentUser) { renderMyOrders(); renderAllOrders(); }
+  }, error => console.error('Orders:', error));
+
+  // الفروع
+  rtdb.ref('branches').on('value', snapshot => {
+    branchesData = [];
+    snapshot.forEach(child => {
+      branchesData.push({ id: child.key, ...child.val() });
+    });
+    branchesData.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+
+    if (currentUser) {
+      populateBranchSelect();
+      populateShortageBranch();
+      populateCCBranch();
+      if (typeof renderBranches === 'function') renderBranches();
+    }
+  }, error => console.error('Branches:', error));
+
+  // الأصناف
+  rtdb.ref('products').on('value', snapshot => {
+    productsData = [];
+    snapshot.forEach(child => {
+      productsData.push({ id: child.key, ...child.val() });
+    });
+    productsData.sort((a, b) => (a.code || '').localeCompare(b.code || ''));
+
+    if (currentUser && typeof renderProducts === 'function') renderProducts();
+  }, error => console.error('Products:', error));
+
+  // العملاء
+  rtdb.ref('customers').on('value', snapshot => {
+    customersData = [];
+    snapshot.forEach(child => {
+      customersData.push({ id: child.key, ...child.val() });
+    });
+    customersData.sort((a, b) => (a.code || '').localeCompare(b.code || ''));
+
+    if (currentUser && typeof renderCustomers === 'function') renderCustomers();
+  }, error => console.error('Customers:', error));
+
+  // الأبلكيشنز
+  rtdb.ref('apps').on('value', snapshot => {
+    appsData = [];
+    snapshot.forEach(child => {
+      appsData.push({ id: child.key, ...child.val() });
+    });
+    appsData.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+
+    if (currentUser) {
+      populateShortageApp();
+      if (typeof renderApps === 'function') renderApps();
+    }
+  }, error => console.error('Apps:', error));
+
+  // النواقص
+  rtdb.ref('shortages').on('value', snapshot => {
+    shortagesData = [];
+    snapshot.forEach(child => {
+      shortagesData.push({ id: child.key, ...child.val() });
+    });
+    shortagesData.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+
+    if (currentUser) { renderShortages(); renderShortagesReport(); }
+  }, error => console.error('Shortages:', error));
+
+  // نواقص كول سنتر
+  rtdb.ref('callcenter_shortages').on('value', snapshot => {
+    ccShortagesData = [];
+    snapshot.forEach(child => {
+      ccShortagesData.push({ id: child.key, ...child.val() });
+    });
+    ccShortagesData.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+
+    if (currentUser) { renderCCShortages(); renderCCShortagesReport(); }
+  }, error => console.error('CC Shortages:', error));
+
+  // الأرشيف
+  rtdb.ref('archived_orders').on('value', snapshot => {
+    archiveData = [];
+    snapshot.forEach(child => {
+      archiveData.push({ id: child.key, ...child.val() });
+    });
+    archiveData.sort((a, b) => (b.archivedAt || 0) - (a.archivedAt || 0));
+
+    if (currentUser) renderArchive();
+  }, error => console.error('Archive:', error));
 }
 
 function populateBranchSelect() {}
@@ -643,6 +732,78 @@ function doLogout() {
   document.getElementById('loginPage').classList.remove('hidden');
   document.getElementById('loginUser').value = '';
   document.getElementById('loginPass').value = '';
+}
+
+// ============================================
+// إدارة المستخدمين
+// ============================================
+function renderUsers() {
+  const list = document.getElementById('usersList');
+  if (!list) return;
+  if (usersData.length === 0) { list.innerHTML = '<div class="empty-state">لا يوجد مستخدمين بعد</div>'; return; }
+  list.innerHTML = usersData.map(u => `
+    <div class="user-row">
+      <div style="display:flex;align-items:center;">
+        <div class="user-avatar">${(u.name || '?').charAt(0).toUpperCase()}</div>
+        <div>
+          <div style="font-weight:700;color:#1e293b;">${u.name || ''}</div>
+          <span class="role-badge role-${u.role || 'employee'}">${ROLES[u.role] || u.role || '-'}</span>
+        </div>
+      </div>
+      <div>
+        <span class="edit-link" onclick="editUser('${u.id}')">✏️ تعديل</span>
+        <span class="delete-link" onclick="deleteUser('${u.id}')">🗑️ حذف</span>
+      </div>
+    </div>
+  `).join('');
+}
+
+function addUser() {
+  const editId = document.getElementById('editUserId').value;
+  const name = document.getElementById('newUserName').value.trim();
+  const pass = document.getElementById('newUserPass').value.trim();
+  const role = document.getElementById('newUserRole').value;
+  if (!name) { showToast('❌ أدخل اسم المستخدم', true); return; }
+  if (!pass) { showToast('❌ أدخل كلمة المرور', true); return; }
+  if (!role) { showToast('❌ اختر الدور', true); return; }
+
+  if (editId) {
+    rtdb.ref('users/' + editId).update({ name, pass, role })
+      .then(() => { showToast('✅ تم تحديث بيانات المستخدم'); cancelEditUser(); })
+      .catch(err => { showToast('❌ خطأ في الحفظ', true); console.error(err); });
+  } else {
+    const duplicate = usersData.some(u => (u.name || '').toLowerCase() === name.toLowerCase());
+    if (duplicate) { showToast('❌ اسم المستخدم موجود بالفعل', true); return; }
+    rtdb.ref('users').push({ name, pass, role })
+      .then(() => { showToast('✅ تم إضافة المستخدم'); cancelEditUser(); })
+      .catch(err => { showToast('❌ خطأ في الإضافة', true); console.error(err); });
+  }
+}
+
+function editUser(id) {
+  const u = usersData.find(x => x.id === id); if (!u) return;
+  document.getElementById('editUserId').value = u.id;
+  document.getElementById('newUserName').value = u.name || '';
+  document.getElementById('newUserPass').value = u.pass || '';
+  document.getElementById('newUserRole').value = u.role || '';
+  document.getElementById('cancelEditBtn').classList.remove('hidden');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function cancelEditUser() {
+  document.getElementById('editUserId').value = '';
+  document.getElementById('newUserName').value = '';
+  document.getElementById('newUserPass').value = '';
+  document.getElementById('newUserRole').value = '';
+  document.getElementById('cancelEditBtn').classList.add('hidden');
+}
+
+function deleteUser(id) {
+  if (currentUser && currentUser.id === id) { showToast('❌ لا يمكنك حذف حسابك الحالي', true); return; }
+  if (!confirm('هل أنت متأكد من حذف هذا المستخدم؟')) return;
+  rtdb.ref('users/' + id).remove()
+    .then(() => showToast('🗑️ تم حذف المستخدم'))
+    .catch(err => { showToast('❌ خطأ في الحذف', true); console.error(err); });
 }
 
 function setupNavByRole() {
