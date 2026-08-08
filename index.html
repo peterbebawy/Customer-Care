@@ -761,9 +761,9 @@ function initApp() {
 
 
   // نواقص كول سنتر
-  db.ref('callcenter_shortages')
-    .once('value')
-    .then(snap => {
+  rtdb.ref('callcenter_shortages')
+    .on('value', snap => {
+
       ccShortagesData = [];
 
       snap.forEach(d => {
@@ -772,13 +772,20 @@ function initApp() {
           ...d.val()
         });
       });
-      ccShortagesData.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+
+      ccShortagesData.sort(
+        (a, b) => (b.timestamp || 0) - (a.timestamp || 0)
+      );
 
       if (currentUser) {
         renderCCShortages();
         renderCCShortagesReport();
       }
-    })
+
+    }, err => {
+      console.error('Call Center Shortages:', err);
+      showToast('❌ خطأ في نواقص كول سنتر', true);
+    });
     .catch(err => {
       console.error('CC Shortages:', err);
       showToast('❌ خطأ في نواقص كول سنتر', true);
