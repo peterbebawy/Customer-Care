@@ -3,32 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>نظام إدارة الأوردرات</title>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-
-<script>
-const firebaseConfig = {
-  apiKey: "AIzaSyCikAWrMtiLw0WAYCH7I4iG6Wv2tMsEt9w",
-  authDomain: "customer-care-841fe.firebaseapp.com",
-  databaseURL: "https://customer-care-841fe-default-rtdb.firebaseio.com",
-  projectId: "customer-care-841fe",
-  storageBucket: "customer-care-841fe.firebasestorage.app",
-  messagingSenderId: "167461661789",
-  appId: "1:167461661789:web:a1141fccdf4650b84eb1b4"
-};
-
-firebase.initializeApp(firebaseConfig);
-
-const db = firebase.firestore();
-const rtdb = firebase.database();
-
-window.db = db;
-window.rtdb = rtdb;
-
-
-</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 * { box-sizing: border-box; }
 body { font-family: Tahoma, 'Segoe UI', sans-serif; direction: rtl; background: #f1f5f9; margin: 0; padding: 20px; }
@@ -61,6 +39,7 @@ body { font-family: Tahoma, 'Segoe UI', sans-serif; direction: rtl; background: 
 .badge-yellow { background: #fef9c3; color: #854d0e; }
 .badge-cyan { background: #cffafe; color: #155e75; }
 .badge-gray { background: #f3f4f6; color: #374151; }
+.badge-pink { background: #fce7f3; color: #9d174d; }
 .header { text-align: center; margin-bottom: 24px; }
 .header h1 { color: #1e293b; margin: 0; font-size: 26px; }
 .header p { color: #64748b; margin: 8px 0 0; }
@@ -141,56 +120,38 @@ th { background: #f1f5f9; font-weight: 600; color: #475569; }
 .progress-text { text-align: center; font-size: 13px; color: #64748b; margin-top: 6px; }
 .search-bar { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
 .search-bar input { flex: 1; min-width: 200px; padding: 10px 16px; border: 1px solid #d1d5db; border-radius: 10px; font-size: 14px; }
-.export-btn { margin-bottom: 16px; }
+.export-bar { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
 </style>
+<base target="_blank">
 <base target="_blank">
 </head>
 <body>
 
 <!-- صفحة تسجيل الدخول -->
 <div id="loginPage" class="card login-box">
-
-  <div class="header">
-    <h1>🛒 نظام تسجيل الأوردرات</h1>
-    <p>سجل دخولك للبدء</p>
-  </div>
-
-  <div id="loginLoading" class="loading">
-    جارٍ تحميل البيانات...
-  </div>
-
+  <div class="header"><h1>🛒 نظام إدارة الأوردرات</h1><p>سجل دخولك للبدء</p></div>
+  <div id="loginLoading" class="loading">جارٍ تحميل البيانات...</div>
   <div id="loginForm" class="hidden">
-
     <label class="label">اسم المستخدم</label>
-    <input type="text" id="loginUser" class="input" placeholder="اكتب اسمك">
-
+    <input type="text" id="loginUser" class="input" placeholder="اكتب اسمك" onkeydown="if(event.key==='Enter')doLogin()">
     <label class="label">كلمة المرور</label>
-    <input type="password" id="loginPass" class="input" placeholder="كلمة المرور">
-
-    <button class="btn btn-primary"
-            style="width:100%; margin-top:8px;"
-            onclick="doLogin()">
-      تسجيل الدخول
-    </button>
-
-  </div>
-
-</div>
+    <input type="password" id="loginPass" class="input" placeholder="كلمة المرور" onkeydown="if(event.key==='Enter')doLogin()">
+    <button class="btn btn-primary" style="width:100%;margin-top:8px;" onclick="doLogin()">تسجيل الدخول</button>
   </div>
 </div>
 
 <!-- لوحة التحكم -->
 <div id="dashboard" class="hidden">
   <div class="card">
-    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">
       <div class="user-info">
         <div class="user-avatar" id="userAvatar">أ</div>
         <div>
-          <div style="font-weight:700; font-size:18px;" id="userName">أحمد</div>
-          <div style="color:#64748b; font-size:13px;" id="userRole">موظف</div>
+          <div style="font-weight:700;font-size:18px;" id="userName">أحمد</div>
+          <div style="color:#64748b;font-size:13px;" id="userRole">موظف</div>
         </div>
       </div>
-      <div style="display:flex; gap:8px; flex-wrap:wrap;">
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
         <button class="btn btn-secondary btn-sm" onclick="openChangePassModal()">🔐 تغيير الباسورد</button>
         <button class="btn btn-danger btn-sm" onclick="doLogout()">تسجيل الخروج</button>
       </div>
@@ -201,7 +162,7 @@ th { background: #f1f5f9; font-weight: 600; color: #475569; }
 
   <!-- تبويب أوردر جديد -->
   <div id="newOrder" class="card">
-    <h2 style="margin-top:0; color:#1e293b;">تسجيل أوردر جديد</h2>
+    <h2 style="margin-top:0;color:#1e293b;">تسجيل أوردر جديد</h2>
     <label class="label">العميل</label>
     <div class="search-wrap">
       <input type="text" id="customerSearch" class="input" placeholder="اكتب كود العميل أو الاسم..." oninput="searchCustomers()" onkeydown="handleCustomerKey(event)" autocomplete="off">
@@ -223,9 +184,7 @@ th { background: #f1f5f9; font-weight: 600; color: #475569; }
       <thead><tr><th>كود الصنف</th><th>اسم الصنف</th><th>السعر</th><th>الكمية</th><th>الإجمالي</th><th>حذف</th></tr></thead>
       <tbody id="orderItemsBody"></tbody>
     </table>
-    <div style="text-align:left; font-weight:700; font-size:16px; color:#1e293b; margin-bottom:16px;">
-      الإجمالي: <span id="orderTotal" style="color:#16a34a;">0</span> ج.م
-    </div>
+    <div style="text-align:left;font-weight:700;font-size:16px;color:#1e293b;margin-bottom:16px;">الإجمالي: <span id="orderTotal" style="color:#16a34a;">0</span> ج.م</div>
     <label class="label">كيف سيتم توفير الأوردر؟</label>
     <div class="radio-group">
       <label class="radio-item"><input type="radio" name="supplyType" value="مقاصة" checked> مقاصة</label>
@@ -241,22 +200,19 @@ th { background: #f1f5f9; font-weight: 600; color: #475569; }
 
   <!-- تبويب أوردراتي -->
   <div id="myOrders" class="hidden">
-    <div class="card">
-      <h2 style="margin-top:0; color:#1e293b;">أوردراتي</h2>
-      <div id="myOrdersList"></div>
-    </div>
+    <div class="card"><h2 style="margin-top:0;color:#1e293b;">أوردراتي</h2><div id="myOrdersList"></div></div>
   </div>
 
   <!-- تبويب كل الأوردرات -->
   <div id="allOrders" class="hidden">
     <div class="card">
-      <h2 style="margin-top:0; color:#1e293b;">كل الأوردرات</h2>
+      <h2 style="margin-top:0;color:#1e293b;">كل الأوردرات</h2>
       <div class="stats" id="statsBox"></div>
       <div class="search-bar">
         <input type="text" id="orderSearch" class="input" style="margin-bottom:0;" placeholder="🔍 ابحث باسم الموظف أو الفرع أو اسم العميل أو كود العميل..." oninput="renderAllOrders()">
       </div>
       <div class="filter-bar">
-        <span style="font-weight:600; color:#374151;">تصفية:</span>
+        <span style="font-weight:600;color:#374151;">تصفية:</span>
         <button class="filter-btn active" onclick="setFilter('all')" id="filter-all">الكل</button>
         <button class="filter-btn" onclick="setFilter('today')" id="filter-today">📅 اليوم</button>
         <button class="filter-btn" onclick="setFilter('pending')" id="filter-pending">⏳ في الانتظار</button>
@@ -266,9 +222,7 @@ th { background: #f1f5f9; font-weight: 600; color: #475569; }
       </div>
       <div class="table-wrap">
         <table>
-          <thead>
-            <tr><th>#</th><th>العميل</th><th>الفرع</th><th>الأصناف</th><th>الإجمالي</th><th>التوفير</th><th>الحالة</th><th>ميعاد الخروج</th><th>الموظف</th><th>التاريخ</th><th>إجراءات</th></tr>
-          </thead>
+          <thead><tr><th>#</th><th>العميل</th><th>الفرع</th><th>الأصناف</th><th>الإجمالي</th><th>التوفير</th><th>الحالة</th><th>ميعاد الخروج</th><th>الموظف</th><th>التاريخ</th><th>إجراءات</th></tr></thead>
           <tbody id="allOrdersTable"></tbody>
         </table>
       </div>
@@ -278,9 +232,9 @@ th { background: #f1f5f9; font-weight: 600; color: #475569; }
   <!-- تبويب نواقص الأبلكيشن -->
   <div id="shortages" class="hidden">
     <div class="card">
-      <h2 style="margin-top:0; color:#1e293b;">📱 تسجيل نواقص الأبلكيشن</h2>
-      <div style="margin-bottom:24px; padding:20px; background:#f8fafc; border-radius:12px;">
-        <h3 style="margin-top:0; color:#374151; font-size:16px;">➕ تسجيل نقص جديد</h3>
+      <h2 style="margin-top:0;color:#1e293b;">📱 نواقص الأبلكيشن</h2>
+      <div style="margin-bottom:24px;padding:20px;background:#f8fafc;border-radius:12px;">
+        <h3 style="margin-top:0;color:#374151;font-size:16px;">➕ تسجيل نقص جديد</h3>
         <label class="label">الصنف</label>
         <div class="search-wrap">
           <input type="text" id="shortageProductSearch" class="input" placeholder="اكتب كود الصنف أو الاسم..." oninput="searchShortageProducts()" onkeydown="handleShortageProductKey(event)" autocomplete="off">
@@ -294,20 +248,25 @@ th { background: #f1f5f9; font-weight: 600; color: #475569; }
         <textarea id="shortageNotes" class="input" rows="2" placeholder="أي ملاحظات..."></textarea>
         <button class="btn btn-success" onclick="submitShortage()">✅ حفظ النقص</button>
       </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>#</th><th>الصنف</th><th>الأبلكيشن</th><th>الفرع</th><th>الموظف</th><th>التاريخ</th><th>ملاحظات</th><th>إجراءات</th></tr></thead>
+          <tbody id="shortagesTable"></tbody>
+        </table>
+      </div>
     </div>
   </div>
 
   <!-- تبويب ريبورت نواقص الأبلكيشن -->
   <div id="shortagesReport" class="hidden">
     <div class="card">
-      <h2 style="margin-top:0; color:#1e293b;">📊 ريبورت نواقص الأبلكيشن</h2>
-      <div class="search-bar">
-        <input type="text" id="shortageReportSearch" class="input" style="margin-bottom:0;" placeholder="🔍 ابحث بالصنف أو الأبلكيشن أو الفرع..." oninput="renderShortagesReport()">
+      <h2 style="margin-top:0;color:#1e293b;">📊 ريبورت نواقص الأبلكيشن</h2>
+      <div class="export-bar">
+        <button class="btn btn-success" onclick="exportShortagesToExcel()">📥 تصدير Excel</button>
       </div>
-      <button class="btn btn-success export-btn" onclick="exportShortagesReport()">📥 تصدير Excel</button>
       <div class="table-wrap">
         <table>
-          <thead><tr><th>#</th><th>الصنف</th><th>الأبلكيشن</th><th>الفرع</th><th>الموظف</th><th>التاريخ</th><th>ملاحظات</th><th>إجراءات</th></tr></thead>
+          <thead><tr><th>#</th><th>كود الصنف</th><th>اسم الصنف</th><th>الأبلكيشن</th><th>الفرع</th><th>الموظف</th><th>التاريخ</th><th>ملاحظات</th></tr></thead>
           <tbody id="shortagesReportTable"></tbody>
         </table>
       </div>
@@ -317,9 +276,9 @@ th { background: #f1f5f9; font-weight: 600; color: #475569; }
   <!-- تبويب نواقص كول سنتر -->
   <div id="callcenterShortages" class="hidden">
     <div class="card">
-      <h2 style="margin-top:0; color:#1e293b;">☎️ تسجيل نواقص كول سنتر</h2>
-      <div style="margin-bottom:24px; padding:20px; background:#f8fafc; border-radius:12px;">
-        <h3 style="margin-top:0; color:#374151; font-size:16px;">➕ تسجيل نقص كول سنتر جديد</h3>
+      <h2 style="margin-top:0;color:#1e293b;">📞 نواقص كول سنتر</h2>
+      <div style="margin-bottom:24px;padding:20px;background:#f8fafc;border-radius:12px;">
+        <h3 style="margin-top:0;color:#374151;font-size:16px;">➕ تسجيل نقص كول سنتر</h3>
         <label class="label">الصنف</label>
         <div class="search-wrap">
           <input type="text" id="ccProductSearch" class="input" placeholder="اكتب كود الصنف أو الاسم..." oninput="searchCCProducts()" onkeydown="handleCCProductKey(event)" autocomplete="off">
@@ -333,21 +292,26 @@ th { background: #f1f5f9; font-weight: 600; color: #475569; }
         <textarea id="ccNotes" class="input" rows="2" placeholder="أي ملاحظات..."></textarea>
         <button class="btn btn-success" onclick="submitCCShortage()">✅ حفظ النقص</button>
       </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>#</th><th>الصنف</th><th>العميل</th><th>الفرع</th><th>الموظف</th><th>التاريخ</th><th>ملاحظات</th></tr></thead>
+          <tbody id="ccShortagesTable"></tbody>
+        </table>
+      </div>
     </div>
   </div>
 
   <!-- تبويب ريبورت نواقص كول سنتر -->
-  <div id="callcenterReport" class="hidden">
+  <div id="ccShortagesReport" class="hidden">
     <div class="card">
-      <h2 style="margin-top:0; color:#1e293b;">📊 ريبورت نواقص كول سنتر</h2>
-      <div class="search-bar">
-        <input type="text" id="ccReportSearch" class="input" style="margin-bottom:0;" placeholder="🔍 ابحث بالصنف أو العميل أو الفرع..." oninput="renderCCReport()">
+      <h2 style="margin-top:0;color:#1e293b;">📊 ريبورت نواقص كول سنتر</h2>
+      <div class="export-bar">
+        <button class="btn btn-success" onclick="exportCCShortagesToExcel()">📥 تصدير Excel</button>
       </div>
-      <button class="btn btn-success export-btn" onclick="exportCCReport()">📥 تصدير Excel</button>
       <div class="table-wrap">
         <table>
-          <thead><tr><th>#</th><th>الصنف</th><th>العميل</th><th>الفرع</th><th>الموظف</th><th>التاريخ</th><th>ملاحظات</th><th>إجراءات</th></tr></thead>
-          <tbody id="ccReportTable"></tbody>
+          <thead><tr><th>#</th><th>كود الصنف</th><th>اسم الصنف</th><th>العميل</th><th>الفرع</th><th>الموظف</th><th>التاريخ</th><th>ملاحظات</th></tr></thead>
+          <tbody id="ccShortagesReportTable"></tbody>
         </table>
       </div>
     </div>
@@ -356,15 +320,14 @@ th { background: #f1f5f9; font-weight: 600; color: #475569; }
   <!-- تبويب أرشيف الأوردرات -->
   <div id="archive" class="hidden">
     <div class="card">
-      <h2 style="margin-top:0; color:#1e293b;">📦 أرشيف الأوردرات</h2>
+      <h2 style="margin-top:0;color:#1e293b;">📦 أرشيف الأوردرات</h2>
+      <div class="stats" id="archiveStatsBox"></div>
       <div class="search-bar">
-        <input type="text" id="archiveSearch" class="input" style="margin-bottom:0;" placeholder="🔍 ابحث باسم العميل أو الفرع أو الموظف..." oninput="renderArchive()">
+        <input type="text" id="archiveSearch" class="input" style="margin-bottom:0;" placeholder="🔍 ابحث..." oninput="renderArchive()">
       </div>
       <div class="table-wrap">
         <table>
-          <thead>
-            <tr><th>#</th><th>العميل</th><th>الفرع</th><th>الأصناف</th><th>الإجمالي</th><th>الحالة</th><th>الموظف</th><th>التاريخ</th><th>إجراءات</th></tr>
-          </thead>
+          <thead><tr><th>#</th><th>العميل</th><th>الفرع</th><th>الأصناف</th><th>الإجمالي</th><th>الحالة</th><th>الموظف</th><th>التاريخ</th><th>إجراءات</th></tr></thead>
           <tbody id="archiveTable"></tbody>
         </table>
       </div>
@@ -374,9 +337,9 @@ th { background: #f1f5f9; font-weight: 600; color: #475569; }
   <!-- تبويب المستخدمين -->
   <div id="users" class="hidden">
     <div class="card">
-      <h2 style="margin-top:0; color:#1e293b;">إدارة المستخدمين</h2>
-      <div style="margin-bottom:24px; padding:20px; background:#f8fafc; border-radius:12px;">
-        <h3 style="margin-top:0; color:#374151; font-size:16px;">➕ إضافة / تعديل مستخدم</h3>
+      <h2 style="margin-top:0;color:#1e293b;">إدارة المستخدمين</h2>
+      <div style="margin-bottom:24px;padding:20px;background:#f8fafc;border-radius:12px;">
+        <h3 style="margin-top:0;color:#374151;font-size:16px;">➕ إضافة / تعديل مستخدم</h3>
         <input type="hidden" id="editUserId">
         <div class="grid-2">
           <div><label class="label">الاسم</label><input type="text" id="newUserName" class="input" placeholder="اسم المستخدم"></div>
@@ -400,9 +363,9 @@ th { background: #f1f5f9; font-weight: 600; color: #475569; }
   <!-- تبويب الفروع -->
   <div id="branches" class="hidden">
     <div class="card">
-      <h2 style="margin-top:0; color:#1e293b;">🏢 إدارة الفروع</h2>
-      <div style="margin-bottom:24px; padding:20px; background:#f8fafc; border-radius:12px;">
-        <h3 style="margin-top:0; color:#374151; font-size:16px;">➕ إضافة فرع جديد</h3>
+      <h2 style="margin-top:0;color:#1e293b;">🏢 إدارة الفروع</h2>
+      <div style="margin-bottom:24px;padding:20px;background:#f8fafc;border-radius:12px;">
+        <h3 style="margin-top:0;color:#374151;font-size:16px;">➕ إضافة فرع جديد</h3>
         <input type="text" id="newBranchName" class="input" placeholder="اسم الفرع">
         <button class="btn btn-primary" onclick="addBranch()">💾 إضافة الفرع</button>
       </div>
@@ -413,9 +376,9 @@ th { background: #f1f5f9; font-weight: 600; color: #475569; }
   <!-- تبويب الأبلكيشنز -->
   <div id="apps" class="hidden">
     <div class="card">
-      <h2 style="margin-top:0; color:#1e293b;">📱 إدارة الأبلكيشنز</h2>
-      <div style="margin-bottom:24px; padding:20px; background:#f8fafc; border-radius:12px;">
-        <h3 style="margin-top:0; color:#374151; font-size:16px;">➕ إضافة أبلكيشن جديد</h3>
+      <h2 style="margin-top:0;color:#1e293b;">📱 إدارة الأبلكيشنز</h2>
+      <div style="margin-bottom:24px;padding:20px;background:#f8fafc;border-radius:12px;">
+        <h3 style="margin-top:0;color:#374151;font-size:16px;">➕ إضافة أبلكيشن جديد</h3>
         <input type="text" id="newAppName" class="input" placeholder="اسم الأبلكيشن">
         <button class="btn btn-primary" onclick="addApp()">💾 إضافة الأبلكيشن</button>
       </div>
@@ -426,9 +389,9 @@ th { background: #f1f5f9; font-weight: 600; color: #475569; }
   <!-- تبويب الأصناف -->
   <div id="products" class="hidden">
     <div class="card">
-      <h2 style="margin-top:0; color:#1e293b;">📦 إدارة الأصناف</h2>
-      <div style="margin-bottom:24px; padding:20px; background:#f8fafc; border-radius:12px;">
-        <h3 style="margin-top:0; color:#374151; font-size:16px;">➕ إضافة صنف يدوياً</h3>
+      <h2 style="margin-top:0;color:#1e293b;">📦 إدارة الأصناف</h2>
+      <div style="margin-bottom:24px;padding:20px;background:#f8fafc;border-radius:12px;">
+        <h3 style="margin-top:0;color:#374151;font-size:16px;">➕ إضافة صنف يدوياً</h3>
         <div class="grid-3">
           <div><label class="label">كود الصنف</label><input type="text" id="newProductCode" class="input" placeholder="مثال: PRD001"></div>
           <div><label class="label">اسم الصنف</label><input type="text" id="newProductName" class="input" placeholder="اسم الصنف"></div>
@@ -436,13 +399,11 @@ th { background: #f1f5f9; font-weight: 600; color: #475569; }
         </div>
         <button class="btn btn-primary" onclick="addProduct()">💾 إضافة الصنف</button>
       </div>
-      <hr style="border:0; border-top:1px solid #e2e8f0; margin:24px 0;">
-      <h3 style="margin-top:0; color:#374151; font-size:16px;">📤 رفع ملف Excel (Drag & Drop)</h3>
-      <p style="color:#64748b; font-size:13px; margin-bottom:12px;">الأعمدة المطلوبة: <strong>كود الصنف | اسم الصنف | السعر</strong> (من الشمال)</p>
+      <hr style="border:0;border-top:1px solid #e2e8f0;margin:24px 0;">
+      <h3 style="margin-top:0;color:#374151;font-size:16px;">📤 رفع ملف Excel (Drag & Drop)</h3>
+      <p style="color:#64748b;font-size:13px;margin-bottom:12px;">الأعمدة المطلوبة: <strong>كود الصنف | اسم الصنف | السعر</strong> (من الشمال)</p>
       <div class="drop-zone" id="productDropZone" onclick="document.getElementById('productFileInput').click()">
-        <div class="icon">📁</div>
-        <div class="text">اسحب ملف Excel هنا أو اضغط لاختياره</div>
-        <div class="sub">يدعم ملفات .xlsx و .xls</div>
+        <div class="icon">📁</div><div class="text">اسحب ملف Excel هنا أو اضغط لاختياره</div><div class="sub">يدعم ملفات .xlsx و .xls</div>
       </div>
       <input type="file" id="productFileInput" class="hidden" accept=".xlsx,.xls" onchange="handleProductFile(this.files[0])">
       <div id="productUploadProgress" class="hidden">
@@ -450,10 +411,7 @@ th { background: #f1f5f9; font-weight: 600; color: #475569; }
         <div class="progress-text" id="productProgressText">0%</div>
       </div>
       <div class="table-wrap" style="margin-top:24px;">
-        <table>
-          <thead><tr><th>كود الصنف</th><th>اسم الصنف</th><th>السعر</th><th>إجراءات</th></tr></thead>
-          <tbody id="productsTable"></tbody>
-        </table>
+        <table><thead><tr><th>كود الصنف</th><th>اسم الصنف</th><th>السعر</th><th>إجراءات</th></tr></thead><tbody id="productsTable"></tbody></table>
       </div>
     </div>
   </div>
@@ -461,9 +419,9 @@ th { background: #f1f5f9; font-weight: 600; color: #475569; }
   <!-- تبويب العملاء -->
   <div id="customers" class="hidden">
     <div class="card">
-      <h2 style="margin-top:0; color:#1e293b;">👤 إدارة العملاء</h2>
-      <div style="margin-bottom:24px; padding:20px; background:#f8fafc; border-radius:12px;">
-        <h3 style="margin-top:0; color:#374151; font-size:16px;">➕ إضافة عميل يدوياً</h3>
+      <h2 style="margin-top:0;color:#1e293b;">👤 إدارة العملاء</h2>
+      <div style="margin-bottom:24px;padding:20px;background:#f8fafc;border-radius:12px;">
+        <h3 style="margin-top:0;color:#374151;font-size:16px;">➕ إضافة عميل يدوياً</h3>
         <div class="grid-2">
           <div><label class="label">كود العميل</label><input type="text" id="newCustomerCode" class="input" placeholder="مثال: CUST001"></div>
           <div><label class="label">اسم العميل</label><input type="text" id="newCustomerName" class="input" placeholder="اسم العميل"></div>
@@ -474,13 +432,11 @@ th { background: #f1f5f9; font-weight: 600; color: #475569; }
         </div>
         <button class="btn btn-primary" onclick="addCustomer()">💾 إضافة العميل</button>
       </div>
-      <hr style="border:0; border-top:1px solid #e2e8f0; margin:24px 0;">
-      <h3 style="margin-top:0; color:#374151; font-size:16px;">📤 رفع ملف Excel (Drag & Drop)</h3>
-      <p style="color:#64748b; font-size:13px; margin-bottom:12px;">الأعمدة المطلوبة: <strong>كود العميل | اسم العميل | رقم التليفون | العنوان</strong> (من الشمال)</p>
+      <hr style="border:0;border-top:1px solid #e2e8f0;margin:24px 0;">
+      <h3 style="margin-top:0;color:#374151;font-size:16px;">📤 رفع ملف Excel (Drag & Drop)</h3>
+      <p style="color:#64748b;font-size:13px;margin-bottom:12px;">الأعمدة المطلوبة: <strong>كود العميل | اسم العميل | رقم التليفون | العنوان</strong> (من الشمال)</p>
       <div class="drop-zone" id="customerDropZone" onclick="document.getElementById('customerFileInput').click()">
-        <div class="icon">📁</div>
-        <div class="text">اسحب ملف Excel هنا أو اضغط لاختياره</div>
-        <div class="sub">يدعم ملفات .xlsx و .xls</div>
+        <div class="icon">📁</div><div class="text">اسحب ملف Excel هنا أو اضغط لاختياره</div><div class="sub">يدعم ملفات .xlsx و .xls</div>
       </div>
       <input type="file" id="customerFileInput" class="hidden" accept=".xlsx,.xls" onchange="handleCustomerFile(this.files[0])">
       <div id="customerUploadProgress" class="hidden">
@@ -488,10 +444,7 @@ th { background: #f1f5f9; font-weight: 600; color: #475569; }
         <div class="progress-text" id="customerProgressText">0%</div>
       </div>
       <div class="table-wrap" style="margin-top:24px;">
-        <table>
-          <thead><tr><th>كود العميل</th><th>اسم العميل</th><th>رقم التليفون</th><th>العنوان</th><th>إجراءات</th></tr></thead>
-          <tbody id="customersTable"></tbody>
-        </table>
+        <table><thead><tr><th>كود العميل</th><th>اسم العميل</th><th>رقم التليفون</th><th>العنوان</th><th>إجراءات</th></tr></thead><tbody id="customersTable"></tbody></table>
       </div>
     </div>
   </div>
@@ -576,17 +529,10 @@ const firebaseConfig = {
   messagingSenderId: "167461661789",
   appId: "1:167461661789:web:a1141fccdf4650b84eb1b4"
 };
-
-
-
-const rtdb = firebase.database();
-
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
 window.db = db;
-window.rtdb = rtdb;
 
-let currentUser = null;
-let usersData = [];
-let ordersData = [];
 let currentUser = null;
 let usersData = [], ordersData = [], branchesData = [], productsData = [], customersData = [], appsData = [], shortagesData = [], ccShortagesData = [], archiveData = [];
 let orderItems = [], selectedCustomer = null, selectedShortageProduct = null, selectedCCProduct = null;
@@ -597,13 +543,223 @@ const ROLES = { admin: 'أدمن', manager: 'مانجر', employee: 'موظف', 
 const STATUS_LABELS = { pending: 'في الانتظار', completed: 'تم', outdelivery: 'Out of Delivery', cancelled: 'ملغي' };
 const STATUS_CLASSES = { pending: 'status-pending', completed: 'status-completed', outdelivery: 'status-outdelivery', cancelled: 'status-cancelled' };
 
-function ciIncludes(str, query) {
-  if (!str || !query) return false;
-  return str.toString().toLowerCase().includes(query.toLowerCase());
+function initApp() {
+
+  // المستخدمين
+  db.collection('users').get()
+    .then(snap => {
+      usersData = [];
+
+      snap.forEach(d => {
+        usersData.push({
+          id: d.id,
+          ...d.data()
+        });
+      });
+
+      document.getElementById('loginLoading').classList.add('hidden');
+      document.getElementById('loginForm').classList.remove('hidden');
+
+      if (currentUser) renderUsers();
+    })
+    .catch(err => {
+      console.error('Users:', err);
+      showToast('❌ خطأ في تحميل المستخدمين', true);
+    });
+
+
+  // الأوردرات
+  db.collection('orders')
+    .orderBy('timestamp', 'desc')
+    .get()
+    .then(snap => {
+      ordersData = [];
+
+      snap.forEach(d => {
+        ordersData.push({
+          id: d.id,
+          ...d.data()
+        });
+      });
+
+      if (currentUser) {
+        renderMyOrders();
+        renderAllOrders();
+      }
+    })
+    .catch(err => {
+      console.error('Orders:', err);
+      showToast('❌ خطأ في الأوردرات', true);
+    });
+
+
+  // الفروع
+  db.collection('branches')
+    .orderBy('name')
+    .get()
+    .then(snap => {
+      branchesData = [];
+
+      snap.forEach(d => {
+        branchesData.push({
+          id: d.id,
+          ...d.data()
+        });
+      });
+
+      if (currentUser) {
+        populateBranchSelect();
+        populateShortageBranch();
+        populateCCBranch();
+        renderBranches();
+      }
+    })
+    .catch(err => {
+      console.error('Branches:', err);
+      showToast('❌ خطأ في الفروع', true);
+    });
+
+
+  // الأصناف
+  db.collection('products')
+    .orderBy('code')
+    .get()
+    .then(snap => {
+      productsData = [];
+
+      snap.forEach(d => {
+        productsData.push({
+          id: d.id,
+          ...d.data()
+        });
+      });
+
+      if (currentUser) renderProducts();
+    })
+    .catch(err => {
+      console.error('Products:', err);
+      showToast('❌ خطأ في الأصناف', true);
+    });
+
+
+  // العملاء
+  db.collection('customers')
+    .orderBy('code')
+    .get()
+    .then(snap => {
+      customersData = [];
+
+      snap.forEach(d => {
+        customersData.push({
+          id: d.id,
+          ...d.data()
+        });
+      });
+
+      if (currentUser) renderCustomers();
+    })
+    .catch(err => {
+      console.error('Customers:', err);
+      showToast('❌ خطأ في العملاء', true);
+    });
+
+
+  // الأبلكيشنز
+  db.collection('apps')
+    .orderBy('name')
+    .get()
+    .then(snap => {
+      appsData = [];
+
+      snap.forEach(d => {
+        appsData.push({
+          id: d.id,
+          ...d.data()
+        });
+      });
+
+      if (currentUser) {
+        populateShortageApp();
+        renderApps();
+      }
+    })
+    .catch(err => {
+      console.error('Apps:', err);
+      showToast('❌ خطأ في الأبلكيشنز', true);
+    });
+
+
+  // النواقص
+  db.collection('shortages')
+    .orderBy('timestamp', 'desc')
+    .get()
+    .then(snap => {
+      shortagesData = [];
+
+      snap.forEach(d => {
+        shortagesData.push({
+          id: d.id,
+          ...d.data()
+        });
+      });
+
+      if (currentUser) {
+        renderShortages();
+        renderShortagesReport();
+      }
+    })
+    .catch(err => {
+      console.error('Shortages:', err);
+      showToast('❌ خطأ في النواقص', true);
+    });
+
+
+  // نواقص كول سنتر
+  db.collection('callcenter_shortages')
+    .orderBy('timestamp', 'desc')
+    .get()
+    .then(snap => {
+      ccShortagesData = [];
+
+      snap.forEach(d => {
+        ccShortagesData.push({
+          id: d.id,
+          ...d.data()
+        });
+      });
+
+      if (currentUser) {
+        renderCCShortages();
+        renderCCShortagesReport();
+      }
+    })
+    .catch(err => {
+      console.error('CC Shortages:', err);
+      showToast('❌ خطأ في نواقص كول سنتر', true);
+    });
+
+
+  // الأرشيف
+  db.collection('archived_orders')
+    .orderBy('archivedAt', 'desc')
+    .get()
+    .then(snap => {
+      archiveData = [];
+
+      snap.forEach(d => {
+        archiveData.push({
+          id: d.id,
+          ...d.data()
+        });
+      });
+
+      if (currentUser) renderArchive();
+    })
+    .catch(err => {
+      console.error('Archive:', err);
+      showToast('❌ خطأ في الأرشيف', true);
+    });
 }
-
-
-
 
 function populateBranchSelect() {
   [document.getElementById('branch'), document.getElementById('editBranch')].forEach(sel => {
@@ -619,39 +775,11 @@ function populateCCBranch() {
 function populateShortageApp() {
   const sel = document.getElementById('shortageApp'); if(!sel) return; const v=sel.value; sel.innerHTML='<option value="">اختر الأبلكيشن</option>'; appsData.forEach(a=>sel.innerHTML+=`<option value="${a.name}">${a.name}</option>`); if(v) sel.value=v;
 }
-function initApp() {
-  console.log("🚀 initApp started");
 
-  rtdb.ref("users").once("value")
-    .then(snapshot => {
-      usersData = [];
-
-      snapshot.forEach(child => {
-        usersData.push({
-          id: child.key,
-          ...child.val()
-        });
-      });
-
-      console.log("🔥 عدد المستخدمين:", usersData.length);
-      console.log("👥 المستخدمين:", usersData);
-
-      document.getElementById("loginLoading").classList.add("hidden");
-      document.getElementById("loginForm").classList.remove("hidden");
-    })
-    .catch(error => {
-      console.error("❌ RTDB USERS ERROR:", error);
-
-      document.getElementById("loginLoading").classList.add("hidden");
-      document.getElementById("loginForm").classList.remove("hidden");
-
-      showToast("❌ خطأ في تحميل المستخدمين", true);
-    });
-}
 function doLogin() {
   const name = document.getElementById('loginUser').value.trim();
   const pass = document.getElementById('loginPass').value.trim();
-  const found = usersData.find(u => ciIncludes(u.name, name) && u.pass === pass);
+  const found = usersData.find(u => u.name.toLowerCase() === name.toLowerCase() && u.pass === pass);
   if (found) {
     currentUser = found;
     document.getElementById('loginPage').classList.add('hidden');
@@ -665,11 +793,8 @@ function doLogin() {
     showTab('newOrder');
     showToast('👋 مرحباً ' + found.name);
   } else { showToast('❌ اسم المستخدم أو كلمة المرور غير صحيحة', true); }
-}    });
 }
 
-
- 
 function doLogout() {
   currentUser = null;
   document.getElementById('dashboard').classList.add('hidden');
@@ -690,14 +815,14 @@ function setupNavByRole() {
   }
   if (currentUser.role === 'appuser' || currentUser.role === 'admin') {
     nav.innerHTML += `<button class="nav-btn" onclick="showTab('shortages')" id="tab-shortages">📱 نواقص الأبلكيشن</button>`;
-    nav.innerHTML += `<button class="nav-btn" onclick="showTab('shortagesReport')" id="tab-shortagesReport">📊 ريبورت نواقص</button>`;
   }
   if (currentUser.role === 'employee' || currentUser.role === 'admin') {
-    nav.innerHTML += `<button class="nav-btn" onclick="showTab('callcenterShortages')" id="tab-callcenterShortages">☎️ نواقص كول سنتر</button>`;
+    nav.innerHTML += `<button class="nav-btn" onclick="showTab('callcenterShortages')" id="tab-callcenterShortages">📞 نواقص كول سنتر</button>`;
   }
   if (currentUser.role === 'admin') {
-    nav.innerHTML += `<button class="nav-btn" onclick="showTab('callcenterReport')" id="tab-callcenterReport">📊 ريبورت كول سنتر</button>`;
-    nav.innerHTML += `<button class="nav-btn" onclick="showTab('archive')" id="tab-archive">📦 الأرشيف</button>`;
+    nav.innerHTML += `<button class="nav-btn" onclick="showTab('shortagesReport')" id="tab-shortagesReport">📊 ريبورت نواقص الأبلكيشن</button>`;
+    nav.innerHTML += `<button class="nav-btn" onclick="showTab('ccShortagesReport')" id="tab-ccShortagesReport">📊 ريبورت نواقص كول سنتر</button>`;
+    nav.innerHTML += `<button class="nav-btn" onclick="showTab('archive')" id="tab-archive">📦 أرشيف الأوردرات</button>`;
     nav.innerHTML += `<button class="nav-btn" onclick="showTab('users')" id="tab-users">👥 المستخدمين</button>`;
     nav.innerHTML += `<button class="nav-btn" onclick="showTab('branches')" id="tab-branches">🏢 الفروع</button>`;
     nav.innerHTML += `<button class="nav-btn" onclick="showTab('apps')" id="tab-apps">📱 الأبلكيشنز</button>`;
@@ -707,7 +832,7 @@ function setupNavByRole() {
 }
 
 function showTab(tab) {
-  ['newOrder','myOrders','allOrders','shortages','shortagesReport','callcenterShortages','callcenterReport','archive','users','branches','apps','products','customers'].forEach(t => {
+  ['newOrder','myOrders','allOrders','shortages','shortagesReport','callcenterShortages','ccShortagesReport','archive','users','branches','apps','products','customers'].forEach(t => {
     const el = document.getElementById(t); const btn = document.getElementById('tab-'+t);
     if(el) el.classList.add('hidden'); if(btn) btn.classList.remove('active');
   });
@@ -715,8 +840,10 @@ function showTab(tab) {
   if(target) target.classList.remove('hidden'); if(targetBtn) targetBtn.classList.add('active');
   if(tab==='myOrders') renderMyOrders();
   if(tab==='allOrders') renderAllOrders();
+  if(tab==='shortages') renderShortages();
   if(tab==='shortagesReport') renderShortagesReport();
-  if(tab==='callcenterReport') renderCCReport();
+  if(tab==='callcenterShortages') renderCCShortages();
+  if(tab==='ccShortagesReport') renderCCShortagesReport();
   if(tab==='archive') renderArchive();
   if(tab==='users') renderUsers();
   if(tab==='branches') renderBranches();
@@ -726,17 +853,20 @@ function showTab(tab) {
 }
 
 // ============================================
-// Customer Search with Keyboard
+// Customer Search with Keyboard (case-insensitive)
 // ============================================
 function searchCustomers() {
   const input = document.getElementById('customerSearch');
   const suggestions = document.getElementById('customerSuggestions');
-  const query = input.value.trim();
+  const query = input.value.trim().toLowerCase();
   customerSelIndex = -1;
   if (!query) { suggestions.classList.add('hidden'); return; }
-  const matches = customersData.filter(c => ciIncludes(c.code, query) || ciIncludes(c.name, query)).slice(0, 7);
+  const matches = customersData.filter(c =>
+    (c.code && c.code.toLowerCase().includes(query)) ||
+    (c.name && c.name.toLowerCase().includes(query))
+  ).slice(0, 7);
   if (matches.length === 0 && query.length >= 2) {
-    suggestions.innerHTML = `<div class="suggestion-add" onclick="openQuickCustomerModal('${query}')">➕ إضافة عميل جديد: "${query}"</div>`;
+    suggestions.innerHTML = `<div class="suggestion-add" onclick="openQuickCustomerModal('${input.value}')">➕ إضافة عميل جديد: "${input.value}"</div>`;
     suggestions.classList.remove('hidden'); return;
   }
   if (matches.length === 0) { suggestions.classList.add('hidden'); return; }
@@ -778,17 +908,20 @@ function selectCustomer(id) {
 }
 
 // ============================================
-// Product Search with Keyboard
+// Product Search with Keyboard (case-insensitive)
 // ============================================
 function searchProducts() {
   const input = document.getElementById('productSearch');
   const suggestions = document.getElementById('productSuggestions');
-  const query = input.value.trim();
+  const query = input.value.trim().toLowerCase();
   productSelIndex = -1;
   if (!query) { suggestions.classList.add('hidden'); return; }
-  const matches = productsData.filter(p => ciIncludes(p.code, query) || ciIncludes(p.name, query)).slice(0, 7);
+  const matches = productsData.filter(p =>
+    (p.code && p.code.toLowerCase().includes(query)) ||
+    (p.name && p.name.toLowerCase().includes(query))
+  ).slice(0, 7);
   if (matches.length === 0 && query.length >= 2) {
-    suggestions.innerHTML = `<div class="suggestion-add" onclick="openQuickProductModal('${query}')">➕ إضافة صنف جديد: "${query}"</div>`;
+    suggestions.innerHTML = `<div class="suggestion-add" onclick="openQuickProductModal('${input.value}')">➕ إضافة صنف جديد: "${input.value}"</div>`;
     suggestions.classList.remove('hidden'); return;
   }
   if (matches.length === 0) { suggestions.classList.add('hidden'); return; }
@@ -909,7 +1042,7 @@ function renderMyOrders() {
 }
 
 // ============================================
-// All Orders with Filter, Search, Archive
+// All Orders with Filter & Search (case-insensitive)
 // ============================================
 function setFilter(filter) {
   currentFilter = filter;
@@ -925,7 +1058,7 @@ function renderAllOrders() {
   const table = document.getElementById('allOrdersTable');
   if (!statsBox || !table) return;
   const today = new Date().toISOString().split('T')[0];
-  const searchQ = (document.getElementById('orderSearch')?.value || '').trim();
+  const searchQ = (document.getElementById('orderSearch')?.value || '').trim().toLowerCase();
 
   let filtered = [...ordersData];
   if (currentFilter === 'today') filtered = filtered.filter(o => o.deliveryDate === today);
@@ -936,8 +1069,10 @@ function renderAllOrders() {
 
   if (searchQ) {
     filtered = filtered.filter(o =>
-      ciIncludes(o.employee, searchQ) || ciIncludes(o.branch, searchQ) ||
-      ciIncludes(o.customer, searchQ) || ciIncludes(o.customerCode, searchQ)
+      (o.employee && o.employee.toLowerCase().includes(searchQ)) ||
+      (o.branch && o.branch.toLowerCase().includes(searchQ)) ||
+      (o.customer && o.customer.toLowerCase().includes(searchQ)) ||
+      (o.customerCode && o.customerCode.toLowerCase().includes(searchQ))
     );
   }
 
@@ -978,7 +1113,7 @@ function renderAllOrders() {
     let actions = `<span class="view-link" onclick="openReviewOrder('${o.id}')">👁️ مراجعة</span>`;
     if (canEdit) {
       actions += `<span class="edit-link" onclick="openEditOrder('${o.id}')">✏️ تعديل</span>
-                 <span class="archive-link" style="color:#7c3aed;cursor:pointer;font-size:13px;font-weight:600;margin-left:8px;" onclick="archiveOrder('${o.id}')">📦 أرشفة</span>
+                 <span class="archive-link" onclick="archiveOrder('${o.id}')">📦 أرشفة</span>
                  <span class="delete-link" onclick="deleteOrder('${o.id}')">🗑️ حذف</span>`;
     }
     return `<tr class="${isUrgent?'urgent-row':''}">
@@ -1000,32 +1135,80 @@ function renderAllOrders() {
 function updateOrderStatus(id, newStatus) {
   const updateData = { status: newStatus };
   if (newStatus !== 'cancelled') updateData.cancelReason = '';
-  db.collection('orders').doc(id).update(updateData).then(() => showToast('✅ تم تحديث الحالة')).catch(err => { showToast('❌ خطأ', true); console.error(err); });
+  db.collection('orders').doc(id).update(updateData)
+    .then(() => showToast('✅ تم تحديث الحالة'))
+    .catch(err => { showToast('❌ خطأ في التحديث', true); console.error(err); });
 }
 
 function deleteOrder(id) {
   if (!confirm('هل أنت متأكد من حذف هذا الأوردر؟')) return;
-  db.collection('orders').doc(id).delete().then(() => showToast('🗑️ تم الحذف')).catch(err => { showToast('❌ خطأ', true); console.error(err); });
+  db.collection('orders').doc(id).delete().then(() => showToast('🗑️ تم حذف الأوردر')).catch(err => { showToast('❌ خطأ في الحذف', true); console.error(err); });
 }
 
+// ============================================
+// Archive Orders
+// ============================================
 function archiveOrder(id) {
   if (!confirm('هل أنت متأكد من أرشفة هذا الأوردر؟')) return;
-  const order = ordersData.find(o => o.id === id); if (!order) return;
-  db.collection('archived_orders').add({ ...order, archivedAt: firebase.firestore.FieldValue.serverTimestamp(), originalId: id })
+  const order = ordersData.find(o => o.id === id);
+  if (!order) return;
+  const archived = { ...order, archivedAt: firebase.firestore.FieldValue.serverTimestamp() };
+  delete archived.id;
+  db.collection('archived_orders').add(archived)
     .then(() => db.collection('orders').doc(id).delete())
-    .then(() => showToast('📦 تم الأرشفة'))
+    .then(() => showToast('📦 تم أرشفة الأوردر'))
     .catch(err => { showToast('❌ خطأ في الأرشفة', true); console.error(err); });
 }
 
 function restoreOrder(id) {
-  if (!confirm('هل أنت متأكد من استرجاع هذا الأوردر؟')) return;
-  const order = archiveData.find(o => o.id === id); if (!order) return;
-  const data = { ...order };
-  delete data.archivedAt; delete data.originalId; delete data.id;
-  db.collection('orders').add(data)
+  if (!confirm('هل أنت متأكد من إعادة هذا الأوردر؟')) return;
+  const order = archiveData.find(o => o.id === id);
+  if (!order) return;
+  const restored = { ...order };
+  delete restored.id; delete restored.archivedAt;
+  restored.timestamp = firebase.firestore.FieldValue.serverTimestamp();
+  db.collection('orders').add(restored)
     .then(() => db.collection('archived_orders').doc(id).delete())
-    .then(() => showToast('📦 تم الاسترجاع'))
-    .catch(err => { showToast('❌ خطأ في الاسترجاع', true); console.error(err); });
+    .then(() => showToast('✅ تم إعادة الأوردر'))
+    .catch(err => { showToast('❌ خطأ في الإرجاع', true); console.error(err); });
+}
+
+function renderArchive() {
+  const statsBox = document.getElementById('archiveStatsBox');
+  const table = document.getElementById('archiveTable');
+  if (!statsBox || !table) return;
+  const searchQ = (document.getElementById('archiveSearch')?.value || '').trim().toLowerCase();
+  let filtered = [...archiveData];
+  if (searchQ) {
+    filtered = filtered.filter(o =>
+      (o.employee && o.employee.toLowerCase().includes(searchQ)) ||
+      (o.branch && o.branch.toLowerCase().includes(searchQ)) ||
+      (o.customer && o.customer.toLowerCase().includes(searchQ)) ||
+      (o.customerCode && o.customerCode.toLowerCase().includes(searchQ))
+    );
+  }
+  statsBox.innerHTML = `<div class="stat-card"><div class="stat-number" style="color:#7c3aed;">${archiveData.length}</div><div class="stat-label">الأوردرات المؤرشفة</div></div>`;
+  if (filtered.length === 0) { table.innerHTML = `<tr><td colspan="9" class="empty-state">لا يوجد أوردرات مؤرشفة</td></tr>`; return; }
+  table.innerHTML = filtered.map((o, i) => {
+    const statusLabel = STATUS_LABELS[o.status] || o.status;
+    const statusClass = STATUS_CLASSES[o.status] || 'status-pending';
+    return `<tr>
+      <td>${i+1}</td>
+      <td><strong>${o.customer}</strong>${o.customerCode?`<br><span style="font-size:11px;color:#64748b;">${o.customerCode}</span>`:''}</td>
+      <td><span class="badge badge-blue">${o.branch}</span></td>
+      <td style="max-width:200px;font-size:12px;white-space:pre-line;">${o.items||'-'}</td>
+      <td><strong style="color:#16a34a;">${o.total?o.total.toFixed(2):'0'}</strong></td>
+      <td><span class="badge ${statusClass}">${statusLabel}</span></td>
+      <td><span class="badge badge-purple">${o.employee}</span></td>
+      <td>${o.date||''}</td>
+      <td><span class="restore-link" onclick="restoreOrder('${o.id}')">🔄 إعادة</span><span class="delete-link" onclick="deleteArchive('${o.id}')">🗑️ حذف</span></td>
+    </tr>`;
+  }).join('');
+}
+
+function deleteArchive(id) {
+  if (!confirm('هل أنت متأكد من الحذف النهائي؟')) return;
+  db.collection('archived_orders').doc(id).delete().then(() => showToast('🗑️ تم الحذف')).catch(err => { showToast('❌ خطأ', true); console.error(err); });
 }
 
 // ============================================
@@ -1091,7 +1274,9 @@ function saveEditOrder() {
   if (!customer || !branch || !items) { showToast('❌ أكمل جميع الحقول المطلوبة', true); return; }
   const data = { customer, branch, items, supplyType, deliveryDate, status, notes };
   if (status === 'cancelled') data.cancelReason = cancelReason; else data.cancelReason = '';
-  db.collection('orders').doc(id).update(data).then(() => { showToast('✅ تم حفظ التعديلات'); closeEditModal(); }).catch(err => { showToast('❌ خطأ', true); console.error(err); });
+  db.collection('orders').doc(id).update(data)
+    .then(() => { showToast('✅ تم حفظ التعديلات'); closeEditModal(); })
+    .catch(err => { showToast('❌ خطأ في الحفظ', true); console.error(err); });
 }
 
 // ============================================
@@ -1111,10 +1296,12 @@ function saveQuickProduct() {
   const price = parseFloat(document.getElementById('quickProductPrice').value) || 0;
   if (!code) { showToast('❌ أدخل كود الصنف', true); return; }
   if (!name) { showToast('❌ أدخل اسم الصنف', true); return; }
-  db.collection('products').add({ code, name, price }).then(() => {
-    showToast('✅ تم إضافة الصنف'); closeQuickProductModal();
-    setTimeout(() => { const newProd = productsData.find(p => p.code === code); if(newProd) addItemToOrder(newProd.id); }, 800);
-  }).catch(err => { showToast('❌ خطأ', true); console.error(err); });
+  db.collection('products').add({ code, name, price })
+    .then(() => {
+      showToast('✅ تم إضافة الصنف'); closeQuickProductModal();
+      setTimeout(() => { const newProd = productsData.find(p => p.code === code); if (newProd) addItemToOrder(newProd.id); }, 800);
+    })
+    .catch(err => { showToast('❌ خطأ في الإضافة', true); console.error(err); });
 }
 
 // ============================================
@@ -1136,10 +1323,12 @@ function saveQuickCustomer() {
   const address = document.getElementById('quickCustomerAddress').value.trim();
   if (!code) { showToast('❌ أدخل كود العميل', true); return; }
   if (!name) { showToast('❌ أدخل اسم العميل', true); return; }
-  db.collection('customers').add({ code, name, phone, address }).then(() => {
-    showToast('✅ تم إضافة العميل'); closeQuickCustomerModal();
-    setTimeout(() => { const newCust = customersData.find(c => c.code === code); if(newCust) selectCustomer(newCust.id); }, 800);
-  }).catch(err => { showToast('❌ خطأ', true); console.error(err); });
+  db.collection('customers').add({ code, name, phone, address })
+    .then(() => {
+      showToast('✅ تم إضافة العميل'); closeQuickCustomerModal();
+      setTimeout(() => { const newCust = customersData.find(c => c.code === code); if (newCust) selectCustomer(newCust.id); }, 800);
+    })
+    .catch(err => { showToast('❌ خطأ في الإضافة', true); console.error(err); });
 }
 
 // ============================================
@@ -1160,9 +1349,9 @@ function saveNewPassword() {
   if (oldPass !== currentUser.pass) { showToast('❌ كلمة المرور الحالية غير صحيحة', true); return; }
   if (newPass !== confirmPass) { showToast('❌ كلمة المرور الجديدة غير متطابقة', true); return; }
   if (newPass.length < 3) { showToast('❌ كلمة المرور قصيرة جداً', true); return; }
-  db.collection('users').doc(currentUser.id).update({ pass: newPass }).then(() => {
-    currentUser.pass = newPass; showToast('✅ تم تغيير كلمة المرور'); closeChangePassModal();
-  }).catch(err => { showToast('❌ خطأ', true); console.error(err); });
+  db.collection('users').doc(currentUser.id).update({ pass: newPass })
+    .then(() => { currentUser.pass = newPass; showToast('✅ تم تغيير كلمة المرور'); closeChangePassModal(); })
+    .catch(err => { showToast('❌ خطأ في الحفظ', true); console.error(err); });
 }
 
 // ============================================
@@ -1171,12 +1360,12 @@ function saveNewPassword() {
 function searchShortageProducts() {
   const input = document.getElementById('shortageProductSearch');
   const suggestions = document.getElementById('shortageProductSuggestions');
-  const query = input.value.trim();
+  const query = input.value.trim().toLowerCase();
   shortageProductSelIndex = -1;
   if (!query) { suggestions.classList.add('hidden'); return; }
-  const matches = productsData.filter(p => ciIncludes(p.code, query) || ciIncludes(p.name, query)).slice(0, 7);
+  const matches = productsData.filter(p => (p.code && p.code.toLowerCase().includes(query)) || (p.name && p.name.toLowerCase().includes(query))).slice(0, 7);
   if (matches.length === 0 && query.length >= 2) {
-    suggestions.innerHTML = `<div class="suggestion-add" onclick="openQuickProductModal('${query}')">➕ إضافة صنف جديد: "${query}"</div>`;
+    suggestions.innerHTML = `<div class="suggestion-add" onclick="openQuickProductModal('${input.value}')">➕ إضافة صنف جديد: "${input.value}"</div>`;
     suggestions.classList.remove('hidden'); return;
   }
   if (matches.length === 0) { suggestions.classList.add('hidden'); return; }
@@ -1187,7 +1376,6 @@ function searchShortageProducts() {
   `).join('');
   suggestions.classList.remove('hidden');
 }
-
 function handleShortageProductKey(e) {
   const items = document.querySelectorAll('#shortageProductSuggestions .suggestion-item');
   if (e.key === 'ArrowDown') { e.preventDefault(); shortageProductSelIndex = Math.min(shortageProductSelIndex + 1, items.length - 1); highlightShortageProductItem(items); }
@@ -1199,19 +1387,16 @@ function handleShortageProductKey(e) {
   }
   else if (e.key === 'Escape') { document.getElementById('shortageProductSuggestions').classList.add('hidden'); }
 }
-
 function highlightShortageProductItem(items) {
   items.forEach((item, i) => item.classList.toggle('active', i === shortageProductSelIndex));
   if (items[shortageProductSelIndex]) items[shortageProductSelIndex].scrollIntoView({ block: 'nearest' });
 }
-
 function selectShortageProduct(id) {
   const p = productsData.find(x => x.id === id); if (!p) return;
   selectedShortageProduct = p;
   document.getElementById('shortageProductSearch').value = p.name + ' (' + p.code + ')';
   document.getElementById('shortageProductSuggestions').classList.add('hidden');
 }
-
 function submitShortage() {
   const product = selectedShortageProduct;
   const appName = document.getElementById('shortageApp').value;
@@ -1221,8 +1406,7 @@ function submitShortage() {
   if (!appName) { showToast('❌ اختر الأبلكيشن', true); return; }
   if (!branch) { showToast('❌ اختر الفرع', true); return; }
   db.collection('shortages').add({
-    productCode: product.code, productName: product.name,
-    appName, branch, notes,
+    productCode: product.code, productName: product.name, appName, branch, notes,
     employee: currentUser.name, employeeId: currentUser.id,
     date: new Date().toISOString().split('T')[0],
     timestamp: firebase.firestore.FieldValue.serverTimestamp()
@@ -1233,20 +1417,13 @@ function submitShortage() {
     document.getElementById('shortageBranch').value = '';
     document.getElementById('shortageNotes').value = '';
     selectedShortageProduct = null;
-  }).catch(err => { showToast('❌ خطأ', true); console.error(err); });
+  }).catch(err => { showToast('❌ خطأ في الحفظ', true); console.error(err); });
 }
-
-// ============================================
-// Shortages Report
-// ============================================
-function renderShortagesReport() {
-  const tbody = document.getElementById('shortagesReportTable');
+function renderShortages() {
+  const tbody = document.getElementById('shortagesTable');
   if (!tbody) return;
-  const searchQ = (document.getElementById('shortageReportSearch')?.value || '').trim();
-  let filtered = [...shortagesData];
-  if (searchQ) filtered = filtered.filter(s => ciIncludes(s.productName, searchQ) || ciIncludes(s.productCode, searchQ) || ciIncludes(s.appName, searchQ) || ciIncludes(s.branch, searchQ));
-  if (filtered.length === 0) { tbody.innerHTML = '<tr><td colspan="8" class="empty-state">لا يوجد نواقص</td></tr>'; return; }
-  tbody.innerHTML = filtered.map((s, i) => `<tr>
+  if (shortagesData.length === 0) { tbody.innerHTML = '<tr><td colspan="8" class="empty-state">لا يوجد نواقص مسجلة</td></tr>'; return; }
+  tbody.innerHTML = shortagesData.map((s, i) => `<tr>
     <td>${i+1}</td>
     <td><strong>${s.productCode}</strong><br><span style="font-size:12px;color:#64748b;">${s.productName}</span></td>
     <td><span class="badge badge-purple">${s.appName}</span></td>
@@ -1257,22 +1434,141 @@ function renderShortagesReport() {
     <td>${currentUser.role==='admin'?`<span class="delete-link" onclick="deleteShortage('${s.id}')">🗑️ حذف</span>`:''}</td>
   </tr>`).join('');
 }
-
 function deleteShortage(id) {
   if (!confirm('هل أنت متأكد؟')) return;
   db.collection('shortages').doc(id).delete().then(() => showToast('🗑️ تم الحذف')).catch(err => { showToast('❌ خطأ', true); console.error(err); });
 }
-
-function exportShortagesReport() {
-  const searchQ = (document.getElementById('shortageReportSearch')?.value || '').trim();
-  let data = [...shortagesData];
-  if (searchQ) data = data.filter(s => ciIncludes(s.productName, searchQ) || ciIncludes(s.productCode, searchQ) || ciIncludes(s.appName, searchQ) || ciIncludes(s.branch, searchQ));
-  if (data.length === 0) { showToast('❌ لا يوجد بيانات للتصدير', true); return; }
-  const rows = [['#', 'كود الصنف', 'اسم الصنف', 'الأبلكيشن', 'الفرع', 'الموظف', 'التاريخ', 'ملاحظات']];
-  data.forEach((s, i) => rows.push([i+1, s.productCode, s.productName, s.appName, s.branch, s.employee, s.date||'', s.notes||'']));
-  const ws = XLSX.utils.aoa_to_sheet(rows);
-  const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'نواقص الأبلكيشن');
-  XLSX.writeFile(wb, 'shortages_report.xlsx');
-  showToast('✅ تم التصدير');
+function renderShortagesReport() {
+  const tbody = document.getElementById('shortagesReportTable');
+  if (!tbody) return;
+  if (shortagesData.length === 0) { tbody.innerHTML = '<tr><td colspan="7" class="empty-state">لا يوجد نواقص</td></tr>'; return; }
+  tbody.innerHTML = shortagesData.map((s, i) => `<tr>
+    <td>${i+1}</td><td><strong>${s.productCode}</strong></td><td>${s.productName}</td>
+    <td><span class="badge badge-purple">${s.appName}</span></td>
+    <td><span class="badge badge-blue">${s.branch}</span></td>
+    <td><span class="badge badge-gray">${s.employee}</span></td>
+    <td>${s.date||''}</td><td>${s.notes||'-'}</td>
+  </tr>`).join('');
 }
-initApp();
+function exportShortagesToExcel() {
+  if (shortagesData.length === 0) { showToast('❌ لا يوجد بيانات للتصدير', true); return; }
+  const rows = shortagesData.map(s => ({
+    'كود الصنف': s.productCode, 'اسم الصنف': s.productName, 'الأبلكيشن': s.appName,
+    'الفرع': s.branch, 'الموظف': s.employee, 'التاريخ': s.date || '', 'ملاحظات': s.notes || ''
+  }));
+  const ws = XLSX.utils.json_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'نواقص الأبلكيشن');
+  XLSX.writeFile(wb, 'نواقص_الأبلكيشن.xlsx');
+  showToast('✅ تم تصدير الملف');
+}
+
+// ============================================
+// Call Center Shortages
+// ============================================
+function searchCCProducts() {
+  const input = document.getElementById('ccProductSearch');
+  const suggestions = document.getElementById('ccProductSuggestions');
+  const query = input.value.trim().toLowerCase();
+  ccProductSelIndex = -1;
+  if (!query) { suggestions.classList.add('hidden'); return; }
+  const matches = productsData.filter(p => (p.code && p.code.toLowerCase().includes(query)) || (p.name && p.name.toLowerCase().includes(query))).slice(0, 7);
+  if (matches.length === 0 && query.length >= 2) {
+    suggestions.innerHTML = `<div class="suggestion-add" onclick="openQuickProductModal('${input.value}')">➕ إضافة صنف جديد: "${input.value}"</div>`;
+    suggestions.classList.remove('hidden'); return;
+  }
+  if (matches.length === 0) { suggestions.classList.add('hidden'); return; }
+  suggestions.innerHTML = matches.map((p, i) => `
+    <div class="suggestion-item" data-index="${i}" data-id="${p.id}" onclick="selectCCProduct('${p.id}')">
+      <div><span class="sug-code">${p.code}</span> - <span class="sug-name">${p.name}</span></div>
+    </div>
+  `).join('');
+  suggestions.classList.remove('hidden');
+}
+function handleCCProductKey(e) {
+  const items = document.querySelectorAll('#ccProductSuggestions .suggestion-item');
+  if (e.key === 'ArrowDown') { e.preventDefault(); ccProductSelIndex = Math.min(ccProductSelIndex + 1, items.length - 1); highlightCCProductItem(items); }
+  else if (e.key === 'ArrowUp') { e.preventDefault(); ccProductSelIndex = Math.max(ccProductSelIndex - 1, 0); highlightCCProductItem(items); }
+  else if (e.key === 'Enter') {
+    e.preventDefault();
+    if (ccProductSelIndex >= 0 && items[ccProductSelIndex]) { selectCCProduct(items[ccProductSelIndex].dataset.id); }
+    else if (document.querySelector('#ccProductSuggestions .suggestion-add')) { openQuickProductModal(document.getElementById('ccProductSearch').value); }
+  }
+  else if (e.key === 'Escape') { document.getElementById('ccProductSuggestions').classList.add('hidden'); }
+}
+function highlightCCProductItem(items) {
+  items.forEach((item, i) => item.classList.toggle('active', i === ccProductSelIndex));
+  if (items[ccProductSelIndex]) items[ccProductSelIndex].scrollIntoView({ block: 'nearest' });
+}
+function selectCCProduct(id) {
+  const p = productsData.find(x => x.id === id); if (!p) return;
+  selectedCCProduct = p;
+  document.getElementById('ccProductSearch').value = p.name + ' (' + p.code + ')';
+  document.getElementById('ccProductSuggestions').classList.add('hidden');
+}
+function submitCCShortage() {
+  const product = selectedCCProduct;
+  const customerName = document.getElementById('ccCustomerName').value.trim();
+  const branch = document.getElementById('ccBranch').value;
+  const notes = document.getElementById('ccNotes').value.trim();
+  if (!product) { showToast('❌ اختر الصنف', true); return; }
+  if (!branch) { showToast('❌ اختر الفرع', true); return; }
+  db.collection('callcenter_shortages').add({
+    productCode: product.code, productName: product.name, customerName, branch, notes,
+    employee: currentUser.name, employeeId: currentUser.id,
+    date: new Date().toISOString().split('T')[0],
+    timestamp: firebase.firestore.FieldValue.serverTimestamp()
+  }).then(() => {
+    showToast('✅ تم تسجيل النقص');
+    document.getElementById('ccProductSearch').value = '';
+    document.getElementById('ccCustomerName').value = '';
+    document.getElementById('ccBranch').value = '';
+    document.getElementById('ccNotes').value = '';
+    selectedCCProduct = null;
+  }).catch(err => { showToast('❌ خطأ في الحفظ', true); console.error(err); });
+}
+function renderCCShortages() {
+  const tbody = document.getElementById('ccShortagesTable');
+  if (!tbody) return;
+  if (ccShortagesData.length === 0) { tbody.innerHTML = '<tr><td colspan="7" class="empty-state">لا يوجد نواقص مسجلة</td></tr>'; return; }
+  tbody.innerHTML = ccShortagesData.map((s, i) => `<tr>
+    <td>${i+1}</td>
+    <td><strong>${s.productCode}</strong><br><span style="font-size:12px;color:#64748b;">${s.productName}</span></td>
+    <td>${s.customerName||'-'}</td>
+    <td><span class="badge badge-blue">${s.branch}</span></td>
+    <td><span class="badge badge-gray">${s.employee}</span></td>
+    <td>${s.date||''}</td>
+    <td>${s.notes||'-'}</td>
+  </tr>`).join('');
+}
+function renderCCShortagesReport() {
+  const tbody = document.getElementById('ccShortagesReportTable');
+  if (!tbody) return;
+  if (ccShortagesData.length === 0) { tbody.innerHTML = '<tr><td colspan="8" class="empty-state">لا يوجد نواقص</td></tr>'; return; }
+  tbody.innerHTML = ccShortagesData.map((s, i) => `<tr>
+    <td>${i+1}</td><td><strong>${s.productCode}</strong></td><td>${s.productName}</td>
+    <td>${s.customerName||'-'}</td>
+    <td><span class="badge badge-blue">${s.branch}</span></td>
+    <td><span class="badge badge-gray">${s.employee}</span></td>
+    <td>${s.date||''}</td><td>${s.notes||'-'}</td>
+  </tr>`).join('');
+}
+function exportCCShortagesToExcel() {
+  if (ccShortagesData.length === 0) { showToast('❌ لا يوجد بيانات للتصدير', true); return; }
+  const rows = ccShortagesData.map(s => ({
+    'كود الصنف': s.productCode, 'اسم الصنف': s.productName, 'العميل': s.customerName || '',
+    'الفرع': s.branch, 'الموظف': s.employee, 'التاريخ': s.date || '', 'ملاحظات': s.notes || ''
+  }));
+  const ws = XLSX.utils.json_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'نواقص كول سنتر');
+  XLSX.writeFile(wb, 'نواقص_كول_سنتر.xlsx');
+  showToast('✅ تم تصدير الملف');
+}
+
+// تشغيل التطبيق عند فتح الصفحة
+window.addEventListener('DOMContentLoaded', initApp);
+</script>
+
+</body>
+</html>
