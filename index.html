@@ -27,11 +27,7 @@ const rtdb = firebase.database();
 window.db = db;
 window.rtdb = rtdb;
 
-console.log("📌 قبل initApp");
 
-initApp();
-
-console.log("📌 بعد initApp");
 </script>
 <style>
 * { box-sizing: border-box; }
@@ -623,7 +619,35 @@ function populateCCBranch() {
 function populateShortageApp() {
   const sel = document.getElementById('shortageApp'); if(!sel) return; const v=sel.value; sel.innerHTML='<option value="">اختر الأبلكيشن</option>'; appsData.forEach(a=>sel.innerHTML+=`<option value="${a.name}">${a.name}</option>`); if(v) sel.value=v;
 }
+function initApp() {
+  console.log("🚀 initApp started");
 
+  rtdb.ref("users").once("value")
+    .then(snapshot => {
+      usersData = [];
+
+      snapshot.forEach(child => {
+        usersData.push({
+          id: child.key,
+          ...child.val()
+        });
+      });
+
+      console.log("🔥 عدد المستخدمين:", usersData.length);
+      console.log("👥 المستخدمين:", usersData);
+
+      document.getElementById("loginLoading").classList.add("hidden");
+      document.getElementById("loginForm").classList.remove("hidden");
+    })
+    .catch(error => {
+      console.error("❌ RTDB USERS ERROR:", error);
+
+      document.getElementById("loginLoading").classList.add("hidden");
+      document.getElementById("loginForm").classList.remove("hidden");
+
+      showToast("❌ خطأ في تحميل المستخدمين", true);
+    });
+}
 function doLogin() {
   const name = document.getElementById('loginUser').value.trim();
   const pass = document.getElementById('loginPass').value.trim();
