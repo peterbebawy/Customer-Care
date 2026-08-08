@@ -27,7 +27,11 @@ const rtdb = firebase.database();
 window.db = db;
 window.rtdb = rtdb;
 
-console.log("🔥 Firebase initialized:", firebase.apps);
+console.log("📌 قبل initApp");
+
+initApp();
+
+console.log("📌 بعد initApp");
 </script>
 <style>
 * { box-sizing: border-box; }
