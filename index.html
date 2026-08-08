@@ -134,7 +134,7 @@ th { background: #f1f5f9; font-weight: 600; color: #475569; }
     <label class="label">اسم المستخدم</label>
     <input type="text" id="loginUser" class="input" placeholder="اكتب اسمك" onkeydown="if(event.key==='Enter')doLogin()">
     <label class="label">كلمة المرور</label>
-    <input type="password" id="loginPass" class="input" placeholder="كلمة المرور" onkeydown="if(event.key==='Enter')doLogin()">
+    <input type="pasبsword" id="loginPass" class="input" placeholder="كلمة المرور" onkeydown="if(event.key==='Enter')doLogin()">
     <button class="btn btn-primary" style="width:100%;margin-top:8px;" onclick="doLogin()">تسجيل الدخول</button>
   </div>
 </div>
@@ -561,22 +561,24 @@ function initApp() {
 
     console.log("👥 users:", usersData);
 
-    const loading = document.getElementById('loginLoading');
-    const form = document.getElementById('loginForm');
+    const loading = document.getElementById("loginLoading");
+    const form = document.getElementById("loginForm");
 
-    if (loading) loading.classList.add('hidden');
-    if (form) form.classList.remove('hidden');
+    if (loading) loading.classList.add("hidden");
+    if (form) form.classList.remove("hidden");
 
   }, error => {
     console.error("❌ RTDB users error:", error);
 
-    const loading = document.getElementById('loginLoading');
-    const form = document.getElementById('loginForm');
+    const loading = document.getElementById("loginLoading");
+    const form = document.getElementById("loginForm");
 
-    if (loading) loading.classList.add('hidden');
-    if (form) form.classList.remove('hidden');
+    if (loading) loading.classList.add("hidden");
+    if (form) form.classList.remove("hidden");
   });
 }
+
+function populateBranchSelect() {}
 function populateBranchSelect() {
   [document.getElementById('branch'), document.getElementById('editBranch')].forEach(sel => {
     if(!sel) return; const v=sel.value; sel.innerHTML='<option value="">اختر الفرع</option>'; branchesData.forEach(b=>sel.innerHTML+=`<option value="${b.name}">${b.name}</option>`); if(v) sel.value=v;
