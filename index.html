@@ -55,22 +55,22 @@ button, input, select, textarea { font-family: 'Cairo', Tahoma, 'Segoe UI', Aria
 .modal-header h3 { font-size: 19px; font-weight: 800; }
 
 .nav-container { max-width: 1100px; margin: 0 auto 20px; position: sticky; top: 12px; z-index: 50; }
-.nav-toggle-bar { display: flex; justify-content: space-between; align-items: center; background: #fff; padding: 13px 18px; border-radius: 14px; box-shadow: 0 6px 22px rgba(15,23,42,0.09); cursor: pointer; font-weight: 800; color: #1e293b; user-select: none; position: relative; overflow: hidden; margin-bottom: 8px; transition: box-shadow 0.2s ease; }
-.nav-toggle-bar:hover { box-shadow: 0 8px 26px rgba(15,23,42,0.13); }
+.nav-toggle-bar { display: flex; justify-content: space-between; align-items: center; background: linear-gradient(135deg, #ffffff, #f8fafc); padding: 14px 20px; border-radius: 16px; box-shadow: 0 6px 22px rgba(15,23,42,0.09); cursor: pointer; font-weight: 800; color: #1e293b; user-select: none; position: relative; overflow: hidden; margin-bottom: 8px; transition: box-shadow 0.2s ease, transform 0.15s ease; border: 1px solid rgba(15,23,42,0.04); }
+.nav-toggle-bar:hover { box-shadow: 0 10px 28px rgba(15,23,42,0.14); transform: translateY(-1px); }
 .nav-toggle-bar::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, #2563eb, #06b6d4, #16a34a); }
 .nav-toggle-bar .nav-toggle-title { display: flex; align-items: center; gap: 10px; font-size: 14.5px; }
 .nav-toggle-bar .nav-toggle-title .cur-tab-label { color: #2563eb; }
 .nav-toggle-arrow { color: #94a3b8; transition: transform 0.2s; font-size: 13px; }
 .nav-toggle-arrow.open { transform: rotate(180deg); }
-.nav { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; background: #fff; border-radius: 18px; box-shadow: 0 4px 20px rgba(15,23,42,0.06); position: relative; max-height: 0; opacity: 0; padding: 0 14px; margin-bottom: 0; overflow: hidden; transition: max-height 0.25s ease, opacity 0.2s ease, padding 0.25s ease, margin 0.25s ease; }
-.nav.open { max-height: 900px; opacity: 1; padding: 14px; margin-bottom: 20px; overflow-y: auto; max-height: min(900px, 70vh); }
+.nav { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; background: #fff; border-radius: 20px; box-shadow: 0 10px 30px rgba(15,23,42,0.08); position: relative; max-height: 0; opacity: 0; padding: 0 16px; margin-bottom: 0; overflow: hidden; transition: max-height 0.28s ease, opacity 0.22s ease, padding 0.28s ease, margin 0.28s ease; border: 1px solid rgba(15,23,42,0.04); }
+.nav.open { max-height: 900px; opacity: 1; padding: 16px; margin-bottom: 20px; overflow-y: auto; max-height: min(900px, 70vh); }
 .nav::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, #2563eb, #06b6d4, #16a34a); }
-.nav-group-label { flex-basis: 100%; display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 800; color: #94a3b8; letter-spacing: .3px; text-transform: uppercase; margin: 10px 2px 2px; }
+.nav-group-label { flex-basis: 100%; display: flex; align-items: center; gap: 8px; font-size: 11.5px; font-weight: 800; color: #94a3b8; letter-spacing: .5px; text-transform: uppercase; margin: 12px 2px 4px; }
 .nav-group-label:first-child { margin-top: 2px; }
 .nav-group-label::after { content: ''; flex: 1; height: 1px; background: #eef2f7; }
-.nav-btn { padding: 10px 16px; border-radius: 10px; border: 1px solid #e2e8f0; background: #fff; cursor: pointer; font-weight: 700; color: #475569; font-size: 13px; transition: all 0.18s ease; white-space: nowrap; position: relative; display: inline-flex; align-items: center; gap: 6px; }
+.nav-btn { padding: 10px 17px; border-radius: 11px; border: 1px solid #e2e8f0; background: #fff; cursor: pointer; font-weight: 700; color: #475569; font-size: 13px; transition: all 0.18s ease; white-space: nowrap; position: relative; display: inline-flex; align-items: center; gap: 6px; }
 .nav-btn:hover { background: #f1f5f9; border-color: #cbd5e1; transform: translateY(-1px); }
-.nav-btn.active { background: linear-gradient(135deg, #2563eb, #1d4ed8); color: #fff; border-color: #2563eb; box-shadow: 0 3px 10px rgba(37,99,235,0.3); }
+.nav-btn.active { background: linear-gradient(135deg, #2563eb, #1d4ed8); color: #fff; border-color: #2563eb; box-shadow: 0 4px 14px rgba(37,99,235,0.32); }
 .nav-count { display: inline-flex; align-items: center; justify-content: center; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: #dc2626; color: #fff; font-size: 10.5px; font-weight: 800; line-height: 1; }
 .nav-btn.active .nav-count { background: rgba(255,255,255,0.28); }
 .nav-divider { width: 1px; background: #e2e8f0; margin: 4px 8px; }
@@ -109,8 +109,27 @@ th { background: #f1f5f9; font-weight: 600; color: #475569; }
 .login-loading .spinner { width: 40px; height: 40px; border: 3px solid #e2e8f0; border-top-color: #2563eb; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 12px; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
-.user-avatar { width: 44px; height: 44px; border-radius: 14px; background: linear-gradient(135deg, #2563eb, #1d4ed8); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 16px; margin-left: 12px; box-shadow: 0 4px 12px rgba(37,99,235,0.25); }
+.user-avatar { width: 44px; height: 44px; border-radius: 14px; background: linear-gradient(135deg, #2563eb, #1d4ed8); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 16px; margin-left: 12px; box-shadow: 0 4px 12px rgba(37,99,235,0.25); flex-shrink: 0; }
 .user-info { display: flex; align-items: center; margin-bottom: 20px; }
+
+/* ===== User dropdown menu ===== */
+.user-bar-card { padding: 14px 18px; }
+.user-menu-wrap { position: relative; display: inline-block; }
+.user-menu-trigger { margin-bottom: 0; cursor: pointer; padding: 6px 10px 6px 6px; border-radius: 14px; transition: background 0.15s ease; user-select: none; }
+.user-menu-trigger:hover { background: #f1f5f9; }
+.user-name-text { font-weight: 800; font-size: 16.5px; color: #1e293b; display: flex; align-items: center; gap: 6px; }
+.user-role-text { color: #2563eb; font-size: 12px; font-weight: 700; letter-spacing: .4px; text-transform: uppercase; margin-top: 2px; background: #eff6ff; display: inline-block; padding: 1px 8px; border-radius: 6px; }
+.user-menu-caret { margin-right: 6px; color: #94a3b8; font-size: 11px; transition: transform 0.2s ease; align-self: center; }
+.user-menu-caret.open { transform: rotate(180deg); }
+.user-dropdown { position: absolute; top: calc(100% + 10px); left: 0; min-width: 230px; background: #fff; border-radius: 14px; box-shadow: 0 14px 38px rgba(15,23,42,0.16), 0 0 0 1px rgba(15,23,42,0.05); padding: 8px; z-index: 300; opacity: 0; transform: translateY(-6px) scale(0.98); pointer-events: none; transition: opacity 0.16s ease, transform 0.16s ease; }
+.user-dropdown.open { opacity: 1; transform: translateY(0) scale(1); pointer-events: auto; }
+.user-dropdown-item { width: 100%; display: flex; align-items: center; gap: 10px; padding: 11px 12px; border: none; background: none; border-radius: 10px; cursor: pointer; font-family: inherit; font-size: 14px; font-weight: 700; color: #374151; text-align: right; transition: background 0.15s ease; }
+.user-dropdown-item:hover { background: #f1f5f9; }
+.user-dropdown-item.danger { color: #dc2626; }
+.user-dropdown-item.danger:hover { background: #fef2f2; }
+.udi-icon { font-size: 16px; width: 20px; text-align: center; flex-shrink: 0; }
+.user-dropdown-divider { height: 1px; background: #eef2f7; margin: 6px 4px; }
+.bulk-actions-bar { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; justify-content: flex-end; }
 .radio-group { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 16px; }
 .radio-item { display: flex; align-items: center; gap: 6px; background: #f1f5f9; padding: 8px 14px; border-radius: 8px; cursor: pointer; }
 .radio-item input { cursor: pointer; }
@@ -256,18 +275,24 @@ th { background: #f1f5f9; font-weight: 600; color: #475569; }
       <div class="brand-bar-sub">نظام إدارة الأوردرات</div>
     </div>
   </div>
-  <div class="card">
-    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">
-      <div class="user-info">
+  <div class="card user-bar-card">
+    <div class="user-menu-wrap" id="userMenuWrap">
+      <div class="user-info user-menu-trigger" id="userMenuTrigger" onclick="toggleUserMenu(event)">
         <div class="user-avatar" id="userAvatar">أ</div>
         <div>
-          <div style="font-weight:700;font-size:18px;" id="userName">أحمد</div>
-          <div style="color:#64748b;font-size:13px;" id="userRole">موظف</div>
+          <div class="user-name-text" id="userName">أحمد</div>
+          <div class="user-role-text" id="userRole">Call Center</div>
         </div>
+        <span class="user-menu-caret" id="userMenuCaret">▾</span>
       </div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;">
-        <button class="btn btn-secondary btn-sm" onclick="openChangePassModal()">🔐 تغيير الباسورد</button>
-        <button class="btn btn-danger btn-sm" onclick="doLogout()">تسجيل الخروج</button>
+      <div class="user-dropdown" id="userDropdown">
+        <button type="button" class="user-dropdown-item" onclick="openChangePassModal(); closeUserMenu();">
+          <span class="udi-icon">🔐</span><span>تغيير كلمة المرور</span>
+        </button>
+        <div class="user-dropdown-divider"></div>
+        <button type="button" class="user-dropdown-item danger" onclick="closeUserMenu(); doLogout();">
+          <span class="udi-icon">🚪</span><span>تسجيل الخروج</span>
+        </button>
       </div>
     </div>
   </div>
@@ -383,6 +408,10 @@ th { background: #f1f5f9; font-weight: 600; color: #475569; }
     <div class="card">
       <h2 style="margin-top:0;color:#1e293b;">✅ Done</h2>
       <div class="stats" id="doneStatsBox"></div>
+      <div class="bulk-actions-bar hidden" id="doneOrdersBulkBar">
+        <button class="btn btn-info btn-sm" onclick="archiveAllDoneOrders()">📦 أرشفة الكل</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteAllDoneOrders()">🗑️ حذف الكل</button>
+      </div>
       <div class="search-bar">
         <input type="text" id="doneOrderSearch" class="input" style="margin-bottom:0;" placeholder="🔍 ابحث برقم الأوردر أو اسم الموظف أو الفرع أو اسم العميل أو كود العميل أو الأبلكيشن..." oninput="renderDoneOrders()">
       </div>
@@ -405,6 +434,10 @@ th { background: #f1f5f9; font-weight: 600; color: #475569; }
     <div class="card">
       <h2 style="margin-top:0;color:#1e293b;">❌ Cancel</h2>
       <div class="stats" id="cancelStatsBox"></div>
+      <div class="bulk-actions-bar hidden" id="cancelOrdersBulkBar">
+        <button class="btn btn-info btn-sm" onclick="archiveAllCancelOrders()">📦 أرشفة الكل</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteAllCancelOrders()">🗑️ حذف الكل</button>
+      </div>
       <div class="search-bar">
         <input type="text" id="cancelOrderSearch" class="input" style="margin-bottom:0;" placeholder="🔍 ابحث برقم الأوردر أو اسم الموظف أو الفرع أو اسم العميل أو كود العميل أو الأبلكيشن..." oninput="renderCancelOrders()">
       </div>
@@ -459,8 +492,8 @@ th { background: #f1f5f9; font-weight: 600; color: #475569; }
       <h2 style="margin-top:0;color:#1e293b;">📊 ريبورت نواقص الأبلكيشن</h2>
       <div class="export-bar">
         <button class="btn btn-success" onclick="exportShortagesToExcel()">📥 تصدير Excel</button>
-        <button class="btn btn-info" onclick="archiveAllShortages()">📦 أرشفة الكل</button>
-        <button class="btn btn-danger" onclick="deleteAllShortages()">🗑️ حذف الكل</button>
+        <button class="btn btn-info hidden" id="shortagesArchiveAllBtn" onclick="archiveAllShortages()">📦 أرشفة الكل</button>
+        <button class="btn btn-danger hidden" id="shortagesDeleteAllBtn" onclick="deleteAllShortages()">🗑️ حذف الكل</button>
       </div>
       <div class="table-wrap">
         <table>
@@ -503,8 +536,8 @@ th { background: #f1f5f9; font-weight: 600; color: #475569; }
       <h2 style="margin-top:0;color:#1e293b;">📊 ريبورت نواقص كول سنتر</h2>
       <div class="export-bar">
         <button class="btn btn-success" onclick="exportCCShortagesToExcel()">📥 تصدير Excel</button>
-        <button class="btn btn-info" onclick="archiveAllCCShortages()">📦 أرشفة الكل</button>
-        <button class="btn btn-danger" onclick="deleteAllCCShortages()">🗑️ حذف الكل</button>
+        <button class="btn btn-info hidden" id="ccShortagesArchiveAllBtn" onclick="archiveAllCCShortages()">📦 أرشفة الكل</button>
+        <button class="btn btn-danger hidden" id="ccShortagesDeleteAllBtn" onclick="deleteAllCCShortages()">🗑️ حذف الكل</button>
       </div>
       <div class="table-wrap">
         <table>
@@ -1009,15 +1042,10 @@ function enterDashboard(user, silent) {
   document.getElementById('loginPage').classList.add('hidden');
   document.getElementById('dashboard').classList.remove('hidden');
   document.getElementById('userName').textContent = user.name;
-  // تعديل: إخفاء الدور/الوظيفة عن المستخدم نفسه - يظهر فقط للأدمن
+  // تعديل: عرض "Call Center" ثابتاً تحت اسم المستخدم بدلاً من الدور
   const userRoleEl = document.getElementById('userRole');
-  if (user.role === 'admin') {
-    userRoleEl.textContent = ROLES[user.role] || user.role || '';
-    userRoleEl.classList.remove('hidden');
-  } else {
-    userRoleEl.textContent = '';
-    userRoleEl.classList.add('hidden');
-  }
+  userRoleEl.textContent = 'Call Center';
+  userRoleEl.classList.remove('hidden');
   document.getElementById('userAvatar').textContent = user.name.charAt(0);
   setupNavByRole();
   populateBranchSelect(); populateShortageBranch(); populateCCBranch(); populateShortageApp(); populateAppOrderBranch(); populateAppOrderAppSelect();
@@ -1043,6 +1071,27 @@ function doLogin() {
   if (found) { enterDashboard(found, false); }
   else { showToast('❌ اسم المستخدم أو كلمة المرور غير صحيحة', true); }
 }
+
+// ===== قائمة المستخدم المنسدلة =====
+function toggleUserMenu(e) {
+  if (e) e.stopPropagation();
+  const dropdown = document.getElementById('userDropdown');
+  const caret = document.getElementById('userMenuCaret');
+  if (!dropdown) return;
+  const willOpen = !dropdown.classList.contains('open');
+  dropdown.classList.toggle('open', willOpen);
+  if (caret) caret.classList.toggle('open', willOpen);
+}
+function closeUserMenu() {
+  const dropdown = document.getElementById('userDropdown');
+  const caret = document.getElementById('userMenuCaret');
+  if (dropdown) dropdown.classList.remove('open');
+  if (caret) caret.classList.remove('open');
+}
+document.addEventListener('click', (e) => {
+  const wrap = document.getElementById('userMenuWrap');
+  if (wrap && !wrap.contains(e.target)) closeUserMenu();
+});
 
 function doLogout() {
   currentUser = null;
@@ -1095,7 +1144,7 @@ function renderUsers() {
       </div>
       <div>
         <span class="edit-link" onclick="editUser('${u.id}')">✏️ تعديل</span>
-        <span class="delete-link" onclick="deleteUser('${u.id}')">🗑️ حذف</span>
+        ${currentUser.role==='admin'?`<span class="delete-link" onclick="deleteUser('${u.id}')">🗑️ حذف</span>`:''}
       </div>
     </div>
   `).join('');
@@ -1156,6 +1205,7 @@ function cancelEditUser() {
 }
 
 function deleteUser(id) {
+  if (currentUser.role !== 'admin') { showToast('❌ هذه الميزة متاحة للأدمن فقط', true); return; }
   if (currentUser && currentUser.id === id) { showToast('❌ لا يمكنك حذف حسابك الحالي', true); return; }
   if (!confirm('هل أنت متأكد من حذف هذا المستخدم؟')) return;
   rtdb.ref('users/' + id).remove()
@@ -1170,7 +1220,7 @@ function renderBranches() {
   list.innerHTML = branchesData.map(b => `
     <div class="user-row">
       <div style="font-weight:700;color:#1e293b;">🏢 ${b.name || ''}</div>
-      <div><span class="delete-link" onclick="deleteBranch('${b.id}')">🗑️ حذف</span></div>
+      <div>${currentUser.role==='admin'?`<span class="delete-link" onclick="deleteBranch('${b.id}')">🗑️ حذف</span>`:''}</div>
     </div>
   `).join('');
 }
@@ -1185,6 +1235,7 @@ function addBranch() {
     .catch(err => { showToast('❌ خطأ في الإضافة', true); console.error(err); });
 }
 function deleteBranch(id) {
+  if (currentUser.role !== 'admin') { showToast('❌ هذه الميزة متاحة للأدمن فقط', true); return; }
   if (!confirm('هل أنت متأكد من حذف هذا الفرع؟')) return;
   rtdb.ref('branches/' + id).remove()
     .then(() => showToast('🗑️ تم حذف الفرع'))
@@ -1198,7 +1249,7 @@ function renderApps() {
   list.innerHTML = appsData.map(a => `
     <div class="user-row">
       <div style="font-weight:700;color:#1e293b;">📱 ${a.name || ''}</div>
-      <div><span class="delete-link" onclick="deleteApp('${a.id}')">🗑️ حذف</span></div>
+      <div>${currentUser.role==='admin'?`<span class="delete-link" onclick="deleteApp('${a.id}')">🗑️ حذف</span>`:''}</div>
     </div>
   `).join('');
 }
@@ -1213,6 +1264,7 @@ function addApp() {
     .catch(err => { showToast('❌ خطأ في الإضافة', true); console.error(err); });
 }
 function deleteApp(id) {
+  if (currentUser.role !== 'admin') { showToast('❌ هذه الميزة متاحة للأدمن فقط', true); return; }
   if (!confirm('هل أنت متأكد من حذف هذا الأبلكيشن؟')) return;
   rtdb.ref('apps/' + id).remove()
     .then(() => showToast('🗑️ تم حذف الأبلكيشن'))
@@ -1227,7 +1279,7 @@ function renderProducts() {
     <td><strong>${p.code || ''}</strong></td>
     <td>${p.name || ''}</td>
     <td>${(parseFloat(p.price) || 0).toFixed(2)}</td>
-    <td><span class="delete-link" onclick="deleteProduct('${p.id}')">🗑️ حذف</span></td>
+    <td>${currentUser.role==='admin'?`<span class="delete-link" onclick="deleteProduct('${p.id}')">🗑️ حذف</span>`:''}</td>
   </tr>`).join('');
 }
 function addProduct() {
@@ -1249,6 +1301,7 @@ function addProduct() {
     .catch(err => { showToast('❌ خطأ في الإضافة', true); console.error(err); });
 }
 function deleteProduct(id) {
+  if (currentUser.role !== 'admin') { showToast('❌ هذه الميزة متاحة للأدمن فقط', true); return; }
   if (!confirm('هل أنت متأكد من حذف هذا الصنف؟')) return;
   rtdb.ref('products/' + id).remove()
     .then(() => showToast('🗑️ تم حذف الصنف'))
@@ -1317,7 +1370,7 @@ function renderCustomers() {
     <td>${c.name || ''}</td>
     <td>${c.phone || '-'}</td>
     <td>${c.address || '-'}</td>
-    <td><span class="delete-link" onclick="deleteCustomer('${c.id}')">🗑️ حذف</span></td>
+    <td>${currentUser.role==='admin'?`<span class="delete-link" onclick="deleteCustomer('${c.id}')">🗑️ حذف</span>`:''}</td>
   </tr>`).join('');
 }
 function addCustomer() {
@@ -1341,6 +1394,7 @@ function addCustomer() {
     .catch(err => { showToast('❌ خطأ في الإضافة', true); console.error(err); });
 }
 function deleteCustomer(id) {
+  if (currentUser.role !== 'admin') { showToast('❌ هذه الميزة متاحة للأدمن فقط', true); return; }
   if (!confirm('هل أنت متأكد من حذف هذا العميل؟')) return;
   rtdb.ref('customers/' + id).remove()
     .then(() => showToast('🗑️ تم حذف العميل'))
@@ -2018,6 +2072,7 @@ function updateOrderStatus(id, newStatus) {
 }
 
 function deleteOrder(id) {
+  if (currentUser.role !== 'admin') { showToast('❌ هذه الميزة متاحة للأدمن فقط', true); return; }
   if (!confirm('هل أنت متأكد من حذف هذا الأوردر؟')) return;
   db.ref('orders/' + id).remove().then(() => showToast('🗑️ تم حذف الأوردر')).catch(err => { showToast('❌ خطأ في الحذف', true); console.error(err); });
 }
@@ -2179,6 +2234,9 @@ function renderDoneOrders() {
     <div class="stat-card"><div class="stat-number" style="color:#7c3aed;">${totalApp}</div><div class="stat-label">أبلكيشن</div></div>
   `;
 
+  const doneBulkBar = document.getElementById('doneOrdersBulkBar');
+  if (doneBulkBar) doneBulkBar.classList.toggle('hidden', currentUser.role !== 'admin');
+
   if (list.length === 0) { table.innerHTML = `<tr><td colspan="13" class="empty-state">لا يوجد أوردرات تم تنفيذها</td></tr>`; return; }
 
   const canEdit = currentUser.role === 'admin';
@@ -2263,6 +2321,9 @@ function renderCancelOrders() {
     <div class="stat-card"><div class="stat-number" style="color:#7c3aed;">${totalApp}</div><div class="stat-label">أبلكيشن</div></div>
   `;
 
+  const cancelBulkBar = document.getElementById('cancelOrdersBulkBar');
+  if (cancelBulkBar) cancelBulkBar.classList.toggle('hidden', currentUser.role !== 'admin');
+
   if (list.length === 0) { table.innerHTML = `<tr><td colspan="14" class="empty-state">لا يوجد أوردرات ملغية</td></tr>`; return; }
 
   const canEdit = currentUser.role === 'admin';
@@ -2338,6 +2399,7 @@ function confirmQuickCancelReason() {
 }
 
 function deleteAppOrder(id) {
+  if (currentUser.role !== 'admin') { showToast('❌ هذه الميزة متاحة للأدمن فقط', true); return; }
   if (!confirm('هل أنت متأكد من حذف هذا الأوردر؟')) return;
   db.ref('app_orders/' + id).remove().then(() => showToast('🗑️ تم حذف الأوردر')).catch(err => { showToast('❌ خطأ في الحذف', true); console.error(err); });
 }
@@ -2346,6 +2408,7 @@ function deleteAppOrder(id) {
 // Archive Orders
 // ============================================
 function archiveOrder(id) {
+  if (currentUser.role !== 'admin') { showToast('❌ هذه الميزة متاحة للأدمن فقط', true); return; }
   if (!confirm('هل أنت متأكد من أرشفة هذا الأوردر؟')) return;
   const order = ordersData.find(o => o.id === id);
   if (!order) return;
@@ -2359,6 +2422,7 @@ function archiveOrder(id) {
 
 // تعديل: أرشفة أوردرات الأبلكيشن أيضاً (متاحة من تبويبي Done و Cancel)
 function archiveAppOrder(id) {
+  if (currentUser.role !== 'admin') { showToast('❌ هذه الميزة متاحة للأدمن فقط', true); return; }
   if (!confirm('هل أنت متأكد من أرشفة هذا الأوردر؟')) return;
   const order = appOrdersData.find(o => o.id === id);
   if (!order) return;
@@ -2418,15 +2482,56 @@ function renderArchive() {
       <td><span class="badge ${statusClass}">${statusLabel}</span></td>
       <td><span class="badge badge-purple">${o.employee}</span></td>
       <td>${o.date||''}</td>
-      <td><span class="restore-link" onclick="restoreOrder('${o.id}')">🔄 إعادة</span><span class="delete-link" onclick="deleteArchive('${o.id}')">🗑️ حذف</span></td>
+      <td><span class="restore-link" onclick="restoreOrder('${o.id}')">🔄 إعادة</span>${currentUser.role==='admin'?`<span class="delete-link" onclick="deleteArchive('${o.id}')">🗑️ حذف</span>`:''}</td>
     </tr>`;
   }).join('');
 }
 
 function deleteArchive(id) {
+  if (currentUser.role !== 'admin') { showToast('❌ هذه الميزة متاحة للأدمن فقط', true); return; }
   if (!confirm('هل أنت متأكد من الحذف النهائي؟')) return;
   db.ref('archived_orders/' + id).remove().then(() => showToast('🗑️ تم الحذف')).catch(err => { showToast('❌ خطأ', true); console.error(err); });
 }
+
+// ============================================
+// تعديل: أرشفة/حذف أوردرات Done و Cancel بالإجمال (متاح للأدمن فقط)
+// ============================================
+function bulkArchiveOrdersByStatus(status, successMsg) {
+  if (currentUser.role !== 'admin') { showToast('❌ هذه الميزة متاحة للأدمن فقط', true); return; }
+  const list = getCombinedOrdersByStatus(status);
+  if (list.length === 0) { showToast('❌ لا يوجد أوردرات', true); return; }
+  if (!confirm(`هل أنت متأكد من أرشفة كل الأوردرات (${list.length})؟`)) return;
+  const updates = {};
+  list.forEach(o => {
+    const sourceTable = o._type === 'app' ? 'app_orders' : 'orders';
+    const archived = { ...o, archivedAt: firebase.database.ServerValue.TIMESTAMP, _sourceTable: sourceTable };
+    delete archived.id; delete archived._type;
+    const newKey = db.ref('archived_orders').push().key;
+    updates['archived_orders/' + newKey] = archived;
+    updates[sourceTable + '/' + o.id] = null;
+  });
+  db.ref().update(updates)
+    .then(() => { showToast(successMsg); renderDoneOrders(); renderCancelOrders(); })
+    .catch(err => { showToast('❌ خطأ في الأرشفة', true); console.error(err); });
+}
+function bulkDeleteOrdersByStatus(status, successMsg) {
+  if (currentUser.role !== 'admin') { showToast('❌ هذه الميزة متاحة للأدمن فقط', true); return; }
+  const list = getCombinedOrdersByStatus(status);
+  if (list.length === 0) { showToast('❌ لا يوجد أوردرات', true); return; }
+  if (!confirm(`هل أنت متأكد من حذف كل الأوردرات (${list.length}) نهائياً؟ لا يمكن التراجع عن هذا الإجراء.`)) return;
+  const updates = {};
+  list.forEach(o => {
+    const sourceTable = o._type === 'app' ? 'app_orders' : 'orders';
+    updates[sourceTable + '/' + o.id] = null;
+  });
+  db.ref().update(updates)
+    .then(() => { showToast(successMsg); renderDoneOrders(); renderCancelOrders(); })
+    .catch(err => { showToast('❌ خطأ في الحذف', true); console.error(err); });
+}
+function archiveAllDoneOrders() { bulkArchiveOrdersByStatus('completed', '📦 تم أرشفة كل أوردرات Done'); }
+function deleteAllDoneOrders() { bulkDeleteOrdersByStatus('completed', '🗑️ تم حذف كل أوردرات Done'); }
+function archiveAllCancelOrders() { bulkArchiveOrdersByStatus('cancelled', '📦 تم أرشفة كل أوردرات Cancel'); }
+function deleteAllCancelOrders() { bulkDeleteOrdersByStatus('cancelled', '🗑️ تم حذف كل أوردرات Cancel'); }
 
 // ============================================
 // Review Order Modal
@@ -2786,12 +2891,16 @@ function renderShortages() {
   </tr>`).join('');
 }
 function deleteShortage(id) {
+  if (currentUser.role !== 'admin') { showToast('❌ هذه الميزة متاحة للأدمن فقط', true); return; }
   if (!confirm('هل أنت متأكد؟')) return;
   db.ref('shortages/' + id).remove().then(() => showToast('🗑️ تم الحذف')).catch(err => { showToast('❌ خطأ', true); console.error(err); });
 }
 function renderShortagesReport() {
   const tbody = document.getElementById('shortagesReportTable');
   if (!tbody) return;
+  const isAdminS = currentUser.role === 'admin';
+  document.getElementById('shortagesArchiveAllBtn')?.classList.toggle('hidden', !isAdminS);
+  document.getElementById('shortagesDeleteAllBtn')?.classList.toggle('hidden', !isAdminS);
   if (shortagesData.length === 0) { tbody.innerHTML = '<tr><td colspan="11" class="empty-state">لا يوجد نواقص</td></tr>'; return; }
   tbody.innerHTML = shortagesData.map((s, i) => `<tr>
     <td>${i+1}</td><td><strong>${s.productCode}</strong></td><td>${s.productName}</td>
@@ -2820,6 +2929,7 @@ function exportShortagesToExcel() {
 
 // تعديل: أرشفة أو حذف نواقص الأبلكيشن (فردي أو الكل دفعة واحدة) - عادة بعد تصدير الإكسل لتفريغ الريبورت
 function archiveShortage(id) {
+  if (currentUser.role !== 'admin') { showToast('❌ هذه الميزة متاحة للأدمن فقط', true); return; }
   const s = shortagesData.find(x => x.id === id); if (!s) return;
   const archived = { ...s, archivedAt: firebase.database.ServerValue.TIMESTAMP };
   delete archived.id;
@@ -2829,6 +2939,7 @@ function archiveShortage(id) {
     .catch(err => { showToast('❌ خطأ في الأرشفة', true); console.error(err); });
 }
 function archiveAllShortages() {
+  if (currentUser.role !== 'admin') { showToast('❌ هذه الميزة متاحة للأدمن فقط', true); return; }
   if (shortagesData.length === 0) { showToast('❌ لا يوجد بيانات', true); return; }
   if (!confirm(`هل أنت متأكد من أرشفة كل النواقص (${shortagesData.length})؟ يُفضّل تصدير الإكسل أولاً.`)) return;
   const updates = {};
@@ -2844,6 +2955,7 @@ function archiveAllShortages() {
     .catch(err => { showToast('❌ خطأ في الأرشفة', true); console.error(err); });
 }
 function deleteAllShortages() {
+  if (currentUser.role !== 'admin') { showToast('❌ هذه الميزة متاحة للأدمن فقط', true); return; }
   if (shortagesData.length === 0) { showToast('❌ لا يوجد بيانات', true); return; }
   if (!confirm(`هل أنت متأكد من حذف كل النواقص (${shortagesData.length}) نهائياً؟ يُفضّل تصدير الإكسل أولاً. لا يمكن التراجع عن هذا الإجراء.`)) return;
   db.ref('shortages').remove()
@@ -2932,6 +3044,9 @@ function renderCCShortages() {
 function renderCCShortagesReport() {
   const tbody = document.getElementById('ccShortagesReportTable');
   if (!tbody) return;
+  const isAdminCC = currentUser.role === 'admin';
+  document.getElementById('ccShortagesArchiveAllBtn')?.classList.toggle('hidden', !isAdminCC);
+  document.getElementById('ccShortagesDeleteAllBtn')?.classList.toggle('hidden', !isAdminCC);
   if (ccShortagesData.length === 0) { tbody.innerHTML = '<tr><td colspan="9" class="empty-state">لا يوجد نواقص</td></tr>'; return; }
   tbody.innerHTML = ccShortagesData.map((s, i) => `<tr>
     <td>${i+1}</td><td><strong>${s.productCode}</strong></td><td>${s.productName}</td>
@@ -2957,10 +3072,12 @@ function exportCCShortagesToExcel() {
 
 // تعديل: أرشفة أو حذف نواقص الكول سنتر (فردي أو الكل دفعة واحدة) - عادة بعد تصدير الإكسل لتفريغ الريبورت
 function deleteCCShortage(id) {
+  if (currentUser.role !== 'admin') { showToast('❌ هذه الميزة متاحة للأدمن فقط', true); return; }
   if (!confirm('هل أنت متأكد؟')) return;
   db.ref('callcenter_shortages/' + id).remove().then(() => showToast('🗑️ تم الحذف')).catch(err => { showToast('❌ خطأ', true); console.error(err); });
 }
 function archiveCCShortage(id) {
+  if (currentUser.role !== 'admin') { showToast('❌ هذه الميزة متاحة للأدمن فقط', true); return; }
   const s = ccShortagesData.find(x => x.id === id); if (!s) return;
   const archived = { ...s, archivedAt: firebase.database.ServerValue.TIMESTAMP };
   delete archived.id;
@@ -2970,6 +3087,7 @@ function archiveCCShortage(id) {
     .catch(err => { showToast('❌ خطأ في الأرشفة', true); console.error(err); });
 }
 function archiveAllCCShortages() {
+  if (currentUser.role !== 'admin') { showToast('❌ هذه الميزة متاحة للأدمن فقط', true); return; }
   if (ccShortagesData.length === 0) { showToast('❌ لا يوجد بيانات', true); return; }
   if (!confirm(`هل أنت متأكد من أرشفة كل النواقص (${ccShortagesData.length})؟ يُفضّل تصدير الإكسل أولاً.`)) return;
   const updates = {};
@@ -2985,6 +3103,7 @@ function archiveAllCCShortages() {
     .catch(err => { showToast('❌ خطأ في الأرشفة', true); console.error(err); });
 }
 function deleteAllCCShortages() {
+  if (currentUser.role !== 'admin') { showToast('❌ هذه الميزة متاحة للأدمن فقط', true); return; }
   if (ccShortagesData.length === 0) { showToast('❌ لا يوجد بيانات', true); return; }
   if (!confirm(`هل أنت متأكد من حذف كل النواقص (${ccShortagesData.length}) نهائياً؟ يُفضّل تصدير الإكسل أولاً. لا يمكن التراجع عن هذا الإجراء.`)) return;
   db.ref('callcenter_shortages').remove()
