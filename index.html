@@ -6,6 +6,7 @@
 <title>نظام إدارة الأوردرات</title>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 * { box-sizing: border-box; }
 body { font-family: Tahoma, 'Segoe UI', sans-serif; direction: rtl; background: #f1f5f9; margin: 0; padding: 20px; }
@@ -564,7 +565,19 @@ function initApp() {
     if (loading) loading.classList.add('hidden');
     if (form) form.classList.remove('hidden');
 
-    if (currentUser) renderUsers();
+    if (currentUser) {
+      const fresh = usersData.find(u => u.id === currentUser.id);
+      if (fresh) { currentUser = fresh; }
+      renderUsers();
+    } else {
+      let savedId = null;
+      try { savedId = localStorage.getItem('currentUserId'); } catch (e) {}
+      if (savedId) {
+        const savedUser = usersData.find(u => u.id === savedId);
+        if (savedUser) { enterDashboard(savedUser, true); }
+        else { try { localStorage.removeItem('currentUserId'); } catch (e) {} }
+      }
+    }
   }, error => {
     console.error('❌ RTDB users error:', error);
     const loading = document.getElementById('loginLoading');
@@ -707,27 +720,33 @@ function populateShortageApp() {
   }, 3000);
 }
 
+function enterDashboard(user, silent) {
+  currentUser = user;
+  try { localStorage.setItem('currentUserId', user.id); } catch (e) { console.warn('localStorage غير متاح:', e); }
+  document.getElementById('loginPage').classList.add('hidden');
+  document.getElementById('dashboard').classList.remove('hidden');
+  document.getElementById('userName').textContent = user.name;
+  document.getElementById('userRole').textContent = ROLES[user.role] || user.role || 'موظف';
+  document.getElementById('userAvatar').textContent = user.name.charAt(0);
+  setupNavByRole();
+  populateBranchSelect(); populateShortageBranch(); populateCCBranch(); populateShortageApp();
+  document.getElementById('deliveryDate').value = new Date().toISOString().split('T')[0];
+  showTab('newOrder');
+  if (!silent) showToast('👋 مرحباً ' + user.name);
+}
+
 function doLogin() {
   const name = document.getElementById('loginUser').value.trim();
   const pass = document.getElementById('loginPass').value.trim();
   const found = usersData.find(u => u.name.toLowerCase() === name.toLowerCase() && u.pass === pass);
   if (found) {
-    currentUser = found;
-    document.getElementById('loginPage').classList.add('hidden');
-    document.getElementById('dashboard').classList.remove('hidden');
-    document.getElementById('userName').textContent = found.name;
-    document.getElementById('userRole').textContent = ROLES[found.role] || found.role || 'موظف';
-    document.getElementById('userAvatar').textContent = found.name.charAt(0);
-    setupNavByRole();
-    populateBranchSelect(); populateShortageBranch(); populateCCBranch(); populateShortageApp();
-    document.getElementById('deliveryDate').value = new Date().toISOString().split('T')[0];
-    showTab('newOrder');
-    showToast('👋 مرحباً ' + found.name);
+    enterDashboard(found, false);
   } else { showToast('❌ اسم المستخدم أو كلمة المرور غير صحيحة', true); }
 }
 
 function doLogout() {
   currentUser = null;
+  try { localStorage.removeItem('currentUserId'); } catch (e) {}
   document.getElementById('dashboard').classList.add('hidden');
   document.getElementById('loginPage').classList.remove('hidden');
   document.getElementById('loginUser').value = '';
@@ -804,6 +823,277 @@ function deleteUser(id) {
   rtdb.ref('users/' + id).remove()
     .then(() => showToast('🗑️ تم حذف المستخدم'))
     .catch(err => { showToast('❌ خطأ في الحذف', true); console.error(err); });
+}
+
+// ============================================
+// إدارة الفروع
+// ============================================
+function renderBranches() {
+  const list = document.getElementById('branchesList');
+  if (!list) return;
+  if (branchesData.length === 0) { list.innerHTML = '<div class="empty-state">لا يوجد فروع بعد</div>'; return; }
+  list.innerHTML = branchesData.map(b => `
+    <div class="user-row">
+      <div style="font-weight:700;color:#1e293b;">🏢 ${b.name || ''}</div>
+      <div><span class="delete-link" onclick="deleteBranch('${b.id}')">🗑️ حذف</span></div>
+    </div>
+  `).join('');
+}
+function addBranch() {
+  const input = document.getElementById('newBranchName');
+  const name = input.value.trim();
+  if (!name) { showToast('❌ أدخل اسم الفرع', true); return; }
+  const duplicate = branchesData.some(b => (b.name || '').toLowerCase() === name.toLowerCase());
+  if (duplicate) { showToast('❌ الفرع موجود بالفعل', true); return; }
+  rtdb.ref('branches').push({ name })
+    .then(() => { showToast('✅ تم إضافة الفرع'); input.value = ''; })
+    .catch(err => { showToast('❌ خطأ في الإضافة', true); console.error(err); });
+}
+function deleteBranch(id) {
+  if (!confirm('هل أنت متأكد من حذف هذا الفرع؟')) return;
+  rtdb.ref('branches/' + id).remove()
+    .then(() => showToast('🗑️ تم حذف الفرع'))
+    .catch(err => { showToast('❌ خطأ في الحذف', true); console.error(err); });
+}
+
+// ============================================
+// إدارة الأبلكيشنز
+// ============================================
+function renderApps() {
+  const list = document.getElementById('appsList');
+  if (!list) return;
+  if (appsData.length === 0) { list.innerHTML = '<div class="empty-state">لا يوجد أبلكيشنز بعد</div>'; return; }
+  list.innerHTML = appsData.map(a => `
+    <div class="user-row">
+      <div style="font-weight:700;color:#1e293b;">📱 ${a.name || ''}</div>
+      <div><span class="delete-link" onclick="deleteApp('${a.id}')">🗑️ حذف</span></div>
+    </div>
+  `).join('');
+}
+function addApp() {
+  const input = document.getElementById('newAppName');
+  const name = input.value.trim();
+  if (!name) { showToast('❌ أدخل اسم الأبلكيشن', true); return; }
+  const duplicate = appsData.some(a => (a.name || '').toLowerCase() === name.toLowerCase());
+  if (duplicate) { showToast('❌ الأبلكيشن موجود بالفعل', true); return; }
+  rtdb.ref('apps').push({ name })
+    .then(() => { showToast('✅ تم إضافة الأبلكيشن'); input.value = ''; })
+    .catch(err => { showToast('❌ خطأ في الإضافة', true); console.error(err); });
+}
+function deleteApp(id) {
+  if (!confirm('هل أنت متأكد من حذف هذا الأبلكيشن؟')) return;
+  rtdb.ref('apps/' + id).remove()
+    .then(() => showToast('🗑️ تم حذف الأبلكيشن'))
+    .catch(err => { showToast('❌ خطأ في الحذف', true); console.error(err); });
+}
+
+// ============================================
+// إدارة الأصناف
+// ============================================
+function renderProducts() {
+  const tbody = document.getElementById('productsTable');
+  if (!tbody) return;
+  if (productsData.length === 0) { tbody.innerHTML = '<tr><td colspan="4" class="empty-state">لا يوجد أصناف بعد</td></tr>'; return; }
+  tbody.innerHTML = productsData.map(p => `<tr>
+    <td><strong>${p.code || ''}</strong></td>
+    <td>${p.name || ''}</td>
+    <td>${(parseFloat(p.price) || 0).toFixed(2)}</td>
+    <td><span class="delete-link" onclick="deleteProduct('${p.id}')">🗑️ حذف</span></td>
+  </tr>`).join('');
+}
+function addProduct() {
+  const codeInput = document.getElementById('newProductCode');
+  const nameInput = document.getElementById('newProductName');
+  const priceInput = document.getElementById('newProductPrice');
+  const code = codeInput.value.trim();
+  const name = nameInput.value.trim();
+  const price = parseFloat(priceInput.value) || 0;
+  if (!code) { showToast('❌ أدخل كود الصنف', true); return; }
+  if (!name) { showToast('❌ أدخل اسم الصنف', true); return; }
+  const duplicate = productsData.some(p => (p.code || '').toLowerCase() === code.toLowerCase());
+  if (duplicate) { showToast('❌ كود الصنف موجود بالفعل', true); return; }
+  rtdb.ref('products').push({ code, name, price })
+    .then(() => {
+      showToast('✅ تم إضافة الصنف');
+      codeInput.value = ''; nameInput.value = ''; priceInput.value = '';
+    })
+    .catch(err => { showToast('❌ خطأ في الإضافة', true); console.error(err); });
+}
+function deleteProduct(id) {
+  if (!confirm('هل أنت متأكد من حذف هذا الصنف؟')) return;
+  rtdb.ref('products/' + id).remove()
+    .then(() => showToast('🗑️ تم حذف الصنف'))
+    .catch(err => { showToast('❌ خطأ في الحذف', true); console.error(err); });
+}
+function handleProductFile(file) {
+  if (!file) return;
+  if (typeof XLSX === 'undefined') { showToast('❌ مكتبة قراءة ملفات Excel لم يتم تحميلها', true); return; }
+  const progressBox = document.getElementById('productUploadProgress');
+  const progressFill = document.getElementById('productProgressFill');
+  const progressText = document.getElementById('productProgressText');
+  progressBox.classList.remove('hidden');
+  progressFill.style.width = '10%';
+  progressText.textContent = 'جارٍ قراءة الملف...';
+
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const data = new Uint8Array(e.target.result);
+      const wb = XLSX.read(data, { type: 'array' });
+      const sheet = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+      progressFill.style.width = '30%';
+
+      const items = rows.slice(1).filter(r => r && r[0]).map(r => ({
+        code: String(r[0] || '').trim(),
+        name: String(r[1] || '').trim(),
+        price: parseFloat(r[2]) || 0
+      })).filter(it => it.code && it.name);
+
+      if (items.length === 0) { showToast('❌ لم يتم العثور على بيانات صالحة في الملف', true); progressBox.classList.add('hidden'); return; }
+
+      let done = 0;
+      const total = items.length;
+      const existingCodes = new Set(productsData.map(p => (p.code || '').toLowerCase()));
+      const updates = {};
+      items.forEach(it => {
+        if (!existingCodes.has(it.code.toLowerCase())) {
+          const newKey = rtdb.ref('products').push().key;
+          updates[newKey] = it;
+          existingCodes.add(it.code.toLowerCase());
+        }
+        done++;
+        const pct = Math.round((done / total) * 70) + 30;
+        progressFill.style.width = pct + '%';
+        progressText.textContent = `جارٍ المعالجة... ${done}/${total}`;
+      });
+
+      rtdb.ref('products').update(updates)
+        .then(() => {
+          progressFill.style.width = '100%';
+          progressText.textContent = '✅ تم الرفع بنجاح';
+          showToast(`✅ تم إضافة ${Object.keys(updates).length} صنف`);
+          setTimeout(() => progressBox.classList.add('hidden'), 1500);
+          document.getElementById('productFileInput').value = '';
+        })
+        .catch(err => { showToast('❌ خطأ في رفع البيانات', true); console.error(err); progressBox.classList.add('hidden'); });
+    } catch (err) {
+      showToast('❌ خطأ في قراءة الملف', true); console.error(err); progressBox.classList.add('hidden');
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+// ============================================
+// إدارة العملاء
+// ============================================
+function renderCustomers() {
+  const tbody = document.getElementById('customersTable');
+  if (!tbody) return;
+  if (customersData.length === 0) { tbody.innerHTML = '<tr><td colspan="5" class="empty-state">لا يوجد عملاء بعد</td></tr>'; return; }
+  tbody.innerHTML = customersData.map(c => `<tr>
+    <td><strong>${c.code || ''}</strong></td>
+    <td>${c.name || ''}</td>
+    <td>${c.phone || '-'}</td>
+    <td>${c.address || '-'}</td>
+    <td><span class="delete-link" onclick="deleteCustomer('${c.id}')">🗑️ حذف</span></td>
+  </tr>`).join('');
+}
+function addCustomer() {
+  const codeInput = document.getElementById('newCustomerCode');
+  const nameInput = document.getElementById('newCustomerName');
+  const phoneInput = document.getElementById('newCustomerPhone');
+  const addressInput = document.getElementById('newCustomerAddress');
+  const code = codeInput.value.trim();
+  const name = nameInput.value.trim();
+  const phone = phoneInput.value.trim();
+  const address = addressInput.value.trim();
+  if (!code) { showToast('❌ أدخل كود العميل', true); return; }
+  if (!name) { showToast('❌ أدخل اسم العميل', true); return; }
+  const duplicate = customersData.some(c => (c.code || '').toLowerCase() === code.toLowerCase());
+  if (duplicate) { showToast('❌ كود العميل موجود بالفعل', true); return; }
+  rtdb.ref('customers').push({ code, name, phone, address })
+    .then(() => {
+      showToast('✅ تم إضافة العميل');
+      codeInput.value = ''; nameInput.value = ''; phoneInput.value = ''; addressInput.value = '';
+    })
+    .catch(err => { showToast('❌ خطأ في الإضافة', true); console.error(err); });
+}
+function deleteCustomer(id) {
+  if (!confirm('هل أنت متأكد من حذف هذا العميل؟')) return;
+  rtdb.ref('customers/' + id).remove()
+    .then(() => showToast('🗑️ تم حذف العميل'))
+    .catch(err => { showToast('❌ خطأ في الحذف', true); console.error(err); });
+}
+function handleCustomerFile(file) {
+  if (!file) return;
+  if (typeof XLSX === 'undefined') { showToast('❌ مكتبة قراءة ملفات Excel لم يتم تحميلها', true); return; }
+  const progressBox = document.getElementById('customerUploadProgress');
+  const progressFill = document.getElementById('customerProgressFill');
+  const progressText = document.getElementById('customerProgressText');
+  progressBox.classList.remove('hidden');
+  progressFill.style.width = '10%';
+  progressText.textContent = 'جارٍ قراءة الملف...';
+
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const data = new Uint8Array(e.target.result);
+      const wb = XLSX.read(data, { type: 'array' });
+      const sheet = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+      progressFill.style.width = '30%';
+
+      const items = rows.slice(1).filter(r => r && r[0]).map(r => ({
+        code: String(r[0] || '').trim(),
+        name: String(r[1] || '').trim(),
+        phone: String(r[2] || '').trim(),
+        address: String(r[3] || '').trim()
+      })).filter(it => it.code && it.name);
+
+      if (items.length === 0) { showToast('❌ لم يتم العثور على بيانات صالحة في الملف', true); progressBox.classList.add('hidden'); return; }
+
+      let done = 0;
+      const total = items.length;
+      const existingCodes = new Set(customersData.map(c => (c.code || '').toLowerCase()));
+      const updates = {};
+      items.forEach(it => {
+        if (!existingCodes.has(it.code.toLowerCase())) {
+          const newKey = rtdb.ref('customers').push().key;
+          updates[newKey] = it;
+          existingCodes.add(it.code.toLowerCase());
+        }
+        done++;
+        const pct = Math.round((done / total) * 70) + 30;
+        progressFill.style.width = pct + '%';
+        progressText.textContent = `جارٍ المعالجة... ${done}/${total}`;
+      });
+
+      rtdb.ref('customers').update(updates)
+        .then(() => {
+          progressFill.style.width = '100%';
+          progressText.textContent = '✅ تم الرفع بنجاح';
+          showToast(`✅ تم إضافة ${Object.keys(updates).length} عميل`);
+          setTimeout(() => progressBox.classList.add('hidden'), 1500);
+          document.getElementById('customerFileInput').value = '';
+        })
+        .catch(err => { showToast('❌ خطأ في رفع البيانات', true); console.error(err); progressBox.classList.add('hidden'); });
+    } catch (err) {
+      showToast('❌ خطأ في قراءة الملف', true); console.error(err); progressBox.classList.add('hidden');
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+function setupDropZone(zoneId, onFile) {
+  const zone = document.getElementById(zoneId);
+  if (!zone) return;
+  zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('dragover'); });
+  zone.addEventListener('dragleave', () => zone.classList.remove('dragover'));
+  zone.addEventListener('drop', e => {
+    e.preventDefault();
+    zone.classList.remove('dragover');
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) onFile(e.dataTransfer.files[0]);
+  });
 }
 
 function setupNavByRole() {
@@ -1570,7 +1860,11 @@ function exportCCShortagesToExcel() {
 }
 
 // تشغيل التطبيق عند فتح الصفحة
-window.addEventListener('DOMContentLoaded', initApp);
+window.addEventListener('DOMContentLoaded', () => {
+  initApp();
+  setupDropZone('productDropZone', handleProductFile);
+  setupDropZone('customerDropZone', handleCustomerFile);
+});
 </script>
 
 </body>
