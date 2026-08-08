@@ -637,8 +637,11 @@ function doLogin() {
     showTab('newOrder');
     showToast('👋 مرحباً ' + found.name);
   } else { showToast('❌ اسم المستخدم أو كلمة المرور غير صحيحة', true); }
+}    });
 }
 
+initApp();
+ 
 function doLogout() {
   currentUser = null;
   document.getElementById('dashboard').classList.add('hidden');
