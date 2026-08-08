@@ -587,15 +587,34 @@ function ciIncludes(str, query) {
 }
 
 function initApp() {
-  db.collection('users').onSnapshot(snap => { usersData = []; snap.forEach(d => usersData.push({id:d.id,...d.data()})); document.getElementById('loginLoading').classList.add('hidden'); document.getElementById('loginForm').classList.remove('hidden'); if(currentUser) renderUsers(); }, err => showToast('❌ خطأ في الاتصال', true));
-  db.collection('orders').orderBy('timestamp','desc').onSnapshot(snap => { ordersData = []; snap.forEach(d => ordersData.push({id:d.id,...d.data()})); if(currentUser){renderMyOrders();renderAllOrders();} }, err => showToast('❌ خطأ في الأوردرات', true));
-  db.collection('branches').orderBy('name').onSnapshot(snap => { branchesData = []; snap.forEach(d => branchesData.push({id:d.id,...d.data()})); if(currentUser){populateBranchSelect();populateShortageBranch();populateCCBranch();renderBranches();} }, err => showToast('❌ خطأ في الفروع', true));
-  db.collection('products').orderBy('code').onSnapshot(snap => { productsData = []; snap.forEach(d => productsData.push({id:d.id,...d.data()})); if(currentUser) renderProducts(); }, err => showToast('❌ خطأ في الأصناف', true));
-  db.collection('customers').orderBy('code').onSnapshot(snap => { customersData = []; snap.forEach(d => customersData.push({id:d.id,...d.data()})); if(currentUser) renderCustomers(); }, err => showToast('❌ خطأ في العملاء', true));
-  db.collection('apps').orderBy('name').onSnapshot(snap => { appsData = []; snap.forEach(d => appsData.push({id:d.id,...d.data()})); if(currentUser){populateShortageApp();renderApps();} }, err => showToast('❌ خطأ في الأبلكيشنز', true));
-  db.collection('shortages').orderBy('timestamp','desc').onSnapshot(snap => { shortagesData = []; snap.forEach(d => shortagesData.push({id:d.id,...d.data()})); if(currentUser) renderShortagesReport(); }, err => showToast('❌ خطأ في نواقص الأبلكيشن', true));
-  db.collection('callcenter_shortages').orderBy('timestamp','desc').onSnapshot(snap => { ccShortagesData = []; snap.forEach(d => ccShortagesData.push({id:d.id,...d.data()})); if(currentUser) renderCCReport(); }, err => showToast('❌ خطأ في نواقص كول سنتر', true));
-  db.collection('archived_orders').orderBy('archivedAt','desc').onSnapshot(snap => { archiveData = []; snap.forEach(d => archiveData.push({id:d.id,...d.data()})); if(currentUser) renderArchive(); }, err => showToast('❌ خطأ في الأرشيف', true));
+  // تحميل المستخدمين من Realtime Database
+  rtdb.ref('users').on('value', snap => {
+    usersData = [];
+
+    snap.forEach(child => {
+      usersData.push({
+        id: child.key,
+        ...child.val()
+      });
+    });
+
+    console.log('🔥 عدد المستخدمين:', usersData.length);
+    console.log('👥 المستخدمين:', usersData);
+
+    document.getElementById('loginLoading').classList.add('hidden');
+    document.getElementById('loginForm').classList.remove('hidden');
+
+    if (currentUser) {
+      renderUsers();
+    }
+  }, err => {
+    console.error('RTDB USERS ERROR:', err);
+    showToast('❌ خطأ في تحميل المستخدمين', true);
+
+    document.getElementById('loginLoading').classList.add('hidden');
+    document.getElementById('loginForm').classList.remove('hidden');
+  });
+}
 }
 
 function populateBranchSelect() {
