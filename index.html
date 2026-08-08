@@ -16,7 +16,7 @@
 body { font-family: 'Cairo', Tahoma, 'Segoe UI', Arial, sans-serif; direction: rtl; background: #eef2f7; margin: 0; padding: 20px; -webkit-font-smoothing: antialiased; }
 button, input, select, textarea { font-family: 'Cairo', Tahoma, 'Segoe UI', Arial, sans-serif; }
 .hidden { display: none !important; }
-.card { background: #fff; border-radius: 18px; box-shadow: 0 4px 24px rgba(15,23,42,0.07); padding: 28px; margin-bottom: 20px; max-width: 1100px; margin-left: auto; margin-right: auto; position: relative; overflow: hidden; transition: box-shadow 0.2s ease; }
+.card { background: #fff; border-radius: 18px; box-shadow: 0 4px 24px rgba(15,23,42,0.07); padding: 28px; margin-bottom: 20px; max-width: 1320px; margin-left: auto; margin-right: auto; position: relative; overflow: hidden; transition: box-shadow 0.2s ease; }
 .card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 5px; background: linear-gradient(90deg, #2563eb, #06b6d4, #16a34a); }
 .btn { padding: 10px 20px; border: none; border-radius: 10px; cursor: pointer; font-size: 14px; font-weight: 700; transition: all 0.18s ease; letter-spacing: .1px; }
 .btn:active { transform: translateY(1px) scale(0.99); }
@@ -54,51 +54,77 @@ button, input, select, textarea { font-family: 'Cairo', Tahoma, 'Segoe UI', Aria
 .card h3 { font-size: 17.5px; font-weight: 700; }
 .modal-header h3 { font-size: 19px; font-weight: 800; }
 
-.nav-container { max-width: 1100px; margin: 0 auto 20px; position: sticky; top: 12px; z-index: 50; }
-.nav-toggle-bar { display: flex; justify-content: space-between; align-items: center; background: linear-gradient(135deg, #ffffff, #f8fafc); padding: 14px 20px; border-radius: 16px; box-shadow: 0 6px 22px rgba(15,23,42,0.09); cursor: pointer; font-weight: 800; color: #1e293b; user-select: none; position: relative; overflow: hidden; margin-bottom: 8px; transition: box-shadow 0.2s ease, transform 0.15s ease; border: 1px solid rgba(15,23,42,0.04); }
-.nav-toggle-bar:hover { box-shadow: 0 10px 28px rgba(15,23,42,0.14); transform: translateY(-1px); }
-.nav-toggle-bar::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, #2563eb, #06b6d4, #16a34a); }
-.nav-toggle-bar .nav-toggle-title { display: flex; align-items: center; gap: 10px; font-size: 14.5px; }
-.nav-toggle-bar .nav-toggle-title .cur-tab-label { color: #2563eb; }
-.nav-toggle-arrow { color: #94a3b8; transition: transform 0.2s; font-size: 13px; }
-.nav-toggle-arrow.open { transform: rotate(180deg); }
-.nav { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; background: #fff; border-radius: 20px; box-shadow: 0 10px 30px rgba(15,23,42,0.08); position: relative; max-height: 0; opacity: 0; padding: 0 16px; margin-bottom: 0; overflow: hidden; transition: max-height 0.28s ease, opacity 0.22s ease, padding 0.28s ease, margin 0.28s ease; border: 1px solid rgba(15,23,42,0.04); }
-.nav.open { max-height: 900px; opacity: 1; padding: 16px; margin-bottom: 20px; overflow-y: auto; max-height: min(900px, 70vh); }
-.nav::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, #2563eb, #06b6d4, #16a34a); }
-.nav-group-label { flex-basis: 100%; display: flex; align-items: center; gap: 8px; font-size: 11.5px; font-weight: 800; color: #94a3b8; letter-spacing: .5px; text-transform: uppercase; margin: 12px 2px 4px; }
+/* ===== Top App Bar ===== */
+.topbar { max-width: 1320px; margin: 0 auto 16px; display: flex; align-items: center; gap: 14px; background: linear-gradient(135deg, #ffffff, #f8fafc); padding: 14px 20px; border-radius: 16px; box-shadow: 0 6px 22px rgba(15,23,42,0.09); position: sticky; top: 12px; z-index: 220; border: 1px solid rgba(15,23,42,0.04); }
+.topbar-menu-btn { border: none; background: linear-gradient(135deg, #2563eb, #1d4ed8); color: #fff; width: 42px; height: 42px; border-radius: 12px; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 3px 10px rgba(37,99,235,0.3); transition: transform 0.15s ease; }
+.topbar-menu-btn:hover { transform: translateY(-1px) scale(1.03); }
+.topbar-menu-icon { display: inline-block; transition: transform 0.2s ease; }
+.topbar-title { font-weight: 800; font-size: 15px; color: #1e293b; }
+.topbar-title .cur-tab-emoji { margin-left: 6px; }
+
+/* ===== Off-canvas sidebar ===== */
+html, body { overflow-x: hidden; }
+#appShell { position: relative; transition: transform 0.32s cubic-bezier(.4,0,.2,1); }
+#appShell.nav-shifted { transform: translateX(-300px); }
+.sidebar-backdrop { position: fixed; inset: 0; background: rgba(15,23,42,0.28); opacity: 0; pointer-events: none; transition: opacity 0.28s ease; z-index: 340; }
+.sidebar-backdrop.open { opacity: 1; pointer-events: auto; }
+.sidebar-nav { position: fixed; top: 0; right: 0; height: 100vh; width: 300px; max-width: 85vw; background: #fff; z-index: 350; box-shadow: -10px 0 40px rgba(15,23,42,0.18); transform: translateX(100%); transition: transform 0.32s cubic-bezier(.4,0,.2,1); overflow-y: auto; display: flex; flex-direction: column; }
+.sidebar-nav.open { transform: translateX(0); }
+.sidebar-header { display: flex; align-items: center; gap: 10px; padding: 18px 16px; background: linear-gradient(135deg, #1f1e22, #302f35); position: relative; overflow: hidden; flex-shrink: 0; }
+.sidebar-header::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, #d0a72e, #4a4950, #d0a72e); }
+.sidebar-logo-img { height: 34px; width: auto; flex-shrink: 0; filter: drop-shadow(0 3px 6px rgba(0,0,0,0.35)); }
+.sidebar-header-text { flex: 1; line-height: 1.3; }
+.sidebar-header-title { color: #fff; font-weight: 800; font-size: 13.5px; }
+.sidebar-header-sub { color: #b9b3a4; font-size: 10.5px; margin-top: 2px; font-weight: 600; }
+.sidebar-close-btn { background: rgba(255,255,255,0.12); border: none; color: #fff; width: 30px; height: 30px; border-radius: 9px; font-size: 18px; cursor: pointer; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+.sidebar-close-btn:hover { background: rgba(255,255,255,0.22); }
+.nav { display: flex; flex-direction: column; gap: 4px; padding: 14px 12px 24px; }
+.nav-group-label { display: flex; align-items: center; gap: 8px; font-size: 11px; font-weight: 800; color: #94a3b8; letter-spacing: .5px; text-transform: uppercase; margin: 14px 4px 4px; }
 .nav-group-label:first-child { margin-top: 2px; }
 .nav-group-label::after { content: ''; flex: 1; height: 1px; background: #eef2f7; }
-.nav-btn { padding: 10px 17px; border-radius: 11px; border: 1px solid #e2e8f0; background: #fff; cursor: pointer; font-weight: 700; color: #475569; font-size: 13px; transition: all 0.18s ease; white-space: nowrap; position: relative; display: inline-flex; align-items: center; gap: 6px; }
-.nav-btn:hover { background: #f1f5f9; border-color: #cbd5e1; transform: translateY(-1px); }
+.nav-btn { padding: 11px 14px; border-radius: 11px; border: 1px solid transparent; background: transparent; cursor: pointer; font-weight: 700; color: #475569; font-size: 13.5px; transition: all 0.16s ease; white-space: nowrap; position: relative; display: flex; align-items: center; gap: 8px; width: 100%; text-align: right; }
+.nav-btn:hover { background: #f1f5f9; }
 .nav-btn.active { background: linear-gradient(135deg, #2563eb, #1d4ed8); color: #fff; border-color: #2563eb; box-shadow: 0 4px 14px rgba(37,99,235,0.32); }
-.nav-count { display: inline-flex; align-items: center; justify-content: center; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: #dc2626; color: #fff; font-size: 10.5px; font-weight: 800; line-height: 1; }
+.nav-count { display: inline-flex; align-items: center; justify-content: center; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: #dc2626; color: #fff; font-size: 10.5px; font-weight: 800; line-height: 1; margin-right: auto; }
 .nav-btn.active .nav-count { background: rgba(255,255,255,0.28); }
-.nav-divider { width: 1px; background: #e2e8f0; margin: 4px 8px; }
+.nav-divider { display: none; }
+@media (max-width: 600px) {
+  #appShell.nav-shifted { transform: translateX(-82vw); }
+  .sidebar-nav { width: 82vw; }
+}
 
 .table-wrap { overflow-x: auto; }
 table { width: 100%; border-collapse: collapse; }
 th, td { padding: 10px; text-align: right; border-bottom: 1px solid #e2e8f0; font-size: 14px; }
 th { background: #f1f5f9; font-weight: 600; color: #475569; }
 
-.login-page { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: radial-gradient(1200px 800px at 15% 10%, #3a3940 0%, transparent 55%), linear-gradient(135deg, #17171a 0%, #232226 45%, #1a1a1d 100%); padding: 20px; position: relative; }
+.login-page { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: radial-gradient(1200px 800px at 15% 10%, #3a3940 0%, transparent 55%), radial-gradient(900px 700px at 90% 90%, #2a2933 0%, transparent 55%), linear-gradient(135deg, #17171a 0%, #232226 45%, #1a1a1d 100%); padding: 20px; position: relative; overflow: hidden; }
 .login-page::before { content:''; position:absolute; inset:0; background-image: linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px); background-size: 42px 42px; pointer-events:none; }
-.login-box { max-width: 430px; width: 100%; background: #fff; border-radius: 26px; box-shadow: 0 30px 90px rgba(0,0,0,0.45), 0 0 0 1px rgba(255,255,255,0.04); padding: 44px 40px 36px; position: relative; overflow: hidden; z-index:1; }
-.login-box::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 6px; background: linear-gradient(90deg, #d0a72e, #34333a, #d0a72e); }
+.login-orb { position: absolute; border-radius: 50%; filter: blur(60px); opacity: 0.35; pointer-events: none; animation: floatOrb 14s ease-in-out infinite; }
+.login-orb.orb1 { width: 360px; height: 360px; background: radial-gradient(circle, #d0a72e 0%, transparent 70%); top: -120px; right: -100px; animation-delay: 0s; }
+.login-orb.orb2 { width: 300px; height: 300px; background: radial-gradient(circle, #2563eb 0%, transparent 70%); bottom: -100px; left: -80px; animation-delay: 3s; }
+.login-orb.orb3 { width: 220px; height: 220px; background: radial-gradient(circle, #16a34a 0%, transparent 70%); top: 50%; left: 8%; animation-delay: 6s; opacity: 0.2; }
+@keyframes floatOrb { 0%, 100% { transform: translate(0,0) scale(1); } 50% { transform: translate(20px,-25px) scale(1.08); } }
+.login-box { max-width: 430px; width: 100%; background: rgba(255,255,255,0.98); backdrop-filter: blur(6px); border-radius: 26px; box-shadow: 0 30px 90px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.06); padding: 44px 40px 36px; position: relative; overflow: hidden; z-index:1; animation: loginBoxIn 0.5s cubic-bezier(.2,.7,.3,1); }
+@keyframes loginBoxIn { from { opacity: 0; transform: translateY(18px) scale(0.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
+.login-box::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 6px; background: linear-gradient(90deg, #d0a72e, #34333a, #d0a72e); background-size: 200% 100%; animation: shimmerBar 3.5s linear infinite; }
+@keyframes shimmerBar { 0% { background-position: 0% 0; } 100% { background-position: 200% 0; } }
 .login-logo-wrap { display:flex; justify-content:center; margin-bottom: 22px; }
 .login-logo-img { max-width: 220px; width: 100%; height: auto; filter: drop-shadow(0 10px 18px rgba(0,0,0,0.18)); }
 .login-title { text-align: center; margin-bottom: 8px; }
 .login-title h1 { color: #1e293b; margin: 0; font-size: 23px; font-weight: 800; letter-spacing: .2px; }
 .login-title p { color: #94836b; margin: 6px 0 0; font-size: 13px; font-weight: 600; letter-spacing: .3px; }
 .login-input-group { margin-bottom: 16px; position: relative; }
-.login-input-group .input { margin-bottom: 0; padding-right: 44px; border-color:#e5e0d5; }
-.login-input-group .input:focus { border-color: #d0a72e; box-shadow: 0 0 0 3px rgba(208,167,46,0.15); }
-.login-icon { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); color: #b8ac95; font-size: 18px; }
+.login-input-group .input { margin-bottom: 0; padding-right: 44px; border-color:#e5e0d5; transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease; }
+.login-input-group .input:focus { border-color: #d0a72e; box-shadow: 0 0 0 3px rgba(208,167,46,0.15); transform: translateY(-1px); }
+.login-icon { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); color: #b8ac95; font-size: 18px; transition: color 0.15s ease; }
+.login-input-group .input:focus ~ .login-icon { color: #d0a72e; }
 
-.login-btn { width: 100%; padding: 14px; font-size: 16px; border-radius: 12px; margin-top: 8px; background: linear-gradient(135deg, #34333a, #17171a); box-shadow: 0 10px 24px rgba(23,23,26,0.3); }
-.login-btn:hover { background: linear-gradient(135deg, #45444c, #232226); }
+.login-btn { width: 100%; padding: 14px; font-size: 16px; border-radius: 12px; margin-top: 8px; background: linear-gradient(135deg, #34333a, #17171a); box-shadow: 0 10px 24px rgba(23,23,26,0.3); position: relative; overflow: hidden; }
+.login-btn:hover { background: linear-gradient(135deg, #45444c, #232226); box-shadow: 0 12px 28px rgba(23,23,26,0.4); transform: translateY(-1px); }
 .login-footer { text-align: center; margin-top: 22px; color: #94a3b8; font-size: 11.5px; display:flex; align-items:center; justify-content:center; gap:6px; }
 
-.brand-bar { max-width: 1100px; margin: 0 auto 14px; background: linear-gradient(135deg, #1f1e22, #302f35); border-radius: 16px; padding: 13px 22px; display: flex; align-items: center; gap: 14px; box-shadow: 0 10px 26px rgba(0,0,0,0.18); position: relative; overflow: hidden; }
+.brand-bar { max-width: 1320px; margin: 0 auto 14px; background: linear-gradient(135deg, #1f1e22, #302f35); border-radius: 16px; padding: 13px 22px; display: flex; align-items: center; gap: 14px; box-shadow: 0 10px 26px rgba(0,0,0,0.18); position: relative; overflow: hidden; }
 .brand-bar::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, #d0a72e, #4a4950, #d0a72e); }
 .brand-logo-img { height: 42px; width: auto; display: block; filter: drop-shadow(0 3px 6px rgba(0,0,0,0.35)); }
 .brand-bar-text { line-height: 1.3; }
@@ -130,6 +156,20 @@ th { background: #f1f5f9; font-weight: 600; color: #475569; }
 .udi-icon { font-size: 16px; width: 20px; text-align: center; flex-shrink: 0; }
 .user-dropdown-divider { height: 1px; background: #eef2f7; margin: 6px 4px; }
 .bulk-actions-bar { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; justify-content: flex-end; }
+
+/* ===== Avatar (custom picture / preset icon) ===== */
+.user-avatar { overflow: hidden; }
+.user-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.avatar-edit-badge { position: absolute; bottom: -2px; left: -2px; width: 18px; height: 18px; background: #16a34a; border: 2px solid #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 9px; color: #fff; }
+.avatar-picker-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; margin: 14px 0 18px; }
+.avatar-option { width: 100%; aspect-ratio: 1/1; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 22px; cursor: pointer; border: 2px solid transparent; transition: all 0.15s ease; }
+.avatar-option:hover { transform: translateY(-2px); }
+.avatar-option.selected { border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,0.18); }
+.avatar-upload-zone { border: 2px dashed #d1d5db; border-radius: 12px; padding: 18px; text-align: center; background: #f8fafc; color: #64748b; cursor: pointer; transition: all 0.2s; font-size: 13.5px; font-weight: 600; }
+.avatar-upload-zone:hover { border-color: #2563eb; background: #eff6ff; color: #2563eb; }
+.avatar-preview-row { display: flex; align-items: center; gap: 14px; margin-bottom: 16px; }
+.avatar-preview-big { width: 64px; height: 64px; border-radius: 18px; background: linear-gradient(135deg, #2563eb, #1d4ed8); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 24px; overflow: hidden; flex-shrink: 0; }
+.avatar-preview-big img { width: 100%; height: 100%; object-fit: cover; }
 .radio-group { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 16px; }
 .radio-item { display: flex; align-items: center; gap: 6px; background: #f1f5f9; padding: 8px 14px; border-radius: 8px; cursor: pointer; }
 .radio-item input { cursor: pointer; }
@@ -242,6 +282,9 @@ th { background: #f1f5f9; font-weight: 600; color: #475569; }
 <body>
 
 <div id="loginPage" class="login-page">
+  <span class="login-orb orb1"></span>
+  <span class="login-orb orb2"></span>
+  <span class="login-orb orb3"></span>
   <div class="login-box">
     <div class="login-logo-wrap"><img class="login-logo-img" id="loginLogoImg" alt="Dr. Wells Pharmacy"></div>
     <div class="login-title">
@@ -268,6 +311,27 @@ th { background: #f1f5f9; font-weight: 600; color: #475569; }
 </div>
 
 <div id="dashboard" class="hidden">
+  <aside class="sidebar-nav" id="sidebarNav">
+    <div class="sidebar-header">
+      <img src="" id="sidebarLogoImg" class="sidebar-logo-img" alt="Dr. Wells Pharmacy">
+      <div class="sidebar-header-text">
+        <div class="sidebar-header-title">Dr. Wells Pharmacy</div>
+        <div class="sidebar-header-sub">نظام إدارة الأوردرات</div>
+      </div>
+      <button type="button" class="sidebar-close-btn" onclick="toggleNavPanel(false)" aria-label="إغلاق">&times;</button>
+    </div>
+    <div class="nav" id="mainNav"></div>
+  </aside>
+  <div class="sidebar-backdrop" id="sidebarBackdrop" onclick="toggleNavPanel(false)"></div>
+
+  <div id="appShell">
+    <div class="topbar">
+      <button type="button" class="topbar-menu-btn" onclick="toggleNavPanel()" aria-label="القائمة">
+        <span class="topbar-menu-icon" id="topbarMenuIcon">☰</span>
+      </button>
+      <div class="topbar-title"><span id="curTabLabel">القائمة</span></div>
+    </div>
+
   <div class="brand-bar">
     <img src="" id="brandLogoImg" class="brand-logo-img" alt="Dr. Wells Pharmacy">
     <div class="brand-bar-text">
@@ -295,14 +359,6 @@ th { background: #f1f5f9; font-weight: 600; color: #475569; }
         </button>
       </div>
     </div>
-  </div>
-
-  <div class="nav-container">
-    <div class="nav-toggle-bar" onclick="toggleNavPanel()">
-      <span class="nav-toggle-title">☰ <span class="cur-tab-label" id="curTabLabel">القائمة</span></span>
-      <span class="nav-toggle-arrow" id="navToggleArrow">▾</span>
-    </div>
-    <div class="nav" id="mainNav"></div>
   </div>
 
   <div id="newOrder" class="card">
@@ -692,6 +748,7 @@ th { background: #f1f5f9; font-weight: 600; color: #475569; }
       </div>
     </div>
   </div>
+  </div><!-- /appShell -->
 </div>
 
 <div id="reviewModal" class="hidden modal-overlay">
@@ -819,9 +876,11 @@ const PHARMACY_LOGO_ICON = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAANcAAA
 (function initPharmacyBranding() {
   const loginImg = document.getElementById('loginLogoImg');
   const brandImg = document.getElementById('brandLogoImg');
+  const sidebarImg = document.getElementById('sidebarLogoImg');
   const favicon = document.getElementById('faviconLink');
   if (loginImg) loginImg.src = PHARMACY_LOGO_FULL;
   if (brandImg) brandImg.src = PHARMACY_LOGO_ICON;
+  if (sidebarImg) sidebarImg.src = PHARMACY_LOGO_ICON;
   if (favicon) favicon.href = PHARMACY_LOGO_ICON;
 })();
 
@@ -1588,12 +1647,16 @@ function clearAppOrderForm() {
 }
 
 function toggleNavPanel(forceOpen) {
-  const nav = document.getElementById('mainNav');
-  const arrow = document.getElementById('navToggleArrow');
-  if (!nav) return;
-  const shouldOpen = typeof forceOpen === 'boolean' ? forceOpen : !nav.classList.contains('open');
-  nav.classList.toggle('open', shouldOpen);
-  if (arrow) arrow.classList.toggle('open', shouldOpen);
+  const sidebar = document.getElementById('sidebarNav');
+  const backdrop = document.getElementById('sidebarBackdrop');
+  const shell = document.getElementById('appShell');
+  const menuIcon = document.getElementById('topbarMenuIcon');
+  if (!sidebar) return;
+  const shouldOpen = typeof forceOpen === 'boolean' ? forceOpen : !sidebar.classList.contains('open');
+  sidebar.classList.toggle('open', shouldOpen);
+  if (backdrop) backdrop.classList.toggle('open', shouldOpen);
+  if (shell) shell.classList.toggle('nav-shifted', shouldOpen);
+  if (menuIcon) menuIcon.textContent = shouldOpen ? '✕' : '☰';
 }
 
 function showTab(tab) {
