@@ -43,14 +43,35 @@ body { font-family: Tahoma, 'Segoe UI', sans-serif; direction: rtl; background: 
 .header { text-align: center; margin-bottom: 24px; }
 .header h1 { color: #1e293b; margin: 0; font-size: 26px; }
 .header p { color: #64748b; margin: 8px 0 0; }
-.nav { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; justify-content: center; }
-.nav-btn { padding: 10px 16px; border-radius: 10px; border: 1px solid #e2e8f0; background: #fff; cursor: pointer; font-weight: 600; color: #475569; font-size: 14px; }
-.nav-btn.active { background: #2563eb; color: #fff; border-color: #2563eb; }
+
+.nav-container { max-width: 1100px; margin: 0 auto 20px; }
+.nav { display: flex; gap: 6px; margin-bottom: 20px; flex-wrap: wrap; justify-content: center; background: #fff; padding: 12px; border-radius: 16px; box-shadow: 0 2px 12px rgba(0,0,0,0.06); }
+.nav-btn { padding: 10px 16px; border-radius: 10px; border: 1px solid #e2e8f0; background: #fff; cursor: pointer; font-weight: 600; color: #475569; font-size: 13px; transition: all 0.2s; white-space: nowrap; }
+.nav-btn:hover { background: #f1f5f9; border-color: #cbd5e1; }
+.nav-btn.active { background: #2563eb; color: #fff; border-color: #2563eb; box-shadow: 0 2px 8px rgba(37,99,235,0.25); }
+.nav-divider { width: 1px; background: #e2e8f0; margin: 4px 8px; }
+
 .table-wrap { overflow-x: auto; }
 table { width: 100%; border-collapse: collapse; }
 th, td { padding: 10px; text-align: right; border-bottom: 1px solid #e2e8f0; font-size: 14px; }
 th { background: #f1f5f9; font-weight: 600; color: #475569; }
-.login-box { max-width: 400px; margin: 60px auto; }
+
+.login-page { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #1e293b 0%, #334155 100%); padding: 20px; }
+.login-box { max-width: 420px; width: 100%; background: #fff; border-radius: 24px; box-shadow: 0 25px 80px rgba(0,0,0,0.3); padding: 40px; position: relative; overflow: hidden; }
+.login-box::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 5px; background: linear-gradient(90deg, #2563eb, #06b6d4, #16a34a); }
+.login-logo { width: 80px; height: 80px; background: linear-gradient(135deg, #2563eb, #1d4ed8); border-radius: 20px; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; font-size: 36px; box-shadow: 0 8px 20px rgba(37,99,235,0.3); }
+.login-title { text-align: center; margin-bottom: 8px; }
+.login-title h1 { color: #1e293b; margin: 0; font-size: 24px; font-weight: 700; }
+.login-title p { color: #64748b; margin: 8px 0 0; font-size: 14px; }
+.login-input-group { margin-bottom: 16px; position: relative; }
+.login-input-group .input { margin-bottom: 0; padding-right: 44px; }
+.login-icon { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); color: #94a3b8; font-size: 18px; }
+.login-btn { width: 100%; padding: 14px; font-size: 16px; border-radius: 12px; margin-top: 8px; }
+.login-footer { text-align: center; margin-top: 20px; color: #94a3b8; font-size: 12px; }
+.login-loading { text-align: center; padding: 40px; color: #64748b; }
+.login-loading .spinner { width: 40px; height: 40px; border: 3px solid #e2e8f0; border-top-color: #2563eb; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 12px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
 .user-avatar { width: 44px; height: 44px; border-radius: 50%; background: #2563eb; color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 16px; margin-left: 12px; }
 .user-info { display: flex; align-items: center; margin-bottom: 20px; }
 .radio-group { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 16px; }
@@ -60,9 +81,9 @@ th { background: #f1f5f9; font-weight: 600; color: #475569; }
 .stat-card { background: #fff; border-radius: 12px; padding: 14px; text-align: center; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
 .stat-number { font-size: 22px; font-weight: 700; color: #2563eb; }
 .stat-label { color: #64748b; font-size: 11px; margin-top: 4px; }
-.toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #16a34a; color: #fff; padding: 14px 28px; border-radius: 10px; font-weight: 600; box-shadow: 0 4px 20px rgba(0,0,0,0.15); z-index: 1000; animation: slideDown 0.3s ease; }
+.toast { position: fixed; top: 20px; right: 20px; background: #16a34a; color: #fff; padding: 14px 28px; border-radius: 10px; font-weight: 600; box-shadow: 0 4px 20px rgba(0,0,0,0.15); z-index: 1000; animation: slideDown 0.3s ease; }
 .toast.error { background: #dc2626; }
-@keyframes slideDown { from { opacity: 0; transform: translate(-50%, -20px); } to { opacity: 1; transform: translate(-50%, 0); } }
+@keyframes slideDown { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
 .user-row { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; padding: 14px; background: #f8fafc; border-radius: 12px; margin-bottom: 10px; }
 .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
@@ -121,26 +142,41 @@ th { background: #f1f5f9; font-weight: 600; color: #475569; }
 .search-bar { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
 .search-bar input { flex: 1; min-width: 200px; padding: 10px 16px; border: 1px solid #d1d5db; border-radius: 10px; font-size: 14px; }
 .export-bar { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
+
+.cancel-reason-box { background: #fef2f2; border: 1px solid #fecaca; border-radius: 10px; padding: 12px; margin-bottom: 12px; }
+.cancel-reason-box .label { color: #991b1b; }
+.cancel-reason-display { background: #fef2f2; border-right: 4px solid #dc2626; padding: 10px 14px; border-radius: 8px; margin-top: 8px; color: #991b1b; font-size: 13px; }
 </style>
-<base target="_blank">
 <base target="_blank">
 </head>
 <body>
 
-<!-- صفحة تسجيل الدخول -->
-<div id="loginPage" class="card login-box">
-  <div class="header"><h1>🛒 نظام إدارة الأوردرات</h1><p>سجل دخولك للبدء</p></div>
-  <div id="loginLoading" class="loading">جارٍ تحميل البيانات...</div>
-  <div id="loginForm" class="hidden">
-    <label class="label">اسم المستخدم</label>
-    <input type="text" id="loginUser" class="input" placeholder="اكتب اسمك" onkeydown="if(event.key==='Enter')doLogin()">
-    <label class="label">كلمة المرور</label>
-    <input type="password" id="loginPass" class="input" placeholder="كلمة المرور" onkeydown="if(event.key==='Enter')doLogin()">
-    <button class="btn btn-primary" style="width:100%;margin-top:8px;" onclick="doLogin()">تسجيل الدخول</button>
+<div id="loginPage" class="login-page">
+  <div class="login-box">
+    <div class="login-logo">🛒</div>
+    <div class="login-title">
+      <h1>نظام إدارة الأوردرات</h1>
+      <p>منصة متكاملة لإدارة الأوردرات والمخزون</p>
+    </div>
+    <div id="loginLoading" class="login-loading">
+      <div class="spinner"></div>
+      <div>جارٍ تحميل البيانات...</div>
+    </div>
+    <div id="loginForm" class="hidden">
+      <div class="login-input-group">
+        <span class="login-icon">👤</span>
+        <input type="text" id="loginUser" class="input" placeholder="اسم المستخدم" onkeydown="if(event.key==='Enter')doLogin()">
+      </div>
+      <div class="login-input-group">
+        <span class="login-icon">🔒</span>
+        <input type="password" id="loginPass" class="input" placeholder="كلمة المرور" onkeydown="if(event.key==='Enter')doLogin()">
+      </div>
+      <button class="btn btn-primary login-btn" onclick="doLogin()">تسجيل الدخول</button>
+      <div class="login-footer">نظام آمن | جميع البيانات محمية</div>
+    </div>
   </div>
 </div>
 
-<!-- لوحة التحكم -->
 <div id="dashboard" class="hidden">
   <div class="card">
     <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">
@@ -158,9 +194,10 @@ th { background: #f1f5f9; font-weight: 600; color: #475569; }
     </div>
   </div>
 
-  <div class="nav" id="mainNav"></div>
+  <div class="nav-container">
+    <div class="nav" id="mainNav"></div>
+  </div>
 
-  <!-- تبويب أوردر جديد -->
   <div id="newOrder" class="card">
     <h2 style="margin-top:0;color:#1e293b;">تسجيل أوردر جديد</h2>
     <label class="label">العميل</label>
@@ -196,15 +233,12 @@ th { background: #f1f5f9; font-weight: 600; color: #475569; }
     <label class="label">ملاحظات</label>
     <textarea id="notes" class="input" rows="2" placeholder="أي ملاحظات إضافية..."></textarea>
     <button class="btn btn-success" onclick="submitOrder()">✅ حفظ الأوردر</button>
-    console.log("🚀 submitOrder started");
   </div>
 
-  <!-- تبويب أوردراتي -->
   <div id="myOrders" class="hidden">
     <div class="card"><h2 style="margin-top:0;color:#1e293b;">أوردراتي</h2><div id="myOrdersList"></div></div>
   </div>
 
-  <!-- تبويب كل الأوردرات -->
   <div id="allOrders" class="hidden">
     <div class="card">
       <h2 style="margin-top:0;color:#1e293b;">كل الأوردرات</h2>
@@ -230,7 +264,6 @@ th { background: #f1f5f9; font-weight: 600; color: #475569; }
     </div>
   </div>
 
-  <!-- تبويب نواقص الأبلكيشن -->
   <div id="shortages" class="hidden">
     <div class="card">
       <h2 style="margin-top:0;color:#1e293b;">📱 نواقص الأبلكيشن</h2>
@@ -258,7 +291,6 @@ th { background: #f1f5f9; font-weight: 600; color: #475569; }
     </div>
   </div>
 
-  <!-- تبويب ريبورت نواقص الأبلكيشن -->
   <div id="shortagesReport" class="hidden">
     <div class="card">
       <h2 style="margin-top:0;color:#1e293b;">📊 ريبورت نواقص الأبلكيشن</h2>
@@ -274,7 +306,6 @@ th { background: #f1f5f9; font-weight: 600; color: #475569; }
     </div>
   </div>
 
-  <!-- تبويب نواقص كول سنتر -->
   <div id="callcenterShortages" class="hidden">
     <div class="card">
       <h2 style="margin-top:0;color:#1e293b;">📞 نواقص كول سنتر</h2>
@@ -302,7 +333,6 @@ th { background: #f1f5f9; font-weight: 600; color: #475569; }
     </div>
   </div>
 
-  <!-- تبويب ريبورت نواقص كول سنتر -->
   <div id="ccShortagesReport" class="hidden">
     <div class="card">
       <h2 style="margin-top:0;color:#1e293b;">📊 ريبورت نواقص كول سنتر</h2>
@@ -318,7 +348,6 @@ th { background: #f1f5f9; font-weight: 600; color: #475569; }
     </div>
   </div>
 
-  <!-- تبويب أرشيف الأوردرات -->
   <div id="archive" class="hidden">
     <div class="card">
       <h2 style="margin-top:0;color:#1e293b;">📦 أرشيف الأوردرات</h2>
@@ -335,7 +364,6 @@ th { background: #f1f5f9; font-weight: 600; color: #475569; }
     </div>
   </div>
 
-  <!-- تبويب المستخدمين -->
   <div id="users" class="hidden">
     <div class="card">
       <h2 style="margin-top:0;color:#1e293b;">إدارة المستخدمين</h2>
@@ -361,7 +389,6 @@ th { background: #f1f5f9; font-weight: 600; color: #475569; }
     </div>
   </div>
 
-  <!-- تبويب الفروع -->
   <div id="branches" class="hidden">
     <div class="card">
       <h2 style="margin-top:0;color:#1e293b;">🏢 إدارة الفروع</h2>
@@ -374,7 +401,6 @@ th { background: #f1f5f9; font-weight: 600; color: #475569; }
     </div>
   </div>
 
-  <!-- تبويب الأبلكيشنز -->
   <div id="apps" class="hidden">
     <div class="card">
       <h2 style="margin-top:0;color:#1e293b;">📱 إدارة الأبلكيشنز</h2>
@@ -387,7 +413,6 @@ th { background: #f1f5f9; font-weight: 600; color: #475569; }
     </div>
   </div>
 
-  <!-- تبويب الأصناف -->
   <div id="products" class="hidden">
     <div class="card">
       <h2 style="margin-top:0;color:#1e293b;">📦 إدارة الأصناف</h2>
@@ -417,7 +442,6 @@ th { background: #f1f5f9; font-weight: 600; color: #475569; }
     </div>
   </div>
 
-  <!-- تبويب العملاء -->
   <div id="customers" class="hidden">
     <div class="card">
       <h2 style="margin-top:0;color:#1e293b;">👤 إدارة العملاء</h2>
@@ -451,7 +475,6 @@ th { background: #f1f5f9; font-weight: 600; color: #475569; }
   </div>
 </div>
 
-<!-- مودال مراجعة الأوردر -->
 <div id="reviewModal" class="hidden modal-overlay">
   <div class="modal-content">
     <div class="modal-header"><h3>📋 مراجعة بيانات الأوردر</h3><button class="close-btn" onclick="closeReviewModal()">&times;</button></div>
@@ -459,7 +482,6 @@ th { background: #f1f5f9; font-weight: 600; color: #475569; }
   </div>
 </div>
 
-<!-- مودال تعديل الأوردر -->
 <div id="editOrderModal" class="hidden modal-overlay">
   <div class="modal-content">
     <div class="modal-header"><h3>✏️ تعديل الأوردر</h3><button class="close-btn" onclick="closeEditModal()">&times;</button></div>
@@ -479,14 +501,16 @@ th { background: #f1f5f9; font-weight: 600; color: #475569; }
       <option value="pending">في الانتظار</option><option value="completed">تم</option><option value="outdelivery">Out of Delivery</option><option value="cancelled">ملغي</option>
     </select>
     <div id="cancelReasonBox" class="hidden">
-      <label class="label">سبب الإلغاء</label><textarea id="editCancelReason" class="input" rows="2" placeholder="اكتب سبب الإلغاء..."></textarea>
+      <div class="cancel-reason-box">
+        <label class="label">سبب الإلغاء <span style="color:#dc2626;">*</span></label>
+        <textarea id="editCancelReason" class="input" rows="2" placeholder="اكتب سبب الإلغاء بالتفصيل..." style="margin-bottom:0;"></textarea>
+      </div>
     </div>
     <label class="label">ملاحظات</label><textarea id="editNotes" class="input" rows="2"></textarea>
     <button class="btn btn-primary" onclick="saveEditOrder()">💾 حفظ التعديلات</button>
   </div>
 </div>
 
-<!-- مودال إضافة صنف سريع -->
 <div id="quickProductModal" class="hidden modal-overlay">
   <div class="modal-content" style="max-width:400px;">
     <div class="modal-header"><h3>➕ إضافة صنف جديد</h3><button class="close-btn" onclick="closeQuickProductModal()">&times;</button></div>
@@ -497,7 +521,6 @@ th { background: #f1f5f9; font-weight: 600; color: #475569; }
   </div>
 </div>
 
-<!-- مودال إضافة عميل سريع -->
 <div id="quickCustomerModal" class="hidden modal-overlay">
   <div class="modal-content" style="max-width:400px;">
     <div class="modal-header"><h3>➕ إضافة عميل جديد</h3><button class="close-btn" onclick="closeQuickCustomerModal()">&times;</button></div>
@@ -509,7 +532,6 @@ th { background: #f1f5f9; font-weight: 600; color: #475569; }
   </div>
 </div>
 
-<!-- مودال تغيير الباسورد -->
 <div id="changePassModal" class="hidden modal-overlay">
   <div class="modal-content" style="max-width:400px;">
     <div class="modal-header"><h3>🔐 تغيير كلمة المرور</h3><button class="close-btn" onclick="closeChangePassModal()">&times;</button></div>
@@ -531,16 +553,13 @@ const firebaseConfig = {
   messagingSenderId: "167461661789",
   appId: "1:167461661789:web:a1141fccdf4650b84eb1b4"
 };
-console.log("🔥 قبل initializeApp");
 
 firebase.initializeApp(firebaseConfig);
-
-console.log("🔥 بعد initializeApp:", firebase.apps.length);
-
 const rtdb = firebase.database();
 window.rtdb = rtdb;
 const db = rtdb;
 window.db = db;
+
 let currentUser = null;
 let usersData = [], ordersData = [], branchesData = [], productsData = [], customersData = [], appsData = [], shortagesData = [], ccShortagesData = [], archiveData = [];
 let orderItems = [], selectedCustomer = null, selectedShortageProduct = null, selectedCCProduct = null;
@@ -550,21 +569,15 @@ let productSelIndex = -1, customerSelIndex = -1, shortageProductSelIndex = -1, c
 const ROLES = { admin: 'أدمن', manager: 'مانجر', employee: 'موظف', appuser: 'مستخدم أبلكيشن' };
 const STATUS_LABELS = { pending: 'في الانتظار', completed: 'تم', outdelivery: 'Out of Delivery', cancelled: 'ملغي' };
 const STATUS_CLASSES = { pending: 'status-pending', completed: 'status-completed', outdelivery: 'status-outdelivery', cancelled: 'status-cancelled' };
-function initApp() {
-  console.log("🚀 initApp started");
 
-  // المستخدمين
+function initApp() {
   rtdb.ref('users').on('value', snapshot => {
     usersData = [];
-    snapshot.forEach(child => {
-      usersData.push({ id: child.key, ...child.val() });
-    });
-
+    snapshot.forEach(child => { usersData.push({ id: child.key, ...child.val() }); });
     const loading = document.getElementById('loginLoading');
     const form = document.getElementById('loginForm');
     if (loading) loading.classList.add('hidden');
     if (form) form.classList.remove('hidden');
-
     if (currentUser) {
       const fresh = usersData.find(u => u.id === currentUser.id);
       if (fresh) { currentUser = fresh; }
@@ -579,128 +592,100 @@ function initApp() {
       }
     }
   }, error => {
-    console.error('❌ RTDB users error:', error);
+    console.error('RTDB users error:', error);
     const loading = document.getElementById('loginLoading');
     if (loading) loading.innerHTML = '❌ فشل تحميل المستخدمين. تأكد من databaseURL وصلاحيات القراءة (Rules).<br><span style="font-size:12px;color:#94a3b8;">' + (error && error.message ? error.message : error) + '</span>';
   });
 
-  // الأوردرات
   rtdb.ref('orders').on('value', snapshot => {
     ordersData = [];
-    snapshot.forEach(child => {
-      ordersData.push({ id: child.key, ...child.val() });
-    });
+    snapshot.forEach(child => { ordersData.push({ id: child.key, ...child.val() }); });
     ordersData.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
-
     if (currentUser) { renderMyOrders(); renderAllOrders(); }
   }, error => console.error('Orders:', error));
 
-  // الفروع
   rtdb.ref('branches').on('value', snapshot => {
     branchesData = [];
-    snapshot.forEach(child => {
-      branchesData.push({ id: child.key, ...child.val() });
-    });
+    snapshot.forEach(child => { branchesData.push({ id: child.key, ...child.val() }); });
     branchesData.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
-
     if (currentUser) {
-      populateBranchSelect();
-      populateShortageBranch();
-      populateCCBranch();
+      populateBranchSelect(); populateShortageBranch(); populateCCBranch();
       if (typeof renderBranches === 'function') renderBranches();
     }
   }, error => console.error('Branches:', error));
 
-  // الأصناف
   rtdb.ref('products').on('value', snapshot => {
     productsData = [];
-    snapshot.forEach(child => {
-      productsData.push({ id: child.key, ...child.val() });
-    });
+    snapshot.forEach(child => { productsData.push({ id: child.key, ...child.val() }); });
     productsData.sort((a, b) => (a.code || '').localeCompare(b.code || ''));
-
     if (currentUser && typeof renderProducts === 'function') renderProducts();
   }, error => console.error('Products:', error));
 
-  // العملاء
   rtdb.ref('customers').on('value', snapshot => {
     customersData = [];
-    snapshot.forEach(child => {
-      customersData.push({ id: child.key, ...child.val() });
-    });
+    snapshot.forEach(child => { customersData.push({ id: child.key, ...child.val() }); });
     customersData.sort((a, b) => (a.code || '').localeCompare(b.code || ''));
-
     if (currentUser && typeof renderCustomers === 'function') renderCustomers();
   }, error => console.error('Customers:', error));
 
-  // الأبلكيشنز
   rtdb.ref('apps').on('value', snapshot => {
     appsData = [];
-    snapshot.forEach(child => {
-      appsData.push({ id: child.key, ...child.val() });
-    });
+    snapshot.forEach(child => { appsData.push({ id: child.key, ...child.val() }); });
     appsData.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
-
-    if (currentUser) {
-      populateShortageApp();
-      if (typeof renderApps === 'function') renderApps();
-    }
+    if (currentUser) { populateShortageApp(); if (typeof renderApps === 'function') renderApps(); }
   }, error => console.error('Apps:', error));
 
-  // النواقص
   rtdb.ref('shortages').on('value', snapshot => {
     shortagesData = [];
-    snapshot.forEach(child => {
-      shortagesData.push({ id: child.key, ...child.val() });
-    });
+    snapshot.forEach(child => { shortagesData.push({ id: child.key, ...child.val() }); });
     shortagesData.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
-
     if (currentUser) { renderShortages(); renderShortagesReport(); }
   }, error => console.error('Shortages:', error));
 
-  // نواقص كول سنتر
   rtdb.ref('callcenter_shortages').on('value', snapshot => {
     ccShortagesData = [];
-    snapshot.forEach(child => {
-      ccShortagesData.push({ id: child.key, ...child.val() });
-    });
+    snapshot.forEach(child => { ccShortagesData.push({ id: child.key, ...child.val() }); });
     ccShortagesData.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
-
     if (currentUser) { renderCCShortages(); renderCCShortagesReport(); }
   }, error => console.error('CC Shortages:', error));
 
-  // الأرشيف
   rtdb.ref('archived_orders').on('value', snapshot => {
     archiveData = [];
-    snapshot.forEach(child => {
-      archiveData.push({ id: child.key, ...child.val() });
-    });
+    snapshot.forEach(child => { archiveData.push({ id: child.key, ...child.val() }); });
     archiveData.sort((a, b) => (b.archivedAt || 0) - (a.archivedAt || 0));
-
     if (currentUser) renderArchive();
   }, error => console.error('Archive:', error));
 }
 
-function populateBranchSelect() {}
 function populateBranchSelect() {
   [document.getElementById('branch'), document.getElementById('editBranch')].forEach(sel => {
-    if(!sel) return; const v=sel.value; sel.innerHTML='<option value="">اختر الفرع</option>'; branchesData.forEach(b=>sel.innerHTML+=`<option value="${b.name}">${b.name}</option>`); if(v) sel.value=v;
+    if(!sel) return; const v=sel.value; sel.innerHTML='<option value="">اختر الفرع</option>'; 
+    branchesData.forEach(b=>sel.innerHTML+=`<option value="${b.name}">${b.name}</option>`); 
+    if(v) sel.value=v;
   });
 }
 function populateShortageBranch() {
-  const sel = document.getElementById('shortageBranch'); if(!sel) return; const v=sel.value; sel.innerHTML='<option value="">اختر الفرع</option>'; branchesData.forEach(b=>sel.innerHTML+=`<option value="${b.name}">${b.name}</option>`); if(v) sel.value=v;
+  const sel = document.getElementById('shortageBranch'); if(!sel) return; const v=sel.value; 
+  sel.innerHTML='<option value="">اختر الفرع</option>'; 
+  branchesData.forEach(b=>sel.innerHTML+=`<option value="${b.name}">${b.name}</option>`); 
+  if(v) sel.value=v;
 }
 function populateCCBranch() {
-  const sel = document.getElementById('ccBranch'); if(!sel) return; const v=sel.value; sel.innerHTML='<option value="">اختر الفرع</option>'; branchesData.forEach(b=>sel.innerHTML+=`<option value="${b.name}">${b.name}</option>`); if(v) sel.value=v;
+  const sel = document.getElementById('ccBranch'); if(!sel) return; const v=sel.value; 
+  sel.innerHTML='<option value="">اختر الفرع</option>'; 
+  branchesData.forEach(b=>sel.innerHTML+=`<option value="${b.name}">${b.name}</option>`); 
+  if(v) sel.value=v;
 }
 function populateShortageApp() {
-  const sel = document.getElementById('shortageApp'); if(!sel) return; const v=sel.value; sel.innerHTML='<option value="">اختر الأبلكيشن</option>'; appsData.forEach(a=>sel.innerHTML+=`<option value="${a.name}">${a.name}</option>`); if(v) sel.value=v;
+  const sel = document.getElementById('shortageApp'); if(!sel) return; const v=sel.value; 
+  sel.innerHTML='<option value="">اختر الأبلكيشن</option>'; 
+  appsData.forEach(a=>sel.innerHTML+=`<option value="${a.name}">${a.name}</option>`); 
+  if(v) sel.value=v;
 }
-  function showToast(message, isError = false) {
+
+function showToast(message, isError = false) {
   const toast = document.createElement('div');
-
   toast.textContent = message;
-
   toast.style.position = 'fixed';
   toast.style.top = '20px';
   toast.style.right = '20px';
@@ -712,12 +697,8 @@ function populateShortageApp() {
   toast.style.fontSize = '15px';
   toast.style.fontWeight = '600';
   toast.style.boxShadow = '0 4px 15px rgba(0,0,0,.2)';
-
   document.body.appendChild(toast);
-
-  setTimeout(() => {
-    toast.remove();
-  }, 3000);
+  setTimeout(() => { toast.remove(); }, 3000);
 }
 
 function enterDashboard(user, silent) {
@@ -738,10 +719,10 @@ function enterDashboard(user, silent) {
 function doLogin() {
   const name = document.getElementById('loginUser').value.trim();
   const pass = document.getElementById('loginPass').value.trim();
+  if (!name || !pass) { showToast('❌ أدخل اسم المستخدم وكلمة المرور', true); return; }
   const found = usersData.find(u => u.name.toLowerCase() === name.toLowerCase() && u.pass === pass);
-  if (found) {
-    enterDashboard(found, false);
-  } else { showToast('❌ اسم المستخدم أو كلمة المرور غير صحيحة', true); }
+  if (found) { enterDashboard(found, false); }
+  else { showToast('❌ اسم المستخدم أو كلمة المرور غير صحيحة', true); }
 }
 
 function doLogout() {
@@ -751,11 +732,9 @@ function doLogout() {
   document.getElementById('loginPage').classList.remove('hidden');
   document.getElementById('loginUser').value = '';
   document.getElementById('loginPass').value = '';
+  document.getElementById('mainNav').innerHTML = '';
 }
 
-// ============================================
-// إدارة المستخدمين
-// ============================================
 function renderUsers() {
   const list = document.getElementById('usersList');
   if (!list) return;
@@ -785,7 +764,6 @@ function addUser() {
   if (!name) { showToast('❌ أدخل اسم المستخدم', true); return; }
   if (!pass) { showToast('❌ أدخل كلمة المرور', true); return; }
   if (!role) { showToast('❌ اختر الدور', true); return; }
-
   if (editId) {
     rtdb.ref('users/' + editId).update({ name, pass, role })
       .then(() => { showToast('✅ تم تحديث بيانات المستخدم'); cancelEditUser(); })
@@ -825,9 +803,6 @@ function deleteUser(id) {
     .catch(err => { showToast('❌ خطأ في الحذف', true); console.error(err); });
 }
 
-// ============================================
-// إدارة الفروع
-// ============================================
 function renderBranches() {
   const list = document.getElementById('branchesList');
   if (!list) return;
@@ -856,9 +831,6 @@ function deleteBranch(id) {
     .catch(err => { showToast('❌ خطأ في الحذف', true); console.error(err); });
 }
 
-// ============================================
-// إدارة الأبلكيشنز
-// ============================================
 function renderApps() {
   const list = document.getElementById('appsList');
   if (!list) return;
@@ -887,9 +859,6 @@ function deleteApp(id) {
     .catch(err => { showToast('❌ خطأ في الحذف', true); console.error(err); });
 }
 
-// ============================================
-// إدارة الأصناف
-// ============================================
 function renderProducts() {
   const tbody = document.getElementById('productsTable');
   if (!tbody) return;
@@ -934,7 +903,6 @@ function handleProductFile(file) {
   progressBox.classList.remove('hidden');
   progressFill.style.width = '10%';
   progressText.textContent = 'جارٍ قراءة الملف...';
-
   const reader = new FileReader();
   reader.onload = e => {
     try {
@@ -943,15 +911,12 @@ function handleProductFile(file) {
       const sheet = wb.Sheets[wb.SheetNames[0]];
       const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
       progressFill.style.width = '30%';
-
       const items = rows.slice(1).filter(r => r && r[0]).map(r => ({
         code: String(r[0] || '').trim(),
         name: String(r[1] || '').trim(),
         price: parseFloat(r[2]) || 0
       })).filter(it => it.code && it.name);
-
       if (items.length === 0) { showToast('❌ لم يتم العثور على بيانات صالحة في الملف', true); progressBox.classList.add('hidden'); return; }
-
       let done = 0;
       const total = items.length;
       const existingCodes = new Set(productsData.map(p => (p.code || '').toLowerCase()));
@@ -967,7 +932,6 @@ function handleProductFile(file) {
         progressFill.style.width = pct + '%';
         progressText.textContent = `جارٍ المعالجة... ${done}/${total}`;
       });
-
       rtdb.ref('products').update(updates)
         .then(() => {
           progressFill.style.width = '100%';
@@ -984,9 +948,6 @@ function handleProductFile(file) {
   reader.readAsArrayBuffer(file);
 }
 
-// ============================================
-// إدارة العملاء
-// ============================================
 function renderCustomers() {
   const tbody = document.getElementById('customersTable');
   if (!tbody) return;
@@ -1034,7 +995,6 @@ function handleCustomerFile(file) {
   progressBox.classList.remove('hidden');
   progressFill.style.width = '10%';
   progressText.textContent = 'جارٍ قراءة الملف...';
-
   const reader = new FileReader();
   reader.onload = e => {
     try {
@@ -1043,16 +1003,13 @@ function handleCustomerFile(file) {
       const sheet = wb.Sheets[wb.SheetNames[0]];
       const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
       progressFill.style.width = '30%';
-
       const items = rows.slice(1).filter(r => r && r[0]).map(r => ({
         code: String(r[0] || '').trim(),
         name: String(r[1] || '').trim(),
         phone: String(r[2] || '').trim(),
         address: String(r[3] || '').trim()
       })).filter(it => it.code && it.name);
-
       if (items.length === 0) { showToast('❌ لم يتم العثور على بيانات صالحة في الملف', true); progressBox.classList.add('hidden'); return; }
-
       let done = 0;
       const total = items.length;
       const existingCodes = new Set(customersData.map(c => (c.code || '').toLowerCase()));
@@ -1068,7 +1025,6 @@ function handleCustomerFile(file) {
         progressFill.style.width = pct + '%';
         progressText.textContent = `جارٍ المعالجة... ${done}/${total}`;
       });
-
       rtdb.ref('customers').update(updates)
         .then(() => {
           progressFill.style.width = '100%';
@@ -1096,26 +1052,58 @@ function setupDropZone(zoneId, onFile) {
   });
 }
 
+// ============================================
+// Navigation & Tabs - MODIFIED
+// ============================================
 function setupNavByRole() {
   const nav = document.getElementById('mainNav');
   nav.innerHTML = '';
+
+  // ====== قسم العمليات ======
+  nav.innerHTML += `<div class="nav-group-label">📋 العمليات</div>`;
   nav.innerHTML += `<button class="nav-btn active" onclick="showTab('newOrder')" id="tab-newOrder">➕ أوردر جديد</button>`;
+
   if (currentUser.role === 'employee' || currentUser.role === 'admin') {
     nav.innerHTML += `<button class="nav-btn" onclick="showTab('myOrders')" id="tab-myOrders">📋 أوردراتي</button>`;
   }
   if (currentUser.role === 'manager' || currentUser.role === 'admin' || currentUser.role === 'appuser') {
     nav.innerHTML += `<button class="nav-btn" onclick="showTab('allOrders')" id="tab-allOrders">📊 كل الأوردرات</button>`;
   }
-  if (currentUser.role === 'appuser' || currentUser.role === 'admin') {
-    nav.innerHTML += `<button class="nav-btn" onclick="showTab('shortages')" id="tab-shortages">📱 نواقص الأبلكيشن</button>`;
+
+  // ====== قسم النواقص ======
+  let hasShortages = false;
+  let shortageHtml = `<div class="nav-group-label">📱 النواقص</div>`;
+
+  // تعديل: فتح نواقص الأبلكيشن للمانجر أيضاً
+  if (currentUser.role === 'appuser' || currentUser.role === 'admin' || currentUser.role === 'manager') {
+    shortageHtml += `<button class="nav-btn" onclick="showTab('shortages')" id="tab-shortages">📱 نواقص الأبلكيشن</button>`;
+    hasShortages = true;
   }
   if (currentUser.role === 'employee' || currentUser.role === 'admin') {
-    nav.innerHTML += `<button class="nav-btn" onclick="showTab('callcenterShortages')" id="tab-callcenterShortages">📞 نواقص كول سنتر</button>`;
+    shortageHtml += `<button class="nav-btn" onclick="showTab('callcenterShortages')" id="tab-callcenterShortages">📞 نواقص كول سنتر</button>`;
+    hasShortages = true;
+  }
+  if (hasShortages) nav.innerHTML += shortageHtml;
+
+  // ====== قسم التقارير ======
+  let hasReports = false;
+  let reportHtml = `<div class="nav-group-label">📊 التقارير</div>`;
+
+  // تعديل: فتح ريبورت نواقص الأبلكيشن للمانجر أيضاً
+  if (currentUser.role === 'admin' || currentUser.role === 'manager') {
+    reportHtml += `<button class="nav-btn" onclick="showTab('shortagesReport')" id="tab-shortagesReport">📊 ريبورت نواقص الأبلكيشن</button>`;
+    hasReports = true;
   }
   if (currentUser.role === 'admin') {
-    nav.innerHTML += `<button class="nav-btn" onclick="showTab('shortagesReport')" id="tab-shortagesReport">📊 ريبورت نواقص الأبلكيشن</button>`;
-    nav.innerHTML += `<button class="nav-btn" onclick="showTab('ccShortagesReport')" id="tab-ccShortagesReport">📊 ريبورت نواقص كول سنتر</button>`;
-    nav.innerHTML += `<button class="nav-btn" onclick="showTab('archive')" id="tab-archive">📦 أرشيف الأوردرات</button>`;
+    reportHtml += `<button class="nav-btn" onclick="showTab('ccShortagesReport')" id="tab-ccShortagesReport">📊 ريبورت نواقص كول سنتر</button>`;
+    reportHtml += `<button class="nav-btn" onclick="showTab('archive')" id="tab-archive">📦 أرشيف الأوردرات</button>`;
+    hasReports = true;
+  }
+  if (hasReports) nav.innerHTML += reportHtml;
+
+  // ====== قسم الإدارة (Admin فقط) ======
+  if (currentUser.role === 'admin') {
+    nav.innerHTML += `<div class="nav-group-label">⚙️ الإدارة</div>`;
     nav.innerHTML += `<button class="nav-btn" onclick="showTab('users')" id="tab-users">👥 المستخدمين</button>`;
     nav.innerHTML += `<button class="nav-btn" onclick="showTab('branches')" id="tab-branches">🏢 الفروع</button>`;
     nav.innerHTML += `<button class="nav-btn" onclick="showTab('apps')" id="tab-apps">📱 الأبلكيشنز</button>`;
@@ -1124,13 +1112,37 @@ function setupNavByRole() {
   }
 }
 
+// تعديل: مسح البيانات عند الضغط على أوردر جديد
+function clearNewOrderForm() {
+  document.getElementById('customerSearch').value = '';
+  document.getElementById('customerCode').value = '';
+  document.getElementById('customerPhone').value = '';
+  document.getElementById('customerAddress').value = '';
+  selectedCustomer = null;
+  document.getElementById('branch').value = '';
+  document.getElementById('notes').value = '';
+  document.getElementById('deliveryDate').value = new Date().toISOString().split('T')[0];
+  document.querySelector('input[name="supplyType"][value="مقاصة"]').checked = true;
+  orderItems = [];
+  renderOrderItems();
+  document.getElementById('customerSuggestions').classList.add('hidden');
+  document.getElementById('productSuggestions').classList.add('hidden');
+}
+
 function showTab(tab) {
   ['newOrder','myOrders','allOrders','shortages','shortagesReport','callcenterShortages','ccShortagesReport','archive','users','branches','apps','products','customers'].forEach(t => {
-    const el = document.getElementById(t); const btn = document.getElementById('tab-'+t);
-    if(el) el.classList.add('hidden'); if(btn) btn.classList.remove('active');
+    const el = document.getElementById(t); 
+    const btn = document.getElementById('tab-'+t);
+    if(el) el.classList.add('hidden'); 
+    if(btn) btn.classList.remove('active');
   });
-  const target = document.getElementById(tab); const targetBtn = document.getElementById('tab-'+tab);
-  if(target) target.classList.remove('hidden'); if(targetBtn) targetBtn.classList.add('active');
+  const target = document.getElementById(tab); 
+  const targetBtn = document.getElementById('tab-'+tab);
+  if(target) target.classList.remove('hidden'); 
+  if(targetBtn) targetBtn.classList.add('active');
+
+  // تعديل: مسح النموذج عند الذهاب لأوردر جديد
+  if(tab==='newOrder') clearNewOrderForm();
   if(tab==='myOrders') renderMyOrders();
   if(tab==='allOrders') renderAllOrders();
   if(tab==='shortages') renderShortages();
@@ -1146,7 +1158,7 @@ function showTab(tab) {
 }
 
 // ============================================
-// Customer Search with Keyboard (case-insensitive)
+// Customer Search
 // ============================================
 function searchCustomers() {
   const input = document.getElementById('customerSearch');
@@ -1201,7 +1213,7 @@ function selectCustomer(id) {
 }
 
 // ============================================
-// Product Search with Keyboard (case-insensitive)
+// Product Search
 // ============================================
 function searchProducts() {
   const input = document.getElementById('productSearch');
@@ -1295,16 +1307,7 @@ function submitOrder() {
     notes, timestamp: firebase.database.ServerValue.TIMESTAMP
   }).then(() => {
     showToast('✅ تم حفظ الأوردر');
-    document.getElementById('customerSearch').value = '';
-    document.getElementById('customerCode').value = '';
-    document.getElementById('customerPhone').value = '';
-    document.getElementById('customerAddress').value = '';
-    selectedCustomer = null;
-    document.getElementById('branch').value = '';
-    document.getElementById('notes').value = '';
-    document.getElementById('deliveryDate').value = new Date().toISOString().split('T')[0];
-    document.querySelector('input[name="supplyType"][value="مقاصة"]').checked = true;
-    orderItems = []; renderOrderItems();
+    clearNewOrderForm();
   }).catch(err => { showToast('❌ حدث خطأ أثناء الحفظ', true); console.error(err); });
 }
 
@@ -1335,7 +1338,7 @@ function renderMyOrders() {
 }
 
 // ============================================
-// All Orders with Filter & Search (case-insensitive)
+// All Orders with Filter & Search
 // ============================================
 function setFilter(filter) {
   currentFilter = filter;
@@ -1392,7 +1395,8 @@ function renderAllOrders() {
     const statusLabel = STATUS_LABELS[o.status] || o.status;
     const isUrgent = o.deliveryDate === today && o.status !== 'completed' && o.status !== 'cancelled';
     const canEdit = currentUser.role === 'admin';
-    const canChangeStatus = currentUser.role === 'admin' || currentUser.role === 'manager';
+    // تعديل: السماح لموظف الأبلكيشن بتعديل الحالة أيضاً
+    const canChangeStatus = currentUser.role === 'admin' || currentUser.role === 'manager' || currentUser.role === 'appuser';
 
     let statusCell = `<span class="badge ${statusClass}">${statusLabel}</span>`;
     if (canChangeStatus) {
@@ -1515,12 +1519,18 @@ function openReviewOrder(id) {
   if (o.itemsArray && o.itemsArray.length > 0) {
     itemsHtml = `<table class="order-items-table" style="margin:12px 0;"><thead><tr><th>كود</th><th>اسم الصنف</th><th>سعر</th><th>كمية</th><th>إجمالي</th></tr></thead><tbody>${o.itemsArray.map(i => `<tr><td>${i.code}</td><td>${i.name}</td><td>${parseFloat(i.price).toFixed(2)}</td><td>${i.qty}</td><td>${(i.price*i.qty).toFixed(2)}</td></tr>`).join('')}</tbody></table>`;
   } else { itemsHtml = `<div style="white-space:pre-line;background:#f8fafc;padding:12px;border-radius:8px;margin:12px 0;">${o.items||'-'}</div>`; }
+
+  let cancelReasonHtml = '';
+  if (o.status === 'cancelled' && o.cancelReason) {
+    cancelReasonHtml = `<div class="cancel-reason-display"><strong>❌ سبب الإلغاء:</strong> ${o.cancelReason}</div>`;
+  }
+
   document.getElementById('reviewContent').innerHTML = `
     <div style="margin-bottom:16px;"><div class="grid-2"><div><strong>العميل:</strong> ${o.customer}</div><div><strong>الفرع:</strong> <span class="badge badge-blue">${o.branch}</span></div></div></div>
     <div style="margin-bottom:16px;"><div class="grid-2"><div><strong>الموظف:</strong> <span class="badge badge-purple">${o.employee}</span></div><div><strong>تاريخ التسجيل:</strong> ${o.date||'-'}</div></div></div>
     <div style="margin-bottom:16px;"><div class="grid-2"><div><strong>طريقة التوفير:</strong> <span class="badge badge-orange">${o.supplyType||'مقاصة'}</span></div><div><strong>الحالة:</strong> <span class="badge ${statusClass}">${statusLabel}</span></div></div></div>
     <div style="margin-bottom:16px;"><div class="grid-2"><div><strong>ميعاد الخروج:</strong> <span class="badge badge-cyan">${o.deliveryDate||'-'}</span></div><div><strong>الإجمالي:</strong> <span style="color:#16a34a;font-size:18px;font-weight:700;">${o.total?o.total.toFixed(2):'0'} ج.م</span></div></div></div>
-    ${o.cancelReason?`<div style="margin-bottom:16px;background:#fee2e2;padding:12px;border-radius:8px;"><strong>❌ سبب الإلغاء:</strong> ${o.cancelReason}</div>`:''}
+    ${cancelReasonHtml}
     <hr style="border:0;border-top:1px solid #e2e8f0;margin:16px 0;">
     <h4 style="margin:0 0 8px;color:#374151;">📝 الأصناف المطلوبة</h4>${itemsHtml}
     ${o.notes?`<div style="margin-top:16px;"><strong>ملاحظات:</strong><div style="background:#f8fafc;padding:12px;border-radius:8px;margin-top:6px;">${o.notes}</div></div>`:''}
@@ -1549,11 +1559,19 @@ function openEditOrder(id) {
   document.getElementById('editOrderModal').classList.remove('hidden');
 }
 function closeEditModal() { document.getElementById('editOrderModal').classList.add('hidden'); }
+
+// تعديل: تحسين ظهور سبب الإلغاء
 function toggleCancelReason() {
   const status = document.getElementById('editStatus').value;
   const box = document.getElementById('cancelReasonBox');
-  if (status === 'cancelled') box.classList.remove('hidden'); else box.classList.add('hidden');
+  if (status === 'cancelled') {
+    box.classList.remove('hidden');
+    setTimeout(() => document.getElementById('editCancelReason').focus(), 100);
+  } else {
+    box.classList.add('hidden');
+  }
 }
+
 function saveEditOrder() {
   const id = document.getElementById('editOrderId').value;
   const customer = document.getElementById('editCustomerName').value.trim();
@@ -1564,7 +1582,16 @@ function saveEditOrder() {
   const status = document.getElementById('editStatus').value;
   const cancelReason = document.getElementById('editCancelReason').value.trim();
   const notes = document.getElementById('editNotes').value.trim();
+
   if (!customer || !branch || !items) { showToast('❌ أكمل جميع الحقول المطلوبة', true); return; }
+
+  // تعديل: التحقق من وجود سبب الإلغاء عند اختيار حالة ملغي
+  if (status === 'cancelled' && !cancelReason) {
+    showToast('❌ يجب كتابة سبب الإلغاء', true);
+    document.getElementById('editCancelReason').focus();
+    return;
+  }
+
   const data = { customer, branch, items, supplyType, deliveryDate, status, notes };
   if (status === 'cancelled') data.cancelReason = cancelReason; else data.cancelReason = '';
   db.ref('orders/' + id).update(data)
@@ -1859,7 +1886,6 @@ function exportCCShortagesToExcel() {
   showToast('✅ تم تصدير الملف');
 }
 
-// تشغيل التطبيق عند فتح الصفحة
 window.addEventListener('DOMContentLoaded', () => {
   initApp();
   setupDropZone('productDropZone', handleProductFile);
