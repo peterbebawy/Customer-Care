@@ -549,11 +549,7 @@ const STATUS_CLASSES = { pending: 'status-pending', completed: 'status-completed
 function initApp() {
   console.log("🚀 initApp started");
 
-  // =========================
-  // USERS
-  // =========================
   rtdb.ref("users").on("value", snapshot => {
-
     usersData = [];
 
     snapshot.forEach(child => {
@@ -565,255 +561,22 @@ function initApp() {
 
     console.log("👥 users:", usersData);
 
-    document.getElementById('loginLoading').classList.add('hidden');
-    document.getElementById('loginForm').classList.remove('hidden');
+    const loading = document.getElementById('loginLoading');
+    const form = document.getElementById('loginForm');
 
-    if (currentUser) {
-      renderUsers();
-    }
+    if (loading) loading.classList.add('hidden');
+    if (form) form.classList.remove('hidden');
 
   }, error => {
-
     console.error("❌ RTDB users error:", error);
 
-    document.getElementById('loginLoading').classList.add('hidden');
-    document.getElementById('loginForm').classList.remove('hidden');
+    const loading = document.getElementById('loginLoading');
+    const form = document.getElementById('loginForm');
 
-  });
-
-  // =========================
-  // ORDERS
-  // =========================
-  rtdb.ref("orders").on("value", snapshot => {
-
-    ordersData = [];
-
-    snapshot.forEach(child => {
-      ordersData.push({
-        id: child.key,
-        ...child.val()
-      });
-    });
-
-    ordersData.sort((a, b) =>
-      (b.timestamp || 0) - (a.timestamp || 0)
-    );
-
-    console.log("📦 orders:", ordersData.length);
-
-    if (currentUser) {
-      renderMyOrders();
-      renderAllOrders();
-    }
-
-  }, error => {
-
-    console.error("❌ Orders error:", error);
-    showToast('❌ خطأ في الأوردرات', true);
-
+    if (loading) loading.classList.add('hidden');
+    if (form) form.classList.remove('hidden');
   });
 }
-
-  // الأوردرات
-  db.ref('orders')
-    .once('value')
-    .then(snap => {
-      ordersData = [];
-
-      snap.forEach(d => {
-        ordersData.push({
-          id: d.key,
-          ...d.val()
-        });
-      });
-      ordersData.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
-
-      if (currentUser) {
-        renderMyOrders();
-        renderAllOrders();
-      }
-    })
-    .catch(err => {
-      console.error('Orders:', err);
-      showToast('❌ خطأ في الأوردرات', true);
-    });
-
-
-  // الفروع
-  db.ref('branches')
-    .once('value')
-    .then(snap => {
-      branchesData = [];
-
-      snap.forEach(d => {
-        branchesData.push({
-          id: d.key,
-          ...d.val()
-        });
-      });
-      branchesData.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
-
-      if (currentUser) {
-        populateBranchSelect();
-        populateShortageBranch();
-        populateCCBranch();
-        renderBranches();
-      }
-    })
-    .catch(err => {
-      console.error('Branches:', err);
-      showToast('❌ خطأ في الفروع', true);
-    });
-
-
-  // الأصناف
-  db.ref('products')
-    .once('value')
-    .then(snap => {
-      productsData = [];
-
-      snap.forEach(d => {
-        productsData.push({
-          id: d.key,
-          ...d.val()
-        });
-      });
-      productsData.sort((a, b) => (a.code || '').localeCompare(b.code || ''));
-
-      if (currentUser) renderProducts();
-    })
-    .catch(err => {
-      console.error('Products:', err);
-      showToast('❌ خطأ في الأصناف', true);
-    });
-
-
-  // العملاء
-  db.ref('customers')
-    .once('value')
-    .then(snap => {
-      customersData = [];
-
-      snap.forEach(d => {
-        customersData.push({
-          id: d.key,
-          ...d.val()
-        });
-      });
-      customersData.sort((a, b) => (a.code || '').localeCompare(b.code || ''));
-
-      if (currentUser) renderCustomers();
-    })
-    .catch(err => {
-      console.error('Customers:', err);
-      showToast('❌ خطأ في العملاء', true);
-    });
-
-
-  // الأبلكيشنز
-  db.ref('apps')
-    .once('value')
-    .then(snap => {
-      appsData = [];
-
-      snap.forEach(d => {
-        appsData.push({
-          id: d.key,
-          ...d.val()
-        });
-      });
-      appsData.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
-
-      if (currentUser) {
-        populateShortageApp();
-        renderApps();
-      }
-    })
-    .catch(err => {
-      console.error('Apps:', err);
-      showToast('❌ خطأ في الأبلكيشنز', true);
-    });
-
-
-  // النواقص
-  db.ref('shortages')
-    .once('value')
-    .then(snap => {
-      shortagesData = [];
-
-      snap.forEach(d => {
-        shortagesData.push({
-          id: d.key,
-          ...d.val()
-        });
-      });
-      shortagesData.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
-
-      if (currentUser) {
-        renderShortages();
-        renderShortagesReport();
-      }
-    })
-    .catch(err => {
-      console.error('Shortages:', err);
-      showToast('❌ خطأ في النواقص', true);
-    });
-
-
-  // نواقص كول سنتر
-  rtdb.ref('callcenter_shortages')
-    .on('value', snap => {
-
-      ccShortagesData = [];
-
-      snap.forEach(d => {
-        ccShortagesData.push({
-          id: d.key,
-          ...d.val()
-        });
-      });
-
-      ccShortagesData.sort(
-        (a, b) => (b.timestamp || 0) - (a.timestamp || 0)
-      );
-
-      if (currentUser) {
-        renderCCShortages();
-        renderCCShortagesReport();
-      }
-
-    }, err => {
-      console.error('Call Center Shortages:', err);
-      showToast('❌ خطأ في نواقص كول سنتر', true);
-    });
-    .catch(err => {
-      console.error('CC Shortages:', err);
-      showToast('❌ خطأ في نواقص كول سنتر', true);
-    });
-
-
-  // الأرشيف
-  db.ref('archived_orders')
-    .once('value')
-    .then(snap => {
-      archiveData = [];
-
-      snap.forEach(d => {
-        archiveData.push({
-          id: d.key,
-          ...d.val()
-        });
-      });
-      archiveData.sort((a, b) => (b.archivedAt || 0) - (a.archivedAt || 0));
-
-      if (currentUser) renderArchive();
-    })
-    .catch(err => {
-      console.error('Archive:', err);
-      showToast('❌ خطأ في الأرشيف', true);
-    });
-}
-
 function populateBranchSelect() {
   [document.getElementById('branch'), document.getElementById('editBranch')].forEach(sel => {
     if(!sel) return; const v=sel.value; sel.innerHTML='<option value="">اختر الفرع</option>'; branchesData.forEach(b=>sel.innerHTML+=`<option value="${b.name}">${b.name}</option>`); if(v) sel.value=v;
