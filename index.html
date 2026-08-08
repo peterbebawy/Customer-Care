@@ -4,14 +4,19 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>نظام إدارة الأوردرات</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 * { box-sizing: border-box; }
-body { font-family: Tahoma, 'Segoe UI', sans-serif; direction: rtl; background: #f1f5f9; margin: 0; padding: 20px; }
+body { font-family: 'Cairo', Tahoma, 'Segoe UI', sans-serif; direction: rtl; background: #eef2f7; margin: 0; padding: 20px; }
+button, input, select, textarea { font-family: 'Cairo', Tahoma, 'Segoe UI', sans-serif; }
 .hidden { display: none !important; }
-.card { background: #fff; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); padding: 28px; margin-bottom: 20px; max-width: 1100px; margin-left: auto; margin-right: auto; }
+.card { background: #fff; border-radius: 18px; box-shadow: 0 4px 24px rgba(15,23,42,0.07); padding: 28px; margin-bottom: 20px; max-width: 1100px; margin-left: auto; margin-right: auto; position: relative; overflow: hidden; }
+.card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 5px; background: linear-gradient(90deg, #2563eb, #06b6d4, #16a34a); }
 .btn { padding: 10px 20px; border: none; border-radius: 10px; cursor: pointer; font-size: 14px; font-weight: 600; transition: all 0.2s; }
 .btn-primary { background: #2563eb; color: #fff; }
 .btn-primary:hover { background: #1d4ed8; }
@@ -45,10 +50,14 @@ body { font-family: Tahoma, 'Segoe UI', sans-serif; direction: rtl; background: 
 .header p { color: #64748b; margin: 8px 0 0; }
 
 .nav-container { max-width: 1100px; margin: 0 auto 20px; }
-.nav { display: flex; gap: 6px; margin-bottom: 20px; flex-wrap: wrap; justify-content: center; background: #fff; padding: 12px; border-radius: 16px; box-shadow: 0 2px 12px rgba(0,0,0,0.06); }
-.nav-btn { padding: 10px 16px; border-radius: 10px; border: 1px solid #e2e8f0; background: #fff; cursor: pointer; font-weight: 600; color: #475569; font-size: 13px; transition: all 0.2s; white-space: nowrap; }
+.nav { display: flex; gap: 6px; margin-bottom: 20px; flex-wrap: wrap; align-items: center; background: #fff; padding: 14px; border-radius: 18px; box-shadow: 0 4px 20px rgba(15,23,42,0.06); position: relative; overflow: hidden; }
+.nav::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, #2563eb, #06b6d4, #16a34a); }
+.nav-group-label { flex-basis: 100%; display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 800; color: #94a3b8; letter-spacing: .3px; text-transform: uppercase; margin: 10px 2px 2px; }
+.nav-group-label:first-child { margin-top: 2px; }
+.nav-group-label::after { content: ''; flex: 1; height: 1px; background: #eef2f7; }
+.nav-btn { padding: 10px 16px; border-radius: 10px; border: 1px solid #e2e8f0; background: #fff; cursor: pointer; font-weight: 700; color: #475569; font-size: 13px; transition: all 0.2s; white-space: nowrap; }
 .nav-btn:hover { background: #f1f5f9; border-color: #cbd5e1; }
-.nav-btn.active { background: #2563eb; color: #fff; border-color: #2563eb; box-shadow: 0 2px 8px rgba(37,99,235,0.25); }
+.nav-btn.active { background: linear-gradient(135deg, #2563eb, #1d4ed8); color: #fff; border-color: #2563eb; box-shadow: 0 3px 10px rgba(37,99,235,0.3); }
 .nav-divider { width: 1px; background: #e2e8f0; margin: 4px 8px; }
 
 .table-wrap { overflow-x: auto; }
@@ -72,7 +81,7 @@ th { background: #f1f5f9; font-weight: 600; color: #475569; }
 .login-loading .spinner { width: 40px; height: 40px; border: 3px solid #e2e8f0; border-top-color: #2563eb; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 12px; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
-.user-avatar { width: 44px; height: 44px; border-radius: 50%; background: #2563eb; color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 16px; margin-left: 12px; }
+.user-avatar { width: 44px; height: 44px; border-radius: 14px; background: linear-gradient(135deg, #2563eb, #1d4ed8); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 16px; margin-left: 12px; box-shadow: 0 4px 12px rgba(37,99,235,0.25); }
 .user-info { display: flex; align-items: center; margin-bottom: 20px; }
 .radio-group { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 16px; }
 .radio-item { display: flex; align-items: center; gap: 6px; background: #f1f5f9; padding: 8px 14px; border-radius: 8px; cursor: pointer; }
@@ -235,6 +244,45 @@ th { background: #f1f5f9; font-weight: 600; color: #475569; }
     <button class="btn btn-success" onclick="submitOrder()">✅ حفظ الأوردر</button>
   </div>
 
+  <div id="appOrder" class="card">
+    <h2 style="margin-top:0;color:#1e293b;">📱 تسجيل أوردر أبلكيشن جديد</h2>
+    <label class="label">العميل</label>
+    <div class="search-wrap">
+      <input type="text" id="appOrderCustomerSearch" class="input" placeholder="اكتب كود العميل أو الاسم..." oninput="searchAppOrderCustomers()" onkeydown="handleAppOrderCustomerKey(event)" autocomplete="off">
+      <div id="appOrderCustomerSuggestions" class="suggestions hidden"></div>
+    </div>
+    <div class="grid-3">
+      <div><label class="label">كود العميل</label><input type="text" id="appOrderCustomerCode" class="input" readonly placeholder="يتم التعبئة تلقائياً"></div>
+      <div><label class="label">رقم التليفون</label><input type="text" id="appOrderCustomerPhone" class="input" readonly placeholder="يتم التعبئة تلقائياً"></div>
+      <div><label class="label">العنوان</label><input type="text" id="appOrderCustomerAddress" class="input" readonly placeholder="يتم التعبئة تلقائياً"></div>
+    </div>
+    <div class="grid-2">
+      <div><label class="label">الفرع</label><select id="appOrderBranch" class="input"><option value="">اختر الفرع</option></select></div>
+      <div><label class="label">الأبلكيشن</label><select id="appOrderApp" class="input"><option value="">اختر الأبلكيشن</option></select></div>
+    </div>
+    <label class="label">الأصناف المطلوبة</label>
+    <div class="search-wrap">
+      <input type="text" id="appOrderProductSearch" class="input" placeholder="اكتب كود الصنف أو الاسم..." oninput="searchAppOrderProducts()" onkeydown="handleAppOrderProductKey(event)" autocomplete="off">
+      <div id="appOrderProductSuggestions" class="suggestions hidden"></div>
+    </div>
+    <table class="order-items-table" id="appOrderItemsTable">
+      <thead><tr><th>كود الصنف</th><th>اسم الصنف</th><th>السعر</th><th>الكمية</th><th>الإجمالي</th><th>حذف</th></tr></thead>
+      <tbody id="appOrderItemsBody"></tbody>
+    </table>
+    <div style="text-align:left;font-weight:700;font-size:16px;color:#1e293b;margin-bottom:16px;">الإجمالي: <span id="appOrderTotal" style="color:#16a34a;">0</span> ج.م</div>
+    <label class="label">كيف سيتم توفير الأوردر؟</label>
+    <div class="radio-group">
+      <label class="radio-item"><input type="radio" name="appOrderSupplyType" value="مقاصة" checked> مقاصة</label>
+      <label class="radio-item"><input type="radio" name="appOrderSupplyType" value="مشتريات"> مشتريات</label>
+      <label class="radio-item"><input type="radio" name="appOrderSupplyType" value="إبلاغ العميل"> عند توفير الصنف يتم إبلاغ العميل</label>
+    </div>
+    <label class="label">ميعاد خروج الأوردر</label>
+    <input type="date" id="appOrderDeliveryDate" class="input">
+    <label class="label">ملاحظات</label>
+    <textarea id="appOrderNotes" class="input" rows="2" placeholder="أي ملاحظات إضافية..."></textarea>
+    <button class="btn btn-success" onclick="submitAppOrder()">✅ حفظ أوردر الأبلكيشن</button>
+  </div>
+
   <div id="myOrders" class="hidden">
     <div class="card"><h2 style="margin-top:0;color:#1e293b;">أوردراتي</h2><div id="myOrdersList"></div></div>
   </div>
@@ -259,6 +307,31 @@ th { background: #f1f5f9; font-weight: 600; color: #475569; }
         <table>
           <thead><tr><th>#</th><th>العميل</th><th>الفرع</th><th>الأصناف</th><th>الإجمالي</th><th>التوفير</th><th>الحالة</th><th>ميعاد الخروج</th><th>الموظف</th><th>التاريخ</th><th>إجراءات</th></tr></thead>
           <tbody id="allOrdersTable"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div id="allAppOrders" class="hidden">
+    <div class="card">
+      <h2 style="margin-top:0;color:#1e293b;">📱 كل أوردرات الأبلكيشن</h2>
+      <div class="stats" id="appStatsBox"></div>
+      <div class="search-bar">
+        <input type="text" id="appOrderSearch" class="input" style="margin-bottom:0;" placeholder="🔍 ابحث باسم الموظف أو الفرع أو اسم العميل أو كود العميل أو الأبلكيشن..." oninput="renderAllAppOrders()">
+      </div>
+      <div class="filter-bar">
+        <span style="font-weight:600;color:#374151;">تصفية:</span>
+        <button class="filter-btn active" onclick="setAppFilter('all')" id="filter-app-all">الكل</button>
+        <button class="filter-btn" onclick="setAppFilter('today')" id="filter-app-today">📅 اليوم</button>
+        <button class="filter-btn" onclick="setAppFilter('pending')" id="filter-app-pending">⏳ في الانتظار</button>
+        <button class="filter-btn" onclick="setAppFilter('completed')" id="filter-app-completed">✅ تم</button>
+        <button class="filter-btn" onclick="setAppFilter('outdelivery')" id="filter-app-outdelivery">🚚 Out</button>
+        <button class="filter-btn" onclick="setAppFilter('cancelled')" id="filter-app-cancelled">❌ ملغي</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>#</th><th>العميل</th><th>الفرع</th><th>الأبلكيشن</th><th>الأصناف</th><th>الإجمالي</th><th>التوفير</th><th>الحالة</th><th>ميعاد الخروج</th><th>الموظف</th><th>التاريخ</th><th>إجراءات</th></tr></thead>
+          <tbody id="allAppOrdersTable"></tbody>
         </table>
       </div>
     </div>
@@ -375,13 +448,36 @@ th { background: #f1f5f9; font-weight: 600; color: #475569; }
           <div><label class="label">كلمة المرور</label><input type="password" id="newUserPass" class="input" placeholder="كلمة المرور"></div>
         </div>
         <label class="label">الدور / الوظيفة</label>
-        <select id="newUserRole" class="input">
+        <select id="newUserRole" class="input" onchange="applyRoleDefaults()">
           <option value="">اختر الدور</option>
           <option value="admin">Admin - أدمن</option>
           <option value="manager">Manager - مانجر</option>
           <option value="employee">Employee - موظف</option>
           <option value="appuser">App User - مستخدم أبلكيشن</option>
         </select>
+        <label class="label">نوع الأوردر الخاص بالمستخدم</label>
+        <div class="radio-group">
+          <label class="radio-item"><input type="radio" name="newUserOrderType" value="normal" checked onchange="applyOrderTypeDefaults()"> أوردر عادي (يسمع في كل الأوردرات)</label>
+          <label class="radio-item"><input type="radio" name="newUserOrderType" value="app" onchange="applyOrderTypeDefaults()"> أوردر أبلكيشن (يسمع في ريبورت الأبلكيشن)</label>
+        </div>
+        <label class="label">الأقسام المتاحة لهذا المستخدم (تحديد يدوي)</label>
+        <div class="radio-group" id="userSectionsBox">
+          <label class="radio-item"><input type="checkbox" class="userSectionChk" value="newOrder"> ➕ أوردر جديد</label>
+          <label class="radio-item"><input type="checkbox" class="userSectionChk" value="myOrders"> 📋 أوردراتي</label>
+          <label class="radio-item"><input type="checkbox" class="userSectionChk" value="allOrders"> 📊 كل الأوردرات</label>
+          <label class="radio-item"><input type="checkbox" class="userSectionChk" value="appOrder"> 📱 أوردر أبلكيشن</label>
+          <label class="radio-item"><input type="checkbox" class="userSectionChk" value="allAppOrders"> 📊 كل أوردرات الأبلكيشن</label>
+          <label class="radio-item"><input type="checkbox" class="userSectionChk" value="shortages"> 📱 نواقص الأبلكيشن</label>
+          <label class="radio-item"><input type="checkbox" class="userSectionChk" value="shortagesReport"> 📊 ريبورت نواقص الأبلكيشن</label>
+          <label class="radio-item"><input type="checkbox" class="userSectionChk" value="callcenterShortages"> 📞 نواقص كول سنتر</label>
+          <label class="radio-item"><input type="checkbox" class="userSectionChk" value="ccShortagesReport"> 📊 ريبورت نواقص كول سنتر</label>
+          <label class="radio-item"><input type="checkbox" class="userSectionChk" value="archive"> 📦 أرشيف الأوردرات</label>
+          <label class="radio-item"><input type="checkbox" class="userSectionChk" value="users"> 👥 المستخدمين</label>
+          <label class="radio-item"><input type="checkbox" class="userSectionChk" value="branches"> 🏢 الفروع</label>
+          <label class="radio-item"><input type="checkbox" class="userSectionChk" value="apps"> 📱 الأبلكيشنز</label>
+          <label class="radio-item"><input type="checkbox" class="userSectionChk" value="products"> 📦 الأصناف</label>
+          <label class="radio-item"><input type="checkbox" class="userSectionChk" value="customers"> 👤 العملاء</label>
+        </div>
         <button class="btn btn-primary" onclick="addUser()">💾 حفظ المستخدم</button>
         <button class="btn btn-secondary hidden" id="cancelEditBtn" onclick="cancelEditUser()">إلغاء التعديل</button>
       </div>
@@ -511,6 +607,38 @@ th { background: #f1f5f9; font-weight: 600; color: #475569; }
   </div>
 </div>
 
+<div id="editAppOrderModal" class="hidden modal-overlay">
+  <div class="modal-content">
+    <div class="modal-header"><h3>✏️ تعديل أوردر الأبلكيشن</h3><button class="close-btn" onclick="closeEditAppOrderModal()">&times;</button></div>
+    <input type="hidden" id="editAppOrderId">
+    <label class="label">اسم العميل</label><input type="text" id="editAppOrderCustomerName" class="input">
+    <div class="grid-2">
+      <div><label class="label">الفرع</label><select id="editAppOrderBranch" class="input"></select></div>
+      <div><label class="label">الأبلكيشن</label><select id="editAppOrderApp" class="input"></select></div>
+    </div>
+    <label class="label">الأصناف المطلوبة</label><textarea id="editAppOrderItems" class="input" rows="3"></textarea>
+    <label class="label">كيف سيتم توفير الأوردر؟</label>
+    <div class="radio-group">
+      <label class="radio-item"><input type="radio" name="editAppOrderSupplyType" value="مقاصة"> مقاصة</label>
+      <label class="radio-item"><input type="radio" name="editAppOrderSupplyType" value="مشتريات"> مشتريات</label>
+      <label class="radio-item"><input type="radio" name="editAppOrderSupplyType" value="إبلاغ العميل"> عند توفير الصنف يتم إبلاغ العميل</label>
+    </div>
+    <label class="label">ميعاد خروج الأوردر</label><input type="date" id="editAppOrderDeliveryDate" class="input">
+    <label class="label">الحالة</label>
+    <select id="editAppOrderStatus" class="input" onchange="toggleAppCancelReason()">
+      <option value="pending">في الانتظار</option><option value="completed">تم</option><option value="outdelivery">Out of Delivery</option><option value="cancelled">ملغي</option>
+    </select>
+    <div id="appCancelReasonBox" class="hidden">
+      <div class="cancel-reason-box">
+        <label class="label">سبب الإلغاء <span style="color:#dc2626;">*</span></label>
+        <textarea id="editAppOrderCancelReason" class="input" rows="2" placeholder="اكتب سبب الإلغاء بالتفصيل..." style="margin-bottom:0;"></textarea>
+      </div>
+    </div>
+    <label class="label">ملاحظات</label><textarea id="editAppOrderNotes" class="input" rows="2"></textarea>
+    <button class="btn btn-primary" onclick="saveEditAppOrder()">💾 حفظ التعديلات</button>
+  </div>
+</div>
+
 <div id="quickProductModal" class="hidden modal-overlay">
   <div class="modal-content" style="max-width:400px;">
     <div class="modal-header"><h3>➕ إضافة صنف جديد</h3><button class="close-btn" onclick="closeQuickProductModal()">&times;</button></div>
@@ -542,6 +670,20 @@ th { background: #f1f5f9; font-weight: 600; color: #475569; }
   </div>
 </div>
 
+<div id="quickCancelReasonModal" class="hidden modal-overlay">
+  <div class="modal-content" style="max-width:420px;">
+    <div class="modal-header"><h3>❌ سبب الإلغاء</h3><button class="close-btn" onclick="closeQuickCancelReasonModal(true)">&times;</button></div>
+    <div class="cancel-reason-box">
+      <label class="label">اكتب سبب الإلغاء <span style="color:#dc2626;">*</span></label>
+      <textarea id="quickCancelReasonText" class="input" rows="3" placeholder="اكتب سبب الإلغاء بالتفصيل..." style="margin-bottom:0;"></textarea>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:14px;">
+      <button class="btn btn-danger" style="flex:1;" onclick="confirmQuickCancelReason()">✅ تأكيد الإلغاء</button>
+      <button class="btn btn-secondary" style="flex:1;" onclick="closeQuickCancelReasonModal(true)">تراجع</button>
+    </div>
+  </div>
+</div>
+
 <script>
 
 const firebaseConfig = {
@@ -561,14 +703,43 @@ const db = rtdb;
 window.db = db;
 
 let currentUser = null;
-let usersData = [], ordersData = [], branchesData = [], productsData = [], customersData = [], appsData = [], shortagesData = [], ccShortagesData = [], archiveData = [];
+let usersData = [], ordersData = [], appOrdersData = [], branchesData = [], productsData = [], customersData = [], appsData = [], shortagesData = [], ccShortagesData = [], archiveData = [];
 let orderItems = [], selectedCustomer = null, selectedShortageProduct = null, selectedCCProduct = null;
+let appOrderItems = [], selectedAppOrderCustomer = null;
 let currentFilter = 'all';
+let currentAppFilter = 'all';
 let productSelIndex = -1, customerSelIndex = -1, shortageProductSelIndex = -1, ccProductSelIndex = -1;
+let appOrderProductSelIndex = -1, appOrderCustomerSelIndex = -1;
+let quickProductContext = 'order', quickCustomerContext = 'order';
 
 const ROLES = { admin: 'أدمن', manager: 'مانجر', employee: 'موظف', appuser: 'مستخدم أبلكيشن' };
 const STATUS_LABELS = { pending: 'في الانتظار', completed: 'تم', outdelivery: 'Out of Delivery', cancelled: 'ملغي' };
 const STATUS_CLASSES = { pending: 'status-pending', completed: 'status-completed', outdelivery: 'status-outdelivery', cancelled: 'status-cancelled' };
+const ALL_SECTION_KEYS = ['newOrder','myOrders','allOrders','appOrder','allAppOrders','shortages','shortagesReport','callcenterShortages','ccShortagesReport','archive','users','branches','apps','products','customers'];
+
+// تعديل: الأقسام الافتراضية حسب الدور (تُستخدم كـ fallback للمستخدمين القدامى بدون تحديد يدوي للأقسام)
+function getDefaultSectionsForRole(role) {
+  const s = {};
+  if (role === 'admin' || role === 'manager' || role === 'employee') {
+    s.newOrder = true;
+    if (role === 'employee' || role === 'admin') s.myOrders = true;
+    if (role === 'manager' || role === 'admin') s.allOrders = true;
+  }
+  if (role === 'appuser' || role === 'manager' || role === 'admin') {
+    s.appOrder = true;
+    if (role === 'manager' || role === 'admin') s.allAppOrders = true;
+    s.shortages = true;
+  }
+  if (role === 'employee' || role === 'manager' || role === 'admin') {
+    s.callcenterShortages = true;
+  }
+  if (role === 'admin' || role === 'manager') s.shortagesReport = true;
+  if (role === 'admin') {
+    s.ccShortagesReport = true; s.archive = true;
+    s.users = true; s.branches = true; s.apps = true; s.products = true; s.customers = true;
+  }
+  return s;
+}
 
 function initApp() {
   rtdb.ref('users').on('value', snapshot => {
@@ -604,12 +775,19 @@ function initApp() {
     if (currentUser) { renderMyOrders(); renderAllOrders(); }
   }, error => console.error('Orders:', error));
 
+  rtdb.ref('app_orders').on('value', snapshot => {
+    appOrdersData = [];
+    snapshot.forEach(child => { appOrdersData.push({ id: child.key, ...child.val() }); });
+    appOrdersData.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+    if (currentUser) { renderAllAppOrders(); }
+  }, error => console.error('App Orders:', error));
+
   rtdb.ref('branches').on('value', snapshot => {
     branchesData = [];
     snapshot.forEach(child => { branchesData.push({ id: child.key, ...child.val() }); });
     branchesData.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
     if (currentUser) {
-      populateBranchSelect(); populateShortageBranch(); populateCCBranch();
+      populateBranchSelect(); populateShortageBranch(); populateCCBranch(); populateAppOrderBranch();
       if (typeof renderBranches === 'function') renderBranches();
     }
   }, error => console.error('Branches:', error));
@@ -632,7 +810,7 @@ function initApp() {
     appsData = [];
     snapshot.forEach(child => { appsData.push({ id: child.key, ...child.val() }); });
     appsData.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
-    if (currentUser) { populateShortageApp(); if (typeof renderApps === 'function') renderApps(); }
+    if (currentUser) { populateShortageApp(); populateAppOrderAppSelect(); if (typeof renderApps === 'function') renderApps(); }
   }, error => console.error('Apps:', error));
 
   rtdb.ref('shortages').on('value', snapshot => {
@@ -682,6 +860,20 @@ function populateShortageApp() {
   appsData.forEach(a=>sel.innerHTML+=`<option value="${a.name}">${a.name}</option>`); 
   if(v) sel.value=v;
 }
+function populateAppOrderBranch() {
+  [document.getElementById('appOrderBranch'), document.getElementById('editAppOrderBranch')].forEach(sel => {
+    if(!sel) return; const v=sel.value; sel.innerHTML='<option value="">اختر الفرع</option>';
+    branchesData.forEach(b=>sel.innerHTML+=`<option value="${b.name}">${b.name}</option>`);
+    if(v) sel.value=v;
+  });
+}
+function populateAppOrderAppSelect() {
+  [document.getElementById('appOrderApp'), document.getElementById('editAppOrderApp')].forEach(sel => {
+    if(!sel) return; const v=sel.value; sel.innerHTML='<option value="">اختر الأبلكيشن</option>';
+    appsData.forEach(a=>sel.innerHTML+=`<option value="${a.name}">${a.name}</option>`);
+    if(v) sel.value=v;
+  });
+}
 
 function showToast(message, isError = false) {
   const toast = document.createElement('div');
@@ -707,12 +899,29 @@ function enterDashboard(user, silent) {
   document.getElementById('loginPage').classList.add('hidden');
   document.getElementById('dashboard').classList.remove('hidden');
   document.getElementById('userName').textContent = user.name;
-  document.getElementById('userRole').textContent = ROLES[user.role] || user.role || 'موظف';
+  // تعديل: إخفاء الدور/الوظيفة عن المستخدم نفسه - يظهر فقط للأدمن
+  const userRoleEl = document.getElementById('userRole');
+  if (user.role === 'admin') {
+    userRoleEl.textContent = ROLES[user.role] || user.role || '';
+    userRoleEl.classList.remove('hidden');
+  } else {
+    userRoleEl.textContent = '';
+    userRoleEl.classList.add('hidden');
+  }
   document.getElementById('userAvatar').textContent = user.name.charAt(0);
   setupNavByRole();
-  populateBranchSelect(); populateShortageBranch(); populateCCBranch(); populateShortageApp();
+  populateBranchSelect(); populateShortageBranch(); populateCCBranch(); populateShortageApp(); populateAppOrderBranch(); populateAppOrderAppSelect();
   document.getElementById('deliveryDate').value = new Date().toISOString().split('T')[0];
-  showTab('newOrder');
+  document.getElementById('appOrderDeliveryDate').value = new Date().toISOString().split('T')[0];
+  // تعديل: تحديد أول قسم متاح للمستخدم كصفحة افتراضية بناءً على الأقسام المسموحة له
+  const userSections = user.sections || getDefaultSectionsForRole(user.role);
+  let defaultTab = 'newOrder';
+  if (userSections.newOrder) defaultTab = 'newOrder';
+  else if (userSections.appOrder) defaultTab = 'appOrder';
+  else if (userSections.allOrders) defaultTab = 'allOrders';
+  else if (userSections.allAppOrders) defaultTab = 'allAppOrders';
+  else { const firstAvail = Object.keys(userSections).find(k => userSections[k]); if (firstAvail) defaultTab = firstAvail; }
+  showTab(defaultTab);
   if (!silent) showToast('👋 مرحباً ' + user.name);
 }
 
@@ -756,22 +965,56 @@ function renderUsers() {
   `).join('');
 }
 
+// تعديل: تحديد الأقسام تلقائياً كبداية عند اختيار الدور (يظل قابل للتعديل يدوياً)
+function applyRoleDefaults() {
+  const editId = document.getElementById('editUserId').value;
+  if (editId) return; // لا تلمس التحديد اليدوي عند التعديل
+  const role = document.getElementById('newUserRole').value;
+  const defaults = getDefaultSectionsForRole(role);
+  document.querySelectorAll('.userSectionChk').forEach(chk => { chk.checked = !!defaults[chk.value]; });
+}
+
+// تعديل: عند اختيار نوع الأوردر (عادي / أبلكيشن) يتم ضبط أقسام الأوردر المرتبطة تلقائياً
+function applyOrderTypeDefaults() {
+  const orderType = document.querySelector('input[name="newUserOrderType"]:checked').value;
+  const newOrderChk = document.querySelector('.userSectionChk[value="newOrder"]');
+  const allOrdersChk = document.querySelector('.userSectionChk[value="allOrders"]');
+  const appOrderChk = document.querySelector('.userSectionChk[value="appOrder"]');
+  const allAppOrdersChk = document.querySelector('.userSectionChk[value="allAppOrders"]');
+  if (orderType === 'app') {
+    if (appOrderChk) appOrderChk.checked = true;
+    if (allAppOrdersChk) allAppOrdersChk.checked = true;
+    if (newOrderChk) newOrderChk.checked = false;
+    if (allOrdersChk) allOrdersChk.checked = false;
+  } else {
+    if (newOrderChk) newOrderChk.checked = true;
+    if (allOrdersChk) allOrdersChk.checked = true;
+    if (appOrderChk) appOrderChk.checked = false;
+    if (allAppOrdersChk) allAppOrdersChk.checked = false;
+  }
+}
+
 function addUser() {
   const editId = document.getElementById('editUserId').value;
   const name = document.getElementById('newUserName').value.trim();
   const pass = document.getElementById('newUserPass').value.trim();
   const role = document.getElementById('newUserRole').value;
+  const orderTypeInput = document.querySelector('input[name="newUserOrderType"]:checked');
+  const orderType = orderTypeInput ? orderTypeInput.value : 'normal';
+  const sections = {};
+  document.querySelectorAll('.userSectionChk').forEach(chk => { sections[chk.value] = chk.checked; });
   if (!name) { showToast('❌ أدخل اسم المستخدم', true); return; }
   if (!pass) { showToast('❌ أدخل كلمة المرور', true); return; }
   if (!role) { showToast('❌ اختر الدور', true); return; }
+  const userData = { name, pass, role, orderType, sections };
   if (editId) {
-    rtdb.ref('users/' + editId).update({ name, pass, role })
+    rtdb.ref('users/' + editId).update(userData)
       .then(() => { showToast('✅ تم تحديث بيانات المستخدم'); cancelEditUser(); })
       .catch(err => { showToast('❌ خطأ في الحفظ', true); console.error(err); });
   } else {
     const duplicate = usersData.some(u => (u.name || '').toLowerCase() === name.toLowerCase());
     if (duplicate) { showToast('❌ اسم المستخدم موجود بالفعل', true); return; }
-    rtdb.ref('users').push({ name, pass, role })
+    rtdb.ref('users').push(userData)
       .then(() => { showToast('✅ تم إضافة المستخدم'); cancelEditUser(); })
       .catch(err => { showToast('❌ خطأ في الإضافة', true); console.error(err); });
   }
@@ -783,6 +1026,11 @@ function editUser(id) {
   document.getElementById('newUserName').value = u.name || '';
   document.getElementById('newUserPass').value = u.pass || '';
   document.getElementById('newUserRole').value = u.role || '';
+  const orderType = u.orderType || 'normal';
+  const orderTypeRadio = document.querySelector(`input[name="newUserOrderType"][value="${orderType}"]`);
+  if (orderTypeRadio) orderTypeRadio.checked = true;
+  const sections = u.sections || getDefaultSectionsForRole(u.role);
+  document.querySelectorAll('.userSectionChk').forEach(chk => { chk.checked = !!sections[chk.value]; });
   document.getElementById('cancelEditBtn').classList.remove('hidden');
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
@@ -792,6 +1040,9 @@ function cancelEditUser() {
   document.getElementById('newUserName').value = '';
   document.getElementById('newUserPass').value = '';
   document.getElementById('newUserRole').value = '';
+  const normalRadio = document.querySelector('input[name="newUserOrderType"][value="normal"]');
+  if (normalRadio) normalRadio.checked = true;
+  document.querySelectorAll('.userSectionChk').forEach(chk => { chk.checked = false; });
   document.getElementById('cancelEditBtn').classList.add('hidden');
 }
 
@@ -1058,58 +1309,44 @@ function setupDropZone(zoneId, onFile) {
 function setupNavByRole() {
   const nav = document.getElementById('mainNav');
   nav.innerHTML = '';
+  const role = currentUser.role;
+  // تعديل: الأقسام أصبحت تُحدد يدوياً لكل مستخدم عند إضافته، وإن لم تكن محددة يتم استخدام افتراضيات الدور
+  const sections = currentUser.sections || getDefaultSectionsForRole(role);
 
-  // ====== قسم العمليات ======
-  nav.innerHTML += `<div class="nav-group-label">📋 العمليات</div>`;
-  nav.innerHTML += `<button class="nav-btn active" onclick="showTab('newOrder')" id="tab-newOrder">➕ أوردر جديد</button>`;
+  // ====== قسم العمليات (أوردرات عادية) ======
+  let opsHtml = '';
+  if (sections.newOrder) opsHtml += `<button class="nav-btn" onclick="showTab('newOrder')" id="tab-newOrder">➕ أوردر جديد</button>`;
+  if (sections.myOrders) opsHtml += `<button class="nav-btn" onclick="showTab('myOrders')" id="tab-myOrders">📋 أوردراتي</button>`;
+  if (sections.allOrders) opsHtml += `<button class="nav-btn" onclick="showTab('allOrders')" id="tab-allOrders">📊 كل الأوردرات</button>`;
+  if (opsHtml) nav.innerHTML += `<div class="nav-group-label">📋 العمليات</div>` + opsHtml;
 
-  if (currentUser.role === 'employee' || currentUser.role === 'admin') {
-    nav.innerHTML += `<button class="nav-btn" onclick="showTab('myOrders')" id="tab-myOrders">📋 أوردراتي</button>`;
-  }
-  if (currentUser.role === 'manager' || currentUser.role === 'admin' || currentUser.role === 'appuser') {
-    nav.innerHTML += `<button class="nav-btn" onclick="showTab('allOrders')" id="tab-allOrders">📊 كل الأوردرات</button>`;
-  }
+  // ====== قسم أوردرات ونواقص الأبلكيشن ======
+  let appHtml = '';
+  if (sections.appOrder) appHtml += `<button class="nav-btn" onclick="showTab('appOrder')" id="tab-appOrder">➕ أوردر أبلكيشن</button>`;
+  if (sections.allAppOrders) appHtml += `<button class="nav-btn" onclick="showTab('allAppOrders')" id="tab-allAppOrders">📊 كل أوردرات الأبلكيشن</button>`;
+  if (sections.shortages) appHtml += `<button class="nav-btn" onclick="showTab('shortages')" id="tab-shortages">📱 نواقص الأبلكيشن</button>`;
+  if (appHtml) nav.innerHTML += `<div class="nav-group-label">📱 نواقص وأوردرات الأبلكيشن</div>` + appHtml;
 
-  // ====== قسم النواقص ======
-  let hasShortages = false;
-  let shortageHtml = `<div class="nav-group-label">📱 النواقص</div>`;
-
-  // تعديل: فتح نواقص الأبلكيشن للمانجر أيضاً
-  if (currentUser.role === 'appuser' || currentUser.role === 'admin' || currentUser.role === 'manager') {
-    shortageHtml += `<button class="nav-btn" onclick="showTab('shortages')" id="tab-shortages">📱 نواقص الأبلكيشن</button>`;
-    hasShortages = true;
-  }
-  if (currentUser.role === 'employee' || currentUser.role === 'admin') {
-    shortageHtml += `<button class="nav-btn" onclick="showTab('callcenterShortages')" id="tab-callcenterShortages">📞 نواقص كول سنتر</button>`;
-    hasShortages = true;
-  }
-  if (hasShortages) nav.innerHTML += shortageHtml;
+  // ====== قسم نواقص الكول سنتر ======
+  let ccHtml = '';
+  if (sections.callcenterShortages) ccHtml += `<button class="nav-btn" onclick="showTab('callcenterShortages')" id="tab-callcenterShortages">📞 نواقص كول سنتر</button>`;
+  if (ccHtml) nav.innerHTML += `<div class="nav-group-label">📞 نواقص كول سنتر</div>` + ccHtml;
 
   // ====== قسم التقارير ======
-  let hasReports = false;
-  let reportHtml = `<div class="nav-group-label">📊 التقارير</div>`;
+  let reportHtml = '';
+  if (sections.shortagesReport) reportHtml += `<button class="nav-btn" onclick="showTab('shortagesReport')" id="tab-shortagesReport">📊 ريبورت نواقص الأبلكيشن</button>`;
+  if (sections.ccShortagesReport) reportHtml += `<button class="nav-btn" onclick="showTab('ccShortagesReport')" id="tab-ccShortagesReport">📊 ريبورت نواقص كول سنتر</button>`;
+  if (sections.archive) reportHtml += `<button class="nav-btn" onclick="showTab('archive')" id="tab-archive">📦 أرشيف الأوردرات</button>`;
+  if (reportHtml) nav.innerHTML += `<div class="nav-group-label">📊 التقارير</div>` + reportHtml;
 
-  // تعديل: فتح ريبورت نواقص الأبلكيشن للمانجر أيضاً
-  if (currentUser.role === 'admin' || currentUser.role === 'manager') {
-    reportHtml += `<button class="nav-btn" onclick="showTab('shortagesReport')" id="tab-shortagesReport">📊 ريبورت نواقص الأبلكيشن</button>`;
-    hasReports = true;
-  }
-  if (currentUser.role === 'admin') {
-    reportHtml += `<button class="nav-btn" onclick="showTab('ccShortagesReport')" id="tab-ccShortagesReport">📊 ريبورت نواقص كول سنتر</button>`;
-    reportHtml += `<button class="nav-btn" onclick="showTab('archive')" id="tab-archive">📦 أرشيف الأوردرات</button>`;
-    hasReports = true;
-  }
-  if (hasReports) nav.innerHTML += reportHtml;
-
-  // ====== قسم الإدارة (Admin فقط) ======
-  if (currentUser.role === 'admin') {
-    nav.innerHTML += `<div class="nav-group-label">⚙️ الإدارة</div>`;
-    nav.innerHTML += `<button class="nav-btn" onclick="showTab('users')" id="tab-users">👥 المستخدمين</button>`;
-    nav.innerHTML += `<button class="nav-btn" onclick="showTab('branches')" id="tab-branches">🏢 الفروع</button>`;
-    nav.innerHTML += `<button class="nav-btn" onclick="showTab('apps')" id="tab-apps">📱 الأبلكيشنز</button>`;
-    nav.innerHTML += `<button class="nav-btn" onclick="showTab('products')" id="tab-products">📦 الأصناف</button>`;
-    nav.innerHTML += `<button class="nav-btn" onclick="showTab('customers')" id="tab-customers">👤 العملاء</button>`;
-  }
+  // ====== قسم الإدارة ======
+  let adminHtml = '';
+  if (sections.users) adminHtml += `<button class="nav-btn" onclick="showTab('users')" id="tab-users">👥 المستخدمين</button>`;
+  if (sections.branches) adminHtml += `<button class="nav-btn" onclick="showTab('branches')" id="tab-branches">🏢 الفروع</button>`;
+  if (sections.apps) adminHtml += `<button class="nav-btn" onclick="showTab('apps')" id="tab-apps">📱 الأبلكيشنز</button>`;
+  if (sections.products) adminHtml += `<button class="nav-btn" onclick="showTab('products')" id="tab-products">📦 الأصناف</button>`;
+  if (sections.customers) adminHtml += `<button class="nav-btn" onclick="showTab('customers')" id="tab-customers">👤 العملاء</button>`;
+  if (adminHtml) nav.innerHTML += `<div class="nav-group-label">⚙️ الإدارة</div>` + adminHtml;
 }
 
 // تعديل: مسح البيانات عند الضغط على أوردر جديد
@@ -1129,8 +1366,25 @@ function clearNewOrderForm() {
   document.getElementById('productSuggestions').classList.add('hidden');
 }
 
+function clearAppOrderForm() {
+  document.getElementById('appOrderCustomerSearch').value = '';
+  document.getElementById('appOrderCustomerCode').value = '';
+  document.getElementById('appOrderCustomerPhone').value = '';
+  document.getElementById('appOrderCustomerAddress').value = '';
+  selectedAppOrderCustomer = null;
+  document.getElementById('appOrderBranch').value = '';
+  document.getElementById('appOrderApp').value = '';
+  document.getElementById('appOrderNotes').value = '';
+  document.getElementById('appOrderDeliveryDate').value = new Date().toISOString().split('T')[0];
+  document.querySelector('input[name="appOrderSupplyType"][value="مقاصة"]').checked = true;
+  appOrderItems = [];
+  renderAppOrderItems();
+  document.getElementById('appOrderCustomerSuggestions').classList.add('hidden');
+  document.getElementById('appOrderProductSuggestions').classList.add('hidden');
+}
+
 function showTab(tab) {
-  ['newOrder','myOrders','allOrders','shortages','shortagesReport','callcenterShortages','ccShortagesReport','archive','users','branches','apps','products','customers'].forEach(t => {
+  ['newOrder','myOrders','allOrders','appOrder','allAppOrders','shortages','shortagesReport','callcenterShortages','ccShortagesReport','archive','users','branches','apps','products','customers'].forEach(t => {
     const el = document.getElementById(t); 
     const btn = document.getElementById('tab-'+t);
     if(el) el.classList.add('hidden'); 
@@ -1145,6 +1399,8 @@ function showTab(tab) {
   if(tab==='newOrder') clearNewOrderForm();
   if(tab==='myOrders') renderMyOrders();
   if(tab==='allOrders') renderAllOrders();
+  if(tab==='appOrder') clearAppOrderForm();
+  if(tab==='allAppOrders') renderAllAppOrders();
   if(tab==='shortages') renderShortages();
   if(tab==='shortagesReport') renderShortagesReport();
   if(tab==='callcenterShortages') renderCCShortages();
@@ -1283,6 +1539,155 @@ function renderOrderItems() {
   document.getElementById('orderTotal').textContent = total.toFixed(2);
 }
 function getOrderTotal() { return orderItems.reduce((sum, i) => sum + (i.price * i.qty), 0); }
+
+// ============================================
+// App Order - Customer Search
+// ============================================
+function searchAppOrderCustomers() {
+  const input = document.getElementById('appOrderCustomerSearch');
+  const suggestions = document.getElementById('appOrderCustomerSuggestions');
+  const query = input.value.trim().toLowerCase();
+  appOrderCustomerSelIndex = -1;
+  if (!query) { suggestions.classList.add('hidden'); return; }
+  const matches = customersData.filter(c =>
+    (c.code && c.code.toLowerCase().includes(query)) ||
+    (c.name && c.name.toLowerCase().includes(query))
+  ).slice(0, 7);
+  if (matches.length === 0 && query.length >= 2) {
+    suggestions.innerHTML = `<div class="suggestion-add" onclick="openQuickCustomerModal('${input.value}','appOrder')">➕ إضافة عميل جديد: "${input.value}"</div>`;
+    suggestions.classList.remove('hidden'); return;
+  }
+  if (matches.length === 0) { suggestions.classList.add('hidden'); return; }
+  suggestions.innerHTML = matches.map((c, i) => `
+    <div class="suggestion-item" data-index="${i}" data-id="${c.id}" onclick="selectAppOrderCustomer('${c.id}')">
+      <div><span class="sug-code">${c.code}</span> - <span class="sug-name">${c.name}</span></div>
+      <span class="sug-extra">${c.phone || ''}</span>
+    </div>
+  `).join('');
+  suggestions.classList.remove('hidden');
+}
+function handleAppOrderCustomerKey(e) {
+  const items = document.querySelectorAll('#appOrderCustomerSuggestions .suggestion-item');
+  if (e.key === 'ArrowDown') { e.preventDefault(); appOrderCustomerSelIndex = Math.min(appOrderCustomerSelIndex + 1, items.length - 1); highlightAppOrderCustomerItem(items); }
+  else if (e.key === 'ArrowUp') { e.preventDefault(); appOrderCustomerSelIndex = Math.max(appOrderCustomerSelIndex - 1, 0); highlightAppOrderCustomerItem(items); }
+  else if (e.key === 'Enter') {
+    e.preventDefault();
+    if (appOrderCustomerSelIndex >= 0 && items[appOrderCustomerSelIndex]) { selectAppOrderCustomer(items[appOrderCustomerSelIndex].dataset.id); }
+    else if (document.querySelector('#appOrderCustomerSuggestions .suggestion-add')) { openQuickCustomerModal(document.getElementById('appOrderCustomerSearch').value, 'appOrder'); }
+    else { document.getElementById('appOrderProductSearch').focus(); }
+  }
+  else if (e.key === 'Escape') { document.getElementById('appOrderCustomerSuggestions').classList.add('hidden'); }
+}
+function highlightAppOrderCustomerItem(items) {
+  items.forEach((item, i) => item.classList.toggle('active', i === appOrderCustomerSelIndex));
+  if (items[appOrderCustomerSelIndex]) items[appOrderCustomerSelIndex].scrollIntoView({ block: 'nearest' });
+}
+function selectAppOrderCustomer(id) {
+  const c = customersData.find(x => x.id === id); if (!c) return;
+  selectedAppOrderCustomer = c;
+  document.getElementById('appOrderCustomerSearch').value = c.name;
+  document.getElementById('appOrderCustomerCode').value = c.code || '';
+  document.getElementById('appOrderCustomerPhone').value = c.phone || '';
+  document.getElementById('appOrderCustomerAddress').value = c.address || '';
+  document.getElementById('appOrderCustomerSuggestions').classList.add('hidden');
+}
+
+// ============================================
+// App Order - Product Search
+// ============================================
+function searchAppOrderProducts() {
+  const input = document.getElementById('appOrderProductSearch');
+  const suggestions = document.getElementById('appOrderProductSuggestions');
+  const query = input.value.trim().toLowerCase();
+  appOrderProductSelIndex = -1;
+  if (!query) { suggestions.classList.add('hidden'); return; }
+  const matches = productsData.filter(p =>
+    (p.code && p.code.toLowerCase().includes(query)) ||
+    (p.name && p.name.toLowerCase().includes(query))
+  ).slice(0, 7);
+  if (matches.length === 0 && query.length >= 2) {
+    suggestions.innerHTML = `<div class="suggestion-add" onclick="openQuickProductModal('${input.value}','appOrder')">➕ إضافة صنف جديد: "${input.value}"</div>`;
+    suggestions.classList.remove('hidden'); return;
+  }
+  if (matches.length === 0) { suggestions.classList.add('hidden'); return; }
+  suggestions.innerHTML = matches.map((p, i) => `
+    <div class="suggestion-item" data-index="${i}" data-id="${p.id}" onclick="addItemToAppOrder('${p.id}')">
+      <div><span class="sug-code">${p.code}</span> - <span class="sug-name">${p.name}</span></div>
+      <span class="sug-extra" style="color:#16a34a;font-weight:700;">${parseFloat(p.price||0).toFixed(2)} ج.م</span>
+    </div>
+  `).join('');
+  suggestions.classList.remove('hidden');
+}
+function handleAppOrderProductKey(e) {
+  const items = document.querySelectorAll('#appOrderProductSuggestions .suggestion-item');
+  if (e.key === 'ArrowDown') { e.preventDefault(); appOrderProductSelIndex = Math.min(appOrderProductSelIndex + 1, items.length - 1); highlightAppOrderProductItem(items); }
+  else if (e.key === 'ArrowUp') { e.preventDefault(); appOrderProductSelIndex = Math.max(appOrderProductSelIndex - 1, 0); highlightAppOrderProductItem(items); }
+  else if (e.key === 'Enter') {
+    e.preventDefault();
+    if (appOrderProductSelIndex >= 0 && items[appOrderProductSelIndex]) { addItemToAppOrder(items[appOrderProductSelIndex].dataset.id); }
+    else if (document.querySelector('#appOrderProductSuggestions .suggestion-add')) { openQuickProductModal(document.getElementById('appOrderProductSearch').value, 'appOrder'); }
+  }
+  else if (e.key === 'Escape') { document.getElementById('appOrderProductSuggestions').classList.add('hidden'); }
+}
+function highlightAppOrderProductItem(items) {
+  items.forEach((item, i) => item.classList.toggle('active', i === appOrderProductSelIndex));
+  if (items[appOrderProductSelIndex]) items[appOrderProductSelIndex].scrollIntoView({ block: 'nearest' });
+}
+function addItemToAppOrder(productId) {
+  const product = productsData.find(p => p.id === productId); if (!product) return;
+  const existing = appOrderItems.find(i => i.productId === productId);
+  if (existing) { existing.qty += 1; }
+  else { appOrderItems.push({ productId: product.id, code: product.code, name: product.name, price: parseFloat(product.price) || 0, qty: 1 }); }
+  document.getElementById('appOrderProductSearch').value = '';
+  document.getElementById('appOrderProductSuggestions').classList.add('hidden');
+  renderAppOrderItems();
+}
+function updateAppOrderItemQty(index, qty) {
+  qty = parseInt(qty) || 1; if (qty < 1) qty = 1;
+  appOrderItems[index].qty = qty; renderAppOrderItems();
+}
+function removeAppOrderItem(index) { appOrderItems.splice(index, 1); renderAppOrderItems(); }
+
+function renderAppOrderItems() {
+  const tbody = document.getElementById('appOrderItemsBody');
+  if (appOrderItems.length === 0) { tbody.innerHTML = '<tr><td colspan="6" style="color:#94a3b8;padding:16px;">لم تضف أصناف بعد</td></tr>'; document.getElementById('appOrderTotal').textContent = '0'; return; }
+  let total = 0;
+  tbody.innerHTML = appOrderItems.map((item, i) => {
+    const lineTotal = item.price * item.qty; total += lineTotal;
+    return `<tr><td>${item.code}</td><td>${item.name}</td><td>${item.price.toFixed(2)}</td><td><input type="number" min="1" value="${item.qty}" onchange="updateAppOrderItemQty(${i},this.value)"></td><td>${lineTotal.toFixed(2)}</td><td><span class="delete-link" onclick="removeAppOrderItem(${i})">🗑️</span></td></tr>`;
+  }).join('');
+  document.getElementById('appOrderTotal').textContent = total.toFixed(2);
+}
+function getAppOrderTotal() { return appOrderItems.reduce((sum, i) => sum + (i.price * i.qty), 0); }
+
+// ============================================
+// Submit App Order
+// ============================================
+function submitAppOrder() {
+  const customer = selectedAppOrderCustomer ? selectedAppOrderCustomer.name : '';
+  const customerCode = selectedAppOrderCustomer ? selectedAppOrderCustomer.code : '';
+  const branch = document.getElementById('appOrderBranch').value;
+  const appName = document.getElementById('appOrderApp').value;
+  const notes = document.getElementById('appOrderNotes').value.trim();
+  const supplyType = document.querySelector('input[name="appOrderSupplyType"]:checked')?.value || 'مقاصة';
+  const deliveryDate = document.getElementById('appOrderDeliveryDate').value;
+  if (!customer) { showToast('❌ اختر العميل', true); return; }
+  if (!branch) { showToast('❌ اختر الفرع', true); return; }
+  if (!appName) { showToast('❌ اختر الأبلكيشن', true); return; }
+  if (appOrderItems.length === 0) { showToast('❌ أضف صنف واحد على الأقل', true); return; }
+  const itemsText = appOrderItems.map(i => `${i.code} - ${i.name} (x${i.qty}) = ${(i.price * i.qty).toFixed(2)} ج.م`).join('\n');
+  const total = getAppOrderTotal();
+  rtdb.ref('app_orders').push({
+    customer, customerCode, branch, appName, items: itemsText, itemsArray: appOrderItems, total,
+    supplyType, status: 'pending', deliveryDate,
+    employee: currentUser.name, employeeId: currentUser.id,
+    date: new Date().toISOString().split('T')[0],
+    notes, timestamp: firebase.database.ServerValue.TIMESTAMP
+  }).then(() => {
+    showToast('✅ تم حفظ أوردر الأبلكيشن');
+    clearAppOrderForm();
+  }).catch(err => { showToast('❌ حدث خطأ أثناء الحفظ', true); console.error(err); });
+}
 
 // ============================================
 // Submit Order
@@ -1430,8 +1835,12 @@ function renderAllOrders() {
 }
 
 function updateOrderStatus(id, newStatus) {
-  const updateData = { status: newStatus };
-  if (newStatus !== 'cancelled') updateData.cancelReason = '';
+  // تعديل: عند اختيار "ملغي" يفتح مربع نصي لكتابة سبب الإلغاء قبل الحفظ
+  if (newStatus === 'cancelled') {
+    openQuickCancelReasonModal(id, 'orders');
+    return;
+  }
+  const updateData = { status: newStatus, cancelReason: '' };
   db.ref('orders/' + id).update(updateData)
     .then(() => showToast('✅ تم تحديث الحالة'))
     .catch(err => { showToast('❌ خطأ في التحديث', true); console.error(err); });
@@ -1440,6 +1849,145 @@ function updateOrderStatus(id, newStatus) {
 function deleteOrder(id) {
   if (!confirm('هل أنت متأكد من حذف هذا الأوردر؟')) return;
   db.ref('orders/' + id).remove().then(() => showToast('🗑️ تم حذف الأوردر')).catch(err => { showToast('❌ خطأ في الحذف', true); console.error(err); });
+}
+
+// ============================================
+// All App Orders with Filter & Search
+// ============================================
+function setAppFilter(filter) {
+  currentAppFilter = filter;
+  ['all','today','pending','completed','outdelivery','cancelled'].forEach(f => {
+    const btn = document.getElementById('filter-app-'+f); if(btn) btn.classList.remove('active');
+  });
+  const activeBtn = document.getElementById('filter-app-'+filter); if(activeBtn) activeBtn.classList.add('active');
+  renderAllAppOrders();
+}
+
+function renderAllAppOrders() {
+  const statsBox = document.getElementById('appStatsBox');
+  const table = document.getElementById('allAppOrdersTable');
+  if (!statsBox || !table) return;
+  const today = new Date().toISOString().split('T')[0];
+  const searchQ = (document.getElementById('appOrderSearch')?.value || '').trim().toLowerCase();
+
+  let filtered = [...appOrdersData];
+  if (currentAppFilter === 'today') filtered = filtered.filter(o => o.deliveryDate === today);
+  else if (currentAppFilter === 'pending') filtered = filtered.filter(o => o.status === 'pending');
+  else if (currentAppFilter === 'completed') filtered = filtered.filter(o => o.status === 'completed');
+  else if (currentAppFilter === 'outdelivery') filtered = filtered.filter(o => o.status === 'outdelivery');
+  else if (currentAppFilter === 'cancelled') filtered = filtered.filter(o => o.status === 'cancelled');
+
+  if (searchQ) {
+    filtered = filtered.filter(o =>
+      (o.employee && o.employee.toLowerCase().includes(searchQ)) ||
+      (o.branch && o.branch.toLowerCase().includes(searchQ)) ||
+      (o.customer && o.customer.toLowerCase().includes(searchQ)) ||
+      (o.customerCode && o.customerCode.toLowerCase().includes(searchQ)) ||
+      (o.appName && o.appName.toLowerCase().includes(searchQ))
+    );
+  }
+
+  const totalOrders = appOrdersData.length;
+  const completed = appOrdersData.filter(o => o.status === 'completed').length;
+  const pending = appOrdersData.filter(o => o.status === 'pending').length;
+  const outdelivery = appOrdersData.filter(o => o.status === 'outdelivery').length;
+  const cancelled = appOrdersData.filter(o => o.status === 'cancelled').length;
+  const todayOrders = appOrdersData.filter(o => o.deliveryDate === today).length;
+
+  statsBox.innerHTML = `
+    <div class="stat-card"><div class="stat-number">${totalOrders}</div><div class="stat-label">إجمالي</div></div>
+    <div class="stat-card"><div class="stat-number" style="color:#16a34a;">${completed}</div><div class="stat-label">تم</div></div>
+    <div class="stat-card"><div class="stat-number" style="color:#f59e0b;">${pending}</div><div class="stat-label">في الانتظار</div></div>
+    <div class="stat-card"><div class="stat-number" style="color:#2563eb;">${outdelivery}</div><div class="stat-label">Out</div></div>
+    <div class="stat-card"><div class="stat-number" style="color:#dc2626;">${cancelled}</div><div class="stat-label">ملغي</div></div>
+    <div class="stat-card"><div class="stat-number" style="color:#7c3aed;">${todayOrders}</div><div class="stat-label">اليوم</div></div>
+  `;
+
+  if (filtered.length === 0) { table.innerHTML = `<tr><td colspan="12" class="empty-state">لا يوجد أوردرات أبلكيشن</td></tr>`; return; }
+
+  table.innerHTML = filtered.map((o, i) => {
+    const statusClass = STATUS_CLASSES[o.status] || 'status-pending';
+    const statusLabel = STATUS_LABELS[o.status] || o.status;
+    const isUrgent = o.deliveryDate === today && o.status !== 'completed' && o.status !== 'cancelled';
+    const canEdit = currentUser.role === 'admin';
+    const canChangeStatus = currentUser.role === 'admin' || currentUser.role === 'manager';
+
+    let statusCell = `<span class="badge ${statusClass}">${statusLabel}</span>`;
+    if (canChangeStatus) {
+      statusCell = `<select class="status-select ${statusClass}" onchange="updateAppOrderStatus('${o.id}', this.value)">
+        <option value="pending" ${o.status==='pending'?'selected':''}>في الانتظار</option>
+        <option value="completed" ${o.status==='completed'?'selected':''}>تم</option>
+        <option value="outdelivery" ${o.status==='outdelivery'?'selected':''}>Out</option>
+        <option value="cancelled" ${o.status==='cancelled'?'selected':''}>ملغي</option>
+      </select>`;
+    }
+    let actions = `<span class="view-link" onclick="openReviewAppOrder('${o.id}')">👁️ مراجعة</span>`;
+    if (canEdit) {
+      actions += `<span class="edit-link" onclick="openEditAppOrder('${o.id}')">✏️ تعديل</span>
+                 <span class="delete-link" onclick="deleteAppOrder('${o.id}')">🗑️ حذف</span>`;
+    }
+    return `<tr class="${isUrgent?'urgent-row':''}">
+      <td>${i+1}</td>
+      <td><strong>${o.customer}</strong>${o.customerCode?`<br><span style="font-size:11px;color:#64748b;">${o.customerCode}</span>`:''}</td>
+      <td><span class="badge badge-blue">${o.branch}</span></td>
+      <td><span class="badge badge-purple">${o.appName||'-'}</span></td>
+      <td style="max-width:200px;font-size:12px;white-space:pre-line;">${o.items||'-'}</td>
+      <td><strong style="color:#16a34a;">${o.total?o.total.toFixed(2):'0'}</strong></td>
+      <td><span class="badge badge-orange">${o.supplyType||'مقاصة'}</span></td>
+      <td>${statusCell}</td>
+      <td><span class="badge ${isUrgent?'badge-red':'badge-cyan'}">${o.deliveryDate||'-'}</span></td>
+      <td><span class="badge badge-gray">${o.employee}</span></td>
+      <td>${o.date||''}</td>
+      <td>${actions}</td>
+    </tr>`;
+  }).join('');
+}
+
+function updateAppOrderStatus(id, newStatus) {
+  // تعديل: عند اختيار "ملغي" يفتح مربع نصي لكتابة سبب الإلغاء قبل الحفظ
+  if (newStatus === 'cancelled') {
+    openQuickCancelReasonModal(id, 'app_orders');
+    return;
+  }
+  const updateData = { status: newStatus, cancelReason: '' };
+  db.ref('app_orders/' + id).update(updateData)
+    .then(() => showToast('✅ تم تحديث الحالة'))
+    .catch(err => { showToast('❌ خطأ في التحديث', true); console.error(err); });
+}
+
+// تعديل: التحكم في مودال سبب الإلغاء السريع (يظهر عند تغيير الحالة إلى "ملغي" من الجدول مباشرة)
+let quickCancelContext = null;
+function openQuickCancelReasonModal(id, table) {
+  quickCancelContext = { id, table };
+  document.getElementById('quickCancelReasonText').value = '';
+  document.getElementById('quickCancelReasonModal').classList.remove('hidden');
+  setTimeout(() => document.getElementById('quickCancelReasonText').focus(), 100);
+}
+function closeQuickCancelReasonModal(revert) {
+  document.getElementById('quickCancelReasonModal').classList.add('hidden');
+  if (revert && quickCancelContext) {
+    // إعادة رسم الجدول لإرجاع اختيار الحالة كما هو محفوظ فعلياً (لم يتم الحفظ بعد)
+    if (quickCancelContext.table === 'orders') renderAllOrders(); else renderAllAppOrders();
+  }
+  quickCancelContext = null;
+}
+function confirmQuickCancelReason() {
+  const reason = document.getElementById('quickCancelReasonText').value.trim();
+  if (!reason) { showToast('❌ اكتب سبب الإلغاء', true); return; }
+  if (!quickCancelContext) return;
+  const { id, table } = quickCancelContext;
+  db.ref(table + '/' + id).update({ status: 'cancelled', cancelReason: reason })
+    .then(() => {
+      showToast('✅ تم إلغاء الأوردر');
+      document.getElementById('quickCancelReasonModal').classList.add('hidden');
+      quickCancelContext = null;
+    })
+    .catch(err => { showToast('❌ خطأ في التحديث', true); console.error(err); });
+}
+
+function deleteAppOrder(id) {
+  if (!confirm('هل أنت متأكد من حذف هذا الأوردر؟')) return;
+  db.ref('app_orders/' + id).remove().then(() => showToast('🗑️ تم حذف الأوردر')).catch(err => { showToast('❌ خطأ في الحذف', true); console.error(err); });
 }
 
 // ============================================
@@ -1600,9 +2148,101 @@ function saveEditOrder() {
 }
 
 // ============================================
+// Review App Order Modal (يعيد استخدام نافذة المراجعة نفسها)
+// ============================================
+function openReviewAppOrder(id) {
+  const o = appOrdersData.find(x => x.id === id); if (!o) return;
+  const statusLabel = STATUS_LABELS[o.status] || o.status;
+  const statusClass = STATUS_CLASSES[o.status] || 'status-pending';
+  let itemsHtml = '';
+  if (o.itemsArray && o.itemsArray.length > 0) {
+    itemsHtml = `<table class="order-items-table" style="margin:12px 0;"><thead><tr><th>كود</th><th>اسم الصنف</th><th>سعر</th><th>كمية</th><th>إجمالي</th></tr></thead><tbody>${o.itemsArray.map(i => `<tr><td>${i.code}</td><td>${i.name}</td><td>${parseFloat(i.price).toFixed(2)}</td><td>${i.qty}</td><td>${(i.price*i.qty).toFixed(2)}</td></tr>`).join('')}</tbody></table>`;
+  } else { itemsHtml = `<div style="white-space:pre-line;background:#f8fafc;padding:12px;border-radius:8px;margin:12px 0;">${o.items||'-'}</div>`; }
+
+  let cancelReasonHtml = '';
+  if (o.status === 'cancelled' && o.cancelReason) {
+    cancelReasonHtml = `<div class="cancel-reason-display"><strong>❌ سبب الإلغاء:</strong> ${o.cancelReason}</div>`;
+  }
+
+  document.getElementById('reviewContent').innerHTML = `
+    <div style="margin-bottom:16px;"><div class="grid-2"><div><strong>العميل:</strong> ${o.customer}</div><div><strong>الفرع:</strong> <span class="badge badge-blue">${o.branch}</span></div></div></div>
+    <div style="margin-bottom:16px;"><div class="grid-2"><div><strong>الأبلكيشن:</strong> <span class="badge badge-purple">${o.appName||'-'}</span></div><div><strong>الموظف:</strong> <span class="badge badge-gray">${o.employee}</span></div></div></div>
+    <div style="margin-bottom:16px;"><div class="grid-2"><div><strong>تاريخ التسجيل:</strong> ${o.date||'-'}</div><div><strong>طريقة التوفير:</strong> <span class="badge badge-orange">${o.supplyType||'مقاصة'}</span></div></div></div>
+    <div style="margin-bottom:16px;"><div class="grid-2"><div><strong>الحالة:</strong> <span class="badge ${statusClass}">${statusLabel}</span></div><div><strong>ميعاد الخروج:</strong> <span class="badge badge-cyan">${o.deliveryDate||'-'}</span></div></div></div>
+    <div style="margin-bottom:16px;"><strong>الإجمالي:</strong> <span style="color:#16a34a;font-size:18px;font-weight:700;">${o.total?o.total.toFixed(2):'0'} ج.م</span></div>
+    ${cancelReasonHtml}
+    <hr style="border:0;border-top:1px solid #e2e8f0;margin:16px 0;">
+    <h4 style="margin:0 0 8px;color:#374151;">📝 الأصناف المطلوبة</h4>${itemsHtml}
+    ${o.notes?`<div style="margin-top:16px;"><strong>ملاحظات:</strong><div style="background:#f8fafc;padding:12px;border-radius:8px;margin-top:6px;">${o.notes}</div></div>`:''}
+  `;
+  document.getElementById('reviewModal').classList.remove('hidden');
+}
+
+// ============================================
+// Edit App Order Modal
+// ============================================
+function openEditAppOrder(id) {
+  const order = appOrdersData.find(o => o.id === id); if (!order) return;
+  document.getElementById('editAppOrderId').value = id;
+  document.getElementById('editAppOrderCustomerName').value = order.customer || '';
+  populateAppOrderBranch(); populateAppOrderAppSelect();
+  document.getElementById('editAppOrderBranch').value = order.branch || '';
+  document.getElementById('editAppOrderApp').value = order.appName || '';
+  document.getElementById('editAppOrderItems').value = order.items || '';
+  const supplyRadio = document.querySelector(`input[name="editAppOrderSupplyType"][value="${order.supplyType}"]`);
+  if (supplyRadio) supplyRadio.checked = true;
+  document.getElementById('editAppOrderDeliveryDate').value = order.deliveryDate || '';
+  document.getElementById('editAppOrderStatus').value = order.status || 'pending';
+  document.getElementById('editAppOrderCancelReason').value = order.cancelReason || '';
+  toggleAppCancelReason();
+  document.getElementById('editAppOrderNotes').value = order.notes || '';
+  document.getElementById('editAppOrderModal').classList.remove('hidden');
+}
+function closeEditAppOrderModal() { document.getElementById('editAppOrderModal').classList.add('hidden'); }
+
+function toggleAppCancelReason() {
+  const status = document.getElementById('editAppOrderStatus').value;
+  const box = document.getElementById('appCancelReasonBox');
+  if (status === 'cancelled') {
+    box.classList.remove('hidden');
+    setTimeout(() => document.getElementById('editAppOrderCancelReason').focus(), 100);
+  } else {
+    box.classList.add('hidden');
+  }
+}
+
+function saveEditAppOrder() {
+  const id = document.getElementById('editAppOrderId').value;
+  const customer = document.getElementById('editAppOrderCustomerName').value.trim();
+  const branch = document.getElementById('editAppOrderBranch').value;
+  const appName = document.getElementById('editAppOrderApp').value;
+  const items = document.getElementById('editAppOrderItems').value.trim();
+  const supplyType = document.querySelector('input[name="editAppOrderSupplyType"]:checked')?.value || 'مقاصة';
+  const deliveryDate = document.getElementById('editAppOrderDeliveryDate').value;
+  const status = document.getElementById('editAppOrderStatus').value;
+  const cancelReason = document.getElementById('editAppOrderCancelReason').value.trim();
+  const notes = document.getElementById('editAppOrderNotes').value.trim();
+
+  if (!customer || !branch || !appName || !items) { showToast('❌ أكمل جميع الحقول المطلوبة', true); return; }
+
+  if (status === 'cancelled' && !cancelReason) {
+    showToast('❌ يجب كتابة سبب الإلغاء', true);
+    document.getElementById('editAppOrderCancelReason').focus();
+    return;
+  }
+
+  const data = { customer, branch, appName, items, supplyType, deliveryDate, status, notes };
+  if (status === 'cancelled') data.cancelReason = cancelReason; else data.cancelReason = '';
+  db.ref('app_orders/' + id).update(data)
+    .then(() => { showToast('✅ تم حفظ التعديلات'); closeEditAppOrderModal(); })
+    .catch(err => { showToast('❌ خطأ في الحفظ', true); console.error(err); });
+}
+
+// ============================================
 // Quick Product Modal
 // ============================================
-function openQuickProductModal(prefillCode) {
+function openQuickProductModal(prefillCode, context) {
+  quickProductContext = context || 'order';
   document.getElementById('quickProductModal').classList.remove('hidden');
   document.getElementById('quickProductCode').value = prefillCode || '';
   document.getElementById('quickProductName').value = '';
@@ -1619,7 +2259,11 @@ function saveQuickProduct() {
   db.ref('products').push({ code, name, price })
     .then(() => {
       showToast('✅ تم إضافة الصنف'); closeQuickProductModal();
-      setTimeout(() => { const newProd = productsData.find(p => p.code === code); if (newProd) addItemToOrder(newProd.id); }, 800);
+      const ctx = quickProductContext;
+      setTimeout(() => {
+        const newProd = productsData.find(p => p.code === code);
+        if (newProd) { if (ctx === 'appOrder') addItemToAppOrder(newProd.id); else addItemToOrder(newProd.id); }
+      }, 800);
     })
     .catch(err => { showToast('❌ خطأ في الإضافة', true); console.error(err); });
 }
@@ -1627,7 +2271,8 @@ function saveQuickProduct() {
 // ============================================
 // Quick Customer Modal
 // ============================================
-function openQuickCustomerModal(prefillCode) {
+function openQuickCustomerModal(prefillCode, context) {
+  quickCustomerContext = context || 'order';
   document.getElementById('quickCustomerModal').classList.remove('hidden');
   document.getElementById('quickCustomerCode').value = prefillCode || '';
   document.getElementById('quickCustomerName').value = '';
@@ -1646,7 +2291,11 @@ function saveQuickCustomer() {
   db.ref('customers').push({ code, name, phone, address })
     .then(() => {
       showToast('✅ تم إضافة العميل'); closeQuickCustomerModal();
-      setTimeout(() => { const newCust = customersData.find(c => c.code === code); if (newCust) selectCustomer(newCust.id); }, 800);
+      const ctx = quickCustomerContext;
+      setTimeout(() => {
+        const newCust = customersData.find(c => c.code === code);
+        if (newCust) { if (ctx === 'appOrder') selectAppOrderCustomer(newCust.id); else selectCustomer(newCust.id); }
+      }, 800);
     })
     .catch(err => { showToast('❌ خطأ في الإضافة', true); console.error(err); });
 }
