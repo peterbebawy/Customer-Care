@@ -48,8 +48,11 @@ button, input, select, textarea { font-family: 'Cairo', Tahoma, 'Segoe UI', Aria
 .badge-gray { background: #f3f4f6; color: #374151; }
 .badge-pink { background: #fce7f3; color: #9d174d; }
 .header { text-align: center; margin-bottom: 24px; }
-.header h1 { color: #1e293b; margin: 0; font-size: 26px; font-weight: 800; }
-.header p { color: #64748b; margin: 8px 0 0; }
+.header h1 { color: #1e293b; margin: 0; font-size: 30px; font-weight: 800; letter-spacing: .2px; }
+.header p { color: #64748b; margin: 8px 0 0; font-size: 14.5px; }
+.card h2 { font-size: 22px; font-weight: 800; letter-spacing: .2px; }
+.card h3 { font-size: 17.5px; font-weight: 700; }
+.modal-header h3 { font-size: 19px; font-weight: 800; }
 
 .nav-container { max-width: 1100px; margin: 0 auto 20px; position: sticky; top: 12px; z-index: 50; }
 .nav-toggle-bar { display: flex; justify-content: space-between; align-items: center; background: #fff; padding: 13px 18px; border-radius: 14px; box-shadow: 0 6px 22px rgba(15,23,42,0.09); cursor: pointer; font-weight: 800; color: #1e293b; user-select: none; position: relative; overflow: hidden; margin-bottom: 8px; transition: box-shadow 0.2s ease; }
@@ -84,7 +87,7 @@ th { background: #f1f5f9; font-weight: 600; color: #475569; }
 .login-logo-wrap { display:flex; justify-content:center; margin-bottom: 22px; }
 .login-logo-img { max-width: 220px; width: 100%; height: auto; filter: drop-shadow(0 10px 18px rgba(0,0,0,0.18)); }
 .login-title { text-align: center; margin-bottom: 8px; }
-.login-title h1 { color: #1e293b; margin: 0; font-size: 21px; font-weight: 700; letter-spacing: .2px; }
+.login-title h1 { color: #1e293b; margin: 0; font-size: 23px; font-weight: 800; letter-spacing: .2px; }
 .login-title p { color: #94836b; margin: 6px 0 0; font-size: 13px; font-weight: 600; letter-spacing: .3px; }
 .login-input-group { margin-bottom: 16px; position: relative; }
 .login-input-group .input { margin-bottom: 0; padding-right: 44px; border-color:#e5e0d5; }
@@ -128,7 +131,7 @@ th { background: #f1f5f9; font-weight: 600; color: #475569; }
 @media (max-width: 640px) {
   body { padding: 10px; }
   .card { padding: 16px; border-radius: 14px; margin-bottom: 14px; }
-  .header h1 { font-size: 20px; }
+  .header h1 { font-size: 22px; }
   .header p { font-size: 13px; }
   .nav { padding: 10px; gap: 6px; border-radius: 14px; }
   .nav-btn { padding: 9px 12px; font-size: 12.5px; }
@@ -315,7 +318,7 @@ th { background: #f1f5f9; font-weight: 600; color: #475569; }
     <div class="radio-group">
       <label class="radio-item"><input type="radio" name="supplyType" value="مقاصة" checked> مقاصة</label>
       <label class="radio-item"><input type="radio" name="supplyType" value="مشتريات"> مشتريات</label>
-      <label class="radio-item"><input type="radio" name="supplyType" value="إبلاغ العميل"> عند توفير الصنف يتم إبلاغ العميل</label>
+      <label class="radio-item" id="supplyTypeNotifyOption"><input type="radio" name="supplyType" value="إبلاغ العميل"> عند توفير الصنف يتم إبلاغ العميل</label>
     </div>
     <label class="label">ميعاد خروج الأوردر</label>
     <input type="date" id="deliveryDate" class="input">
@@ -434,13 +437,17 @@ th { background: #f1f5f9; font-weight: 600; color: #475569; }
           <div><label class="label">الأبلكيشن</label><select id="shortageApp" class="input"><option value="">اختر الأبلكيشن</option></select></div>
           <div><label class="label">الفرع</label><select id="shortageBranch" class="input"><option value="">اختر الفرع</option></select></div>
         </div>
+        <div class="grid-2">
+          <div><label class="label">رقم الأوردر على الأبلكيشن</label><input type="text" id="shortageOrderNumber" class="input" placeholder="رقم الأوردر (إن وجد)" autocomplete="off"></div>
+          <div><label class="label">كمية الصنف حالياً بالفرع</label><input type="number" id="shortageCurrentQty" class="input" placeholder="0" min="0" step="1"></div>
+        </div>
         <label class="label">ملاحظات</label>
         <textarea id="shortageNotes" class="input" rows="2" placeholder="أي ملاحظات..."></textarea>
         <button class="btn btn-success" onclick="submitShortage()">✅ حفظ النقص</button>
       </div>
       <div class="table-wrap">
         <table>
-          <thead><tr><th>#</th><th>الصنف</th><th>الأبلكيشن</th><th>الفرع</th><th>الموظف</th><th>التاريخ</th><th>ملاحظات</th><th>إجراءات</th></tr></thead>
+          <thead><tr><th>#</th><th>الصنف</th><th>الأبلكيشن</th><th>رقم الأوردر</th><th>الفرع</th><th>الكمية الحالية بالفرع</th><th>الموظف</th><th>التاريخ</th><th>ملاحظات</th><th>إجراءات</th></tr></thead>
           <tbody id="shortagesTable"></tbody>
         </table>
       </div>
@@ -452,10 +459,12 @@ th { background: #f1f5f9; font-weight: 600; color: #475569; }
       <h2 style="margin-top:0;color:#1e293b;">📊 ريبورت نواقص الأبلكيشن</h2>
       <div class="export-bar">
         <button class="btn btn-success" onclick="exportShortagesToExcel()">📥 تصدير Excel</button>
+        <button class="btn btn-info" onclick="archiveAllShortages()">📦 أرشفة الكل</button>
+        <button class="btn btn-danger" onclick="deleteAllShortages()">🗑️ حذف الكل</button>
       </div>
       <div class="table-wrap">
         <table>
-          <thead><tr><th>#</th><th>كود الصنف</th><th>اسم الصنف</th><th>الأبلكيشن</th><th>الفرع</th><th>الموظف</th><th>التاريخ</th><th>ملاحظات</th></tr></thead>
+          <thead><tr><th>#</th><th>كود الصنف</th><th>اسم الصنف</th><th>الأبلكيشن</th><th>رقم الأوردر</th><th>الفرع</th><th>الكمية الحالية بالفرع</th><th>الموظف</th><th>التاريخ</th><th>ملاحظات</th><th>إجراءات</th></tr></thead>
           <tbody id="shortagesReportTable"></tbody>
         </table>
       </div>
@@ -494,10 +503,12 @@ th { background: #f1f5f9; font-weight: 600; color: #475569; }
       <h2 style="margin-top:0;color:#1e293b;">📊 ريبورت نواقص كول سنتر</h2>
       <div class="export-bar">
         <button class="btn btn-success" onclick="exportCCShortagesToExcel()">📥 تصدير Excel</button>
+        <button class="btn btn-info" onclick="archiveAllCCShortages()">📦 أرشفة الكل</button>
+        <button class="btn btn-danger" onclick="deleteAllCCShortages()">🗑️ حذف الكل</button>
       </div>
       <div class="table-wrap">
         <table>
-          <thead><tr><th>#</th><th>كود الصنف</th><th>اسم الصنف</th><th>العميل</th><th>الفرع</th><th>الموظف</th><th>التاريخ</th><th>ملاحظات</th></tr></thead>
+          <thead><tr><th>#</th><th>كود الصنف</th><th>اسم الصنف</th><th>العميل</th><th>الفرع</th><th>الموظف</th><th>التاريخ</th><th>ملاحظات</th><th>إجراءات</th></tr></thead>
           <tbody id="ccShortagesReportTable"></tbody>
         </table>
       </div>
@@ -702,7 +713,6 @@ th { background: #f1f5f9; font-weight: 600; color: #475569; }
     <div class="radio-group">
       <label class="radio-item"><input type="radio" name="editAppOrderSupplyType" value="مقاصة"> مقاصة</label>
       <label class="radio-item"><input type="radio" name="editAppOrderSupplyType" value="مشتريات"> مشتريات</label>
-      <label class="radio-item"><input type="radio" name="editAppOrderSupplyType" value="إبلاغ العميل"> عند توفير الصنف يتم إبلاغ العميل</label>
     </div>
     <label class="label">ميعاد خروج الأوردر</label><input type="date" id="editAppOrderDeliveryDate" class="input">
     <label class="label">الحالة</label>
@@ -1481,6 +1491,8 @@ function clearNewOrderForm() {
   document.getElementById('newOrderApp').value = '';
   document.getElementById('newOrderAppNumber').value = '';
   document.getElementById('newOrderAppField').classList.add('hidden');
+  const notifyOption = document.getElementById('supplyTypeNotifyOption');
+  if (notifyOption) notifyOption.classList.remove('hidden');
   orderItems = [];
   renderOrderItems();
   document.getElementById('customerSuggestions').classList.add('hidden');
@@ -1488,9 +1500,20 @@ function clearNewOrderForm() {
 }
 
 // تعديل: إظهار/إخفاء خانة اختيار الأبلكيشن عند تفعيل "هل هذا الأوردر أبلكيشن؟"
+// تعديل: أوردرات الأبلكيشن ليس لها خيار "عند توفير الصنف يتم إبلاغ العميل" - يبقى فقط مقاصة/مشتريات
 function toggleNewOrderAppField() {
   const isApp = document.getElementById('isAppOrderChk').checked;
   document.getElementById('newOrderAppField').classList.toggle('hidden', !isApp);
+  const notifyOption = document.getElementById('supplyTypeNotifyOption');
+  if (notifyOption) {
+    notifyOption.classList.toggle('hidden', isApp);
+    if (isApp) {
+      const notifyRadio = notifyOption.querySelector('input');
+      if (notifyRadio && notifyRadio.checked) {
+        document.querySelector('input[name="supplyType"][value="مقاصة"]').checked = true;
+      }
+    }
+  }
 }
 
 function clearAppOrderForm() {
@@ -2722,12 +2745,15 @@ function submitShortage() {
   const product = selectedShortageProduct;
   const appName = document.getElementById('shortageApp').value;
   const branch = document.getElementById('shortageBranch').value;
+  const orderNumber = document.getElementById('shortageOrderNumber').value.trim();
+  const currentQty = document.getElementById('shortageCurrentQty').value.trim();
   const notes = document.getElementById('shortageNotes').value.trim();
   if (!product) { showToast('❌ اختر الصنف', true); return; }
   if (!appName) { showToast('❌ اختر الأبلكيشن', true); return; }
   if (!branch) { showToast('❌ اختر الفرع', true); return; }
   db.ref('shortages').push({
-    productCode: product.code, productName: product.name, appName, branch, notes,
+    productCode: product.code, productName: product.name, appName, branch,
+    orderNumber, currentQty, notes,
     employee: currentUser.name, employeeId: currentUser.id,
     date: new Date().toISOString().split('T')[0],
     timestamp: firebase.database.ServerValue.TIMESTAMP
@@ -2736,6 +2762,8 @@ function submitShortage() {
     document.getElementById('shortageProductSearch').value = '';
     document.getElementById('shortageApp').value = '';
     document.getElementById('shortageBranch').value = '';
+    document.getElementById('shortageOrderNumber').value = '';
+    document.getElementById('shortageCurrentQty').value = '';
     document.getElementById('shortageNotes').value = '';
     selectedShortageProduct = null;
   }).catch(err => { showToast('❌ خطأ في الحفظ', true); console.error(err); });
@@ -2743,12 +2771,14 @@ function submitShortage() {
 function renderShortages() {
   const tbody = document.getElementById('shortagesTable');
   if (!tbody) return;
-  if (shortagesData.length === 0) { tbody.innerHTML = '<tr><td colspan="8" class="empty-state">لا يوجد نواقص مسجلة</td></tr>'; return; }
+  if (shortagesData.length === 0) { tbody.innerHTML = '<tr><td colspan="10" class="empty-state">لا يوجد نواقص مسجلة</td></tr>'; return; }
   tbody.innerHTML = shortagesData.map((s, i) => `<tr>
     <td>${i+1}</td>
     <td><strong>${s.productCode}</strong><br><span style="font-size:12px;color:#64748b;">${s.productName}</span></td>
     <td><span class="badge badge-purple">${s.appName}</span></td>
+    <td>${s.orderNumber?`<span class="badge badge-pink">#${s.orderNumber}</span>`:'-'}</td>
     <td><span class="badge badge-blue">${s.branch}</span></td>
+    <td>${(s.currentQty!==undefined && s.currentQty!=='')?`<span class="badge badge-orange">${s.currentQty}</span>`:'-'}</td>
     <td><span class="badge badge-gray">${s.employee}</span></td>
     <td>${s.date||''}</td>
     <td>${s.notes||'-'}</td>
@@ -2762,26 +2792,63 @@ function deleteShortage(id) {
 function renderShortagesReport() {
   const tbody = document.getElementById('shortagesReportTable');
   if (!tbody) return;
-  if (shortagesData.length === 0) { tbody.innerHTML = '<tr><td colspan="7" class="empty-state">لا يوجد نواقص</td></tr>'; return; }
+  if (shortagesData.length === 0) { tbody.innerHTML = '<tr><td colspan="11" class="empty-state">لا يوجد نواقص</td></tr>'; return; }
   tbody.innerHTML = shortagesData.map((s, i) => `<tr>
     <td>${i+1}</td><td><strong>${s.productCode}</strong></td><td>${s.productName}</td>
     <td><span class="badge badge-purple">${s.appName}</span></td>
+    <td>${s.orderNumber?`<span class="badge badge-pink">#${s.orderNumber}</span>`:'-'}</td>
     <td><span class="badge badge-blue">${s.branch}</span></td>
+    <td>${(s.currentQty!==undefined && s.currentQty!=='')?`<span class="badge badge-orange">${s.currentQty}</span>`:'-'}</td>
     <td><span class="badge badge-gray">${s.employee}</span></td>
     <td>${s.date||''}</td><td>${s.notes||'-'}</td>
+    <td>${currentUser.role==='admin'?`<span class="archive-link" onclick="archiveShortage('${s.id}')">📦 أرشفة</span><span class="delete-link" onclick="deleteShortage('${s.id}')">🗑️ حذف</span>`:''}</td>
   </tr>`).join('');
 }
 function exportShortagesToExcel() {
   if (shortagesData.length === 0) { showToast('❌ لا يوجد بيانات للتصدير', true); return; }
   const rows = shortagesData.map(s => ({
     'كود الصنف': s.productCode, 'اسم الصنف': s.productName, 'الأبلكيشن': s.appName,
-    'الفرع': s.branch, 'الموظف': s.employee, 'التاريخ': s.date || '', 'ملاحظات': s.notes || ''
+    'رقم الأوردر': s.orderNumber || '', 'الفرع': s.branch, 'الكمية الحالية بالفرع': s.currentQty || '',
+    'الموظف': s.employee, 'التاريخ': s.date || '', 'ملاحظات': s.notes || ''
   }));
   const ws = XLSX.utils.json_to_sheet(rows);
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'نواقص الأبلكيشن');
   XLSX.writeFile(wb, 'نواقص_الأبلكيشن.xlsx');
   showToast('✅ تم تصدير الملف');
+}
+
+// تعديل: أرشفة أو حذف نواقص الأبلكيشن (فردي أو الكل دفعة واحدة) - عادة بعد تصدير الإكسل لتفريغ الريبورت
+function archiveShortage(id) {
+  const s = shortagesData.find(x => x.id === id); if (!s) return;
+  const archived = { ...s, archivedAt: firebase.database.ServerValue.TIMESTAMP };
+  delete archived.id;
+  db.ref('archived_shortages').push(archived)
+    .then(() => db.ref('shortages/' + id).remove())
+    .then(() => showToast('📦 تم أرشفة النقص'))
+    .catch(err => { showToast('❌ خطأ في الأرشفة', true); console.error(err); });
+}
+function archiveAllShortages() {
+  if (shortagesData.length === 0) { showToast('❌ لا يوجد بيانات', true); return; }
+  if (!confirm(`هل أنت متأكد من أرشفة كل النواقص (${shortagesData.length})؟ يُفضّل تصدير الإكسل أولاً.`)) return;
+  const updates = {};
+  shortagesData.forEach(s => {
+    const archived = { ...s, archivedAt: firebase.database.ServerValue.TIMESTAMP };
+    delete archived.id;
+    const newKey = db.ref('archived_shortages').push().key;
+    updates['archived_shortages/' + newKey] = archived;
+    updates['shortages/' + s.id] = null;
+  });
+  db.ref().update(updates)
+    .then(() => showToast('📦 تم أرشفة كل النواقص'))
+    .catch(err => { showToast('❌ خطأ في الأرشفة', true); console.error(err); });
+}
+function deleteAllShortages() {
+  if (shortagesData.length === 0) { showToast('❌ لا يوجد بيانات', true); return; }
+  if (!confirm(`هل أنت متأكد من حذف كل النواقص (${shortagesData.length}) نهائياً؟ يُفضّل تصدير الإكسل أولاً. لا يمكن التراجع عن هذا الإجراء.`)) return;
+  db.ref('shortages').remove()
+    .then(() => showToast('🗑️ تم حذف كل النواقص'))
+    .catch(err => { showToast('❌ خطأ في الحذف', true); console.error(err); });
 }
 
 // ============================================
@@ -2865,13 +2932,14 @@ function renderCCShortages() {
 function renderCCShortagesReport() {
   const tbody = document.getElementById('ccShortagesReportTable');
   if (!tbody) return;
-  if (ccShortagesData.length === 0) { tbody.innerHTML = '<tr><td colspan="8" class="empty-state">لا يوجد نواقص</td></tr>'; return; }
+  if (ccShortagesData.length === 0) { tbody.innerHTML = '<tr><td colspan="9" class="empty-state">لا يوجد نواقص</td></tr>'; return; }
   tbody.innerHTML = ccShortagesData.map((s, i) => `<tr>
     <td>${i+1}</td><td><strong>${s.productCode}</strong></td><td>${s.productName}</td>
     <td>${s.customerName||'-'}</td>
     <td><span class="badge badge-blue">${s.branch}</span></td>
     <td><span class="badge badge-gray">${s.employee}</span></td>
     <td>${s.date||''}</td><td>${s.notes||'-'}</td>
+    <td>${currentUser.role==='admin'?`<span class="archive-link" onclick="archiveCCShortage('${s.id}')">📦 أرشفة</span><span class="delete-link" onclick="deleteCCShortage('${s.id}')">🗑️ حذف</span>`:''}</td>
   </tr>`).join('');
 }
 function exportCCShortagesToExcel() {
@@ -2885,6 +2953,43 @@ function exportCCShortagesToExcel() {
   XLSX.utils.book_append_sheet(wb, ws, 'نواقص كول سنتر');
   XLSX.writeFile(wb, 'نواقص_كول_سنتر.xlsx');
   showToast('✅ تم تصدير الملف');
+}
+
+// تعديل: أرشفة أو حذف نواقص الكول سنتر (فردي أو الكل دفعة واحدة) - عادة بعد تصدير الإكسل لتفريغ الريبورت
+function deleteCCShortage(id) {
+  if (!confirm('هل أنت متأكد؟')) return;
+  db.ref('callcenter_shortages/' + id).remove().then(() => showToast('🗑️ تم الحذف')).catch(err => { showToast('❌ خطأ', true); console.error(err); });
+}
+function archiveCCShortage(id) {
+  const s = ccShortagesData.find(x => x.id === id); if (!s) return;
+  const archived = { ...s, archivedAt: firebase.database.ServerValue.TIMESTAMP };
+  delete archived.id;
+  db.ref('archived_cc_shortages').push(archived)
+    .then(() => db.ref('callcenter_shortages/' + id).remove())
+    .then(() => showToast('📦 تم أرشفة النقص'))
+    .catch(err => { showToast('❌ خطأ في الأرشفة', true); console.error(err); });
+}
+function archiveAllCCShortages() {
+  if (ccShortagesData.length === 0) { showToast('❌ لا يوجد بيانات', true); return; }
+  if (!confirm(`هل أنت متأكد من أرشفة كل النواقص (${ccShortagesData.length})؟ يُفضّل تصدير الإكسل أولاً.`)) return;
+  const updates = {};
+  ccShortagesData.forEach(s => {
+    const archived = { ...s, archivedAt: firebase.database.ServerValue.TIMESTAMP };
+    delete archived.id;
+    const newKey = db.ref('archived_cc_shortages').push().key;
+    updates['archived_cc_shortages/' + newKey] = archived;
+    updates['callcenter_shortages/' + s.id] = null;
+  });
+  db.ref().update(updates)
+    .then(() => showToast('📦 تم أرشفة كل النواقص'))
+    .catch(err => { showToast('❌ خطأ في الأرشفة', true); console.error(err); });
+}
+function deleteAllCCShortages() {
+  if (ccShortagesData.length === 0) { showToast('❌ لا يوجد بيانات', true); return; }
+  if (!confirm(`هل أنت متأكد من حذف كل النواقص (${ccShortagesData.length}) نهائياً؟ يُفضّل تصدير الإكسل أولاً. لا يمكن التراجع عن هذا الإجراء.`)) return;
+  db.ref('callcenter_shortages').remove()
+    .then(() => showToast('🗑️ تم حذف كل النواقص'))
+    .catch(err => { showToast('❌ خطأ في الحذف', true); console.error(err); });
 }
 
 window.addEventListener('DOMContentLoaded', () => {
