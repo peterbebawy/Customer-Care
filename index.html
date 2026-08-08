@@ -7,22 +7,24 @@
 <link rel="icon" id="faviconLink" type="image/png" href="">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 * { box-sizing: border-box; }
-body { font-family: Tahoma, 'Segoe UI', Arial, sans-serif; direction: rtl; background: #eef2f7; margin: 0; padding: 20px; }
-button, input, select, textarea { font-family: Tahoma, 'Segoe UI', Arial, sans-serif; }
+body { font-family: 'Cairo', Tahoma, 'Segoe UI', Arial, sans-serif; direction: rtl; background: #eef2f7; margin: 0; padding: 20px; -webkit-font-smoothing: antialiased; }
+button, input, select, textarea { font-family: 'Cairo', Tahoma, 'Segoe UI', Arial, sans-serif; }
 .hidden { display: none !important; }
-.card { background: #fff; border-radius: 18px; box-shadow: 0 4px 24px rgba(15,23,42,0.07); padding: 28px; margin-bottom: 20px; max-width: 1100px; margin-left: auto; margin-right: auto; position: relative; overflow: hidden; }
+.card { background: #fff; border-radius: 18px; box-shadow: 0 4px 24px rgba(15,23,42,0.07); padding: 28px; margin-bottom: 20px; max-width: 1100px; margin-left: auto; margin-right: auto; position: relative; overflow: hidden; transition: box-shadow 0.2s ease; }
 .card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 5px; background: linear-gradient(90deg, #2563eb, #06b6d4, #16a34a); }
-.btn { padding: 10px 20px; border: none; border-radius: 10px; cursor: pointer; font-size: 14px; font-weight: 600; transition: all 0.2s; }
-.btn-primary { background: #2563eb; color: #fff; }
-.btn-primary:hover { background: #1d4ed8; }
-.btn-success { background: #16a34a; color: #fff; }
-.btn-success:hover { background: #15803d; }
-.btn-danger { background: #dc2626; color: #fff; }
+.btn { padding: 10px 20px; border: none; border-radius: 10px; cursor: pointer; font-size: 14px; font-weight: 700; transition: all 0.18s ease; letter-spacing: .1px; }
+.btn:active { transform: translateY(1px) scale(0.99); }
+.btn-primary { background: #2563eb; color: #fff; box-shadow: 0 3px 10px rgba(37,99,235,0.25); }
+.btn-primary:hover { background: #1d4ed8; box-shadow: 0 5px 14px rgba(37,99,235,0.35); }
+.btn-success { background: #16a34a; color: #fff; box-shadow: 0 3px 10px rgba(22,163,74,0.25); }
+.btn-success:hover { background: #15803d; box-shadow: 0 5px 14px rgba(22,163,74,0.35); }
+.btn-danger { background: #dc2626; color: #fff; box-shadow: 0 3px 10px rgba(220,38,38,0.2); }
 .btn-danger:hover { background: #b91c1c; }
 .btn-warning { background: #f59e0b; color: #fff; }
 .btn-warning:hover { background: #d97706; }
@@ -31,11 +33,11 @@ button, input, select, textarea { font-family: Tahoma, 'Segoe UI', Arial, sans-s
 .btn-info { background: #06b6d4; color: #fff; }
 .btn-info:hover { background: #0891b2; }
 .btn-sm { padding: 6px 14px; font-size: 13px; }
-.input { width: 100%; padding: 12px 16px; border: 1px solid #d1d5db; border-radius: 10px; font-size: 15px; margin-bottom: 12px; }
+.input { width: 100%; padding: 12px 16px; border: 1px solid #d1d5db; border-radius: 10px; font-size: 15px; margin-bottom: 12px; transition: border-color 0.15s ease, box-shadow 0.15s ease; }
 .input:focus { outline: none; border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,0.15); }
-.label { display: block; margin-bottom: 6px; font-weight: 600; color: #374151; font-size: 14px; }
+.label { display: block; margin-bottom: 6px; font-weight: 700; color: #374151; font-size: 14px; }
 .order-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px; margin-bottom: 12px; }
-.badge { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; margin: 2px; }
+.badge { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 700; margin: 2px; }
 .badge-blue { background: #dbeafe; color: #1e40af; }
 .badge-green { background: #dcfce7; color: #166534; }
 .badge-purple { background: #f3e8ff; color: #6b21a8; }
@@ -46,25 +48,28 @@ button, input, select, textarea { font-family: Tahoma, 'Segoe UI', Arial, sans-s
 .badge-gray { background: #f3f4f6; color: #374151; }
 .badge-pink { background: #fce7f3; color: #9d174d; }
 .header { text-align: center; margin-bottom: 24px; }
-.header h1 { color: #1e293b; margin: 0; font-size: 26px; }
+.header h1 { color: #1e293b; margin: 0; font-size: 26px; font-weight: 800; }
 .header p { color: #64748b; margin: 8px 0 0; }
 
-.nav-container { max-width: 1100px; margin: 0 auto 20px; }
-.nav-toggle-bar { display: flex; justify-content: space-between; align-items: center; background: #fff; padding: 13px 18px; border-radius: 14px; box-shadow: 0 4px 20px rgba(15,23,42,0.06); cursor: pointer; font-weight: 800; color: #1e293b; user-select: none; position: relative; overflow: hidden; margin-bottom: 8px; }
+.nav-container { max-width: 1100px; margin: 0 auto 20px; position: sticky; top: 12px; z-index: 50; }
+.nav-toggle-bar { display: flex; justify-content: space-between; align-items: center; background: #fff; padding: 13px 18px; border-radius: 14px; box-shadow: 0 6px 22px rgba(15,23,42,0.09); cursor: pointer; font-weight: 800; color: #1e293b; user-select: none; position: relative; overflow: hidden; margin-bottom: 8px; transition: box-shadow 0.2s ease; }
+.nav-toggle-bar:hover { box-shadow: 0 8px 26px rgba(15,23,42,0.13); }
 .nav-toggle-bar::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, #2563eb, #06b6d4, #16a34a); }
 .nav-toggle-bar .nav-toggle-title { display: flex; align-items: center; gap: 10px; font-size: 14.5px; }
 .nav-toggle-bar .nav-toggle-title .cur-tab-label { color: #2563eb; }
 .nav-toggle-arrow { color: #94a3b8; transition: transform 0.2s; font-size: 13px; }
 .nav-toggle-arrow.open { transform: rotate(180deg); }
 .nav { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; background: #fff; border-radius: 18px; box-shadow: 0 4px 20px rgba(15,23,42,0.06); position: relative; max-height: 0; opacity: 0; padding: 0 14px; margin-bottom: 0; overflow: hidden; transition: max-height 0.25s ease, opacity 0.2s ease, padding 0.25s ease, margin 0.25s ease; }
-.nav.open { max-height: 900px; opacity: 1; padding: 14px; margin-bottom: 20px; }
+.nav.open { max-height: 900px; opacity: 1; padding: 14px; margin-bottom: 20px; overflow-y: auto; max-height: min(900px, 70vh); }
 .nav::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, #2563eb, #06b6d4, #16a34a); }
 .nav-group-label { flex-basis: 100%; display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 800; color: #94a3b8; letter-spacing: .3px; text-transform: uppercase; margin: 10px 2px 2px; }
 .nav-group-label:first-child { margin-top: 2px; }
 .nav-group-label::after { content: ''; flex: 1; height: 1px; background: #eef2f7; }
-.nav-btn { padding: 10px 16px; border-radius: 10px; border: 1px solid #e2e8f0; background: #fff; cursor: pointer; font-weight: 700; color: #475569; font-size: 13px; transition: all 0.2s; white-space: nowrap; }
-.nav-btn:hover { background: #f1f5f9; border-color: #cbd5e1; }
+.nav-btn { padding: 10px 16px; border-radius: 10px; border: 1px solid #e2e8f0; background: #fff; cursor: pointer; font-weight: 700; color: #475569; font-size: 13px; transition: all 0.18s ease; white-space: nowrap; position: relative; display: inline-flex; align-items: center; gap: 6px; }
+.nav-btn:hover { background: #f1f5f9; border-color: #cbd5e1; transform: translateY(-1px); }
 .nav-btn.active { background: linear-gradient(135deg, #2563eb, #1d4ed8); color: #fff; border-color: #2563eb; box-shadow: 0 3px 10px rgba(37,99,235,0.3); }
+.nav-count { display: inline-flex; align-items: center; justify-content: center; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: #dc2626; color: #fff; font-size: 10.5px; font-weight: 800; line-height: 1; }
+.nav-btn.active .nav-count { background: rgba(255,255,255,0.28); }
 .nav-divider { width: 1px; background: #e2e8f0; margin: 4px 8px; }
 
 .table-wrap { overflow-x: auto; }
@@ -293,6 +298,8 @@ th { background: #f1f5f9; font-weight: 600; color: #475569; }
     <div id="newOrderAppField" class="hidden">
       <label class="label">الأبلكيشن</label>
       <select id="newOrderApp" class="input"><option value="">اختر الأبلكيشن</option></select>
+      <label class="label">رقم الأوردر على الأبلكيشن <span style="color:#dc2626;">*</span></label>
+      <input type="text" id="newOrderAppNumber" class="input" placeholder="أدخل رقم الأوردر كما يظهر في الأبلكيشن" autocomplete="off">
     </div>
     <label class="label">الأصناف المطلوبة</label>
     <div class="search-wrap">
@@ -351,7 +358,7 @@ th { background: #f1f5f9; font-weight: 600; color: #475569; }
       <p style="margin:-8px 0 16px;color:#94a3b8;font-size:12.5px;">ℹ️ الأوردرات التي تصبح حالتها "تم" أو "ملغي" تنتقل تلقائياً لتبويب ✅ Done أو ❌ Cancel</p>
       <div class="stats" id="appStatsBox"></div>
       <div class="search-bar">
-        <input type="text" id="appOrderSearch" class="input" style="margin-bottom:0;" placeholder="🔍 ابحث باسم الموظف أو الفرع أو اسم العميل أو كود العميل أو الأبلكيشن..." oninput="renderAllAppOrders()">
+        <input type="text" id="appOrderSearch" class="input" style="margin-bottom:0;" placeholder="🔍 ابحث برقم الأوردر أو اسم الموظف أو الفرع أو اسم العميل أو كود العميل أو الأبلكيشن..." oninput="renderAllAppOrders()">
       </div>
       <div class="filter-bar">
         <span style="font-weight:600;color:#374151;">تصفية:</span>
@@ -362,7 +369,7 @@ th { background: #f1f5f9; font-weight: 600; color: #475569; }
       </div>
       <div class="table-wrap">
         <table>
-          <thead><tr><th>#</th><th>العميل</th><th>الفرع</th><th>الأبلكيشن</th><th>الأصناف</th><th>الإجمالي</th><th>التوفير</th><th>الحالة</th><th>ميعاد الخروج</th><th>الموظف</th><th>التاريخ</th><th>إجراءات</th></tr></thead>
+          <thead><tr><th>#</th><th>العميل</th><th>الفرع</th><th>الأبلكيشن</th><th>رقم الأوردر</th><th>الأصناف</th><th>الإجمالي</th><th>التوفير</th><th>الحالة</th><th>ميعاد الخروج</th><th>الموظف</th><th>التاريخ</th><th>إجراءات</th></tr></thead>
           <tbody id="allAppOrdersTable"></tbody>
         </table>
       </div>
@@ -374,7 +381,7 @@ th { background: #f1f5f9; font-weight: 600; color: #475569; }
       <h2 style="margin-top:0;color:#1e293b;">✅ Done</h2>
       <div class="stats" id="doneStatsBox"></div>
       <div class="search-bar">
-        <input type="text" id="doneOrderSearch" class="input" style="margin-bottom:0;" placeholder="🔍 ابحث باسم الموظف أو الفرع أو اسم العميل أو كود العميل أو الأبلكيشن..." oninput="renderDoneOrders()">
+        <input type="text" id="doneOrderSearch" class="input" style="margin-bottom:0;" placeholder="🔍 ابحث برقم الأوردر أو اسم الموظف أو الفرع أو اسم العميل أو كود العميل أو الأبلكيشن..." oninput="renderDoneOrders()">
       </div>
       <div class="filter-bar">
         <span style="font-weight:600;color:#374151;">تصفية:</span>
@@ -384,7 +391,7 @@ th { background: #f1f5f9; font-weight: 600; color: #475569; }
       </div>
       <div class="table-wrap">
         <table>
-          <thead><tr><th>#</th><th>النوع</th><th>العميل</th><th>الفرع</th><th>الأبلكيشن</th><th>الأصناف</th><th>الإجمالي</th><th>الحالة</th><th>ميعاد الخروج</th><th>الموظف</th><th>التاريخ</th><th>إجراءات</th></tr></thead>
+          <thead><tr><th>#</th><th>النوع</th><th>العميل</th><th>الفرع</th><th>الأبلكيشن</th><th>رقم الأوردر</th><th>الأصناف</th><th>الإجمالي</th><th>الحالة</th><th>ميعاد الخروج</th><th>الموظف</th><th>التاريخ</th><th>إجراءات</th></tr></thead>
           <tbody id="doneOrdersTable"></tbody>
         </table>
       </div>
@@ -396,7 +403,7 @@ th { background: #f1f5f9; font-weight: 600; color: #475569; }
       <h2 style="margin-top:0;color:#1e293b;">❌ Cancel</h2>
       <div class="stats" id="cancelStatsBox"></div>
       <div class="search-bar">
-        <input type="text" id="cancelOrderSearch" class="input" style="margin-bottom:0;" placeholder="🔍 ابحث باسم الموظف أو الفرع أو اسم العميل أو كود العميل أو الأبلكيشن..." oninput="renderCancelOrders()">
+        <input type="text" id="cancelOrderSearch" class="input" style="margin-bottom:0;" placeholder="🔍 ابحث برقم الأوردر أو اسم الموظف أو الفرع أو اسم العميل أو كود العميل أو الأبلكيشن..." oninput="renderCancelOrders()">
       </div>
       <div class="filter-bar">
         <span style="font-weight:600;color:#374151;">تصفية:</span>
@@ -406,7 +413,7 @@ th { background: #f1f5f9; font-weight: 600; color: #475569; }
       </div>
       <div class="table-wrap">
         <table>
-          <thead><tr><th>#</th><th>النوع</th><th>العميل</th><th>الفرع</th><th>الأبلكيشن</th><th>الأصناف</th><th>الإجمالي</th><th>الحالة</th><th>ميعاد الخروج</th><th>سبب الإلغاء</th><th>الموظف</th><th>التاريخ</th><th>إجراءات</th></tr></thead>
+          <thead><tr><th>#</th><th>النوع</th><th>العميل</th><th>الفرع</th><th>الأبلكيشن</th><th>رقم الأوردر</th><th>الأصناف</th><th>الإجمالي</th><th>الحالة</th><th>ميعاد الخروج</th><th>سبب الإلغاء</th><th>الموظف</th><th>التاريخ</th><th>إجراءات</th></tr></thead>
           <tbody id="cancelOrdersTable"></tbody>
         </table>
       </div>
@@ -502,7 +509,7 @@ th { background: #f1f5f9; font-weight: 600; color: #475569; }
       <h2 style="margin-top:0;color:#1e293b;">📦 أرشيف الأوردرات</h2>
       <div class="stats" id="archiveStatsBox"></div>
       <div class="search-bar">
-        <input type="text" id="archiveSearch" class="input" style="margin-bottom:0;" placeholder="🔍 ابحث..." oninput="renderArchive()">
+        <input type="text" id="archiveSearch" class="input" style="margin-bottom:0;" placeholder="🔍 ابحث برقم الأوردر أو اسم الموظف أو الفرع أو اسم العميل..." oninput="renderArchive()">
       </div>
       <div class="table-wrap">
         <table>
@@ -688,6 +695,8 @@ th { background: #f1f5f9; font-weight: 600; color: #475569; }
       <div><label class="label">الفرع</label><select id="editAppOrderBranch" class="input"></select></div>
       <div><label class="label">الأبلكيشن</label><select id="editAppOrderApp" class="input"></select></div>
     </div>
+    <label class="label">رقم الأوردر على الأبلكيشن <span style="color:#dc2626;">*</span></label>
+    <input type="text" id="editAppOrderNumber" class="input" placeholder="رقم الأوردر كما يظهر في الأبلكيشن">
     <label class="label">الأصناف المطلوبة</label><textarea id="editAppOrderItems" class="input" rows="3"></textarea>
     <label class="label">كيف سيتم توفير الأوردر؟</label>
     <div class="radio-group">
@@ -861,14 +870,14 @@ function initApp() {
     ordersData = [];
     snapshot.forEach(child => { ordersData.push({ id: child.key, ...child.val() }); });
     ordersData.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
-    if (currentUser) { renderMyOrders(); renderAllOrders(); renderDoneOrders(); renderCancelOrders(); }
+    if (currentUser) { renderMyOrders(); renderAllOrders(); renderDoneOrders(); renderCancelOrders(); updateNavBadges(); }
   }, error => console.error('Orders:', error));
 
   rtdb.ref('app_orders').on('value', snapshot => {
     appOrdersData = [];
     snapshot.forEach(child => { appOrdersData.push({ id: child.key, ...child.val() }); });
     appOrdersData.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
-    if (currentUser) { renderAllAppOrders(); renderDoneOrders(); renderCancelOrders(); }
+    if (currentUser) { renderAllAppOrders(); renderDoneOrders(); renderCancelOrders(); updateNavBadges(); }
   }, error => console.error('App Orders:', error));
 
   rtdb.ref('branches').on('value', snapshot => {
@@ -1013,6 +1022,7 @@ function enterDashboard(user, silent) {
   else { const firstAvail = Object.keys(userSections).find(k => userSections[k]); if (firstAvail) defaultTab = firstAvail; }
   showTab(defaultTab);
   if (!silent) showToast('👋 مرحباً ' + user.name);
+  resetIdleTimer();
 }
 
 function doLogin() {
@@ -1032,6 +1042,32 @@ function doLogout() {
   document.getElementById('loginUser').value = '';
   document.getElementById('loginPass').value = '';
   document.getElementById('mainNav').innerHTML = '';
+  stopIdleTimer();
+}
+
+// ============================================
+// تعديل: تسجيل الخروج التلقائي بعد 10 دقائق من عدم الاستخدام
+// الجلسة تبقى مفتوحة عند تحديث الصفحة (refresh)، ولا يتم تسجيل الخروج إلا بعد عدم أي نشاط للمستخدم لمدة 10 دقائق
+// ============================================
+const IDLE_LIMIT_MS = 10 * 60 * 1000; // 10 دقائق
+let idleTimer = null;
+function resetIdleTimer() {
+  if (!currentUser) return;
+  if (idleTimer) clearTimeout(idleTimer);
+  idleTimer = setTimeout(() => {
+    if (currentUser) {
+      showToast('⏱️ تم تسجيل الخروج تلقائياً بسبب عدم الاستخدام لمدة 10 دقائق', true);
+      doLogout();
+    }
+  }, IDLE_LIMIT_MS);
+}
+function stopIdleTimer() {
+  if (idleTimer) { clearTimeout(idleTimer); idleTimer = null; }
+}
+function setupIdleWatcher() {
+  ['mousemove', 'mousedown', 'keydown', 'scroll', 'touchstart', 'click', 'wheel'].forEach(evt => {
+    document.addEventListener(evt, resetIdleTimer, { passive: true });
+  });
 }
 
 function renderUsers() {
@@ -1379,15 +1415,15 @@ function setupNavByRole() {
   // ====== قسم العمليات (أوردرات عادية) ======
   let opsHtml = '';
   if (sections.newOrder) opsHtml += `<button class="nav-btn" onclick="showTab('newOrder')" id="tab-newOrder">➕ أوردر جديد</button>`;
-  if (sections.myOrders) opsHtml += `<button class="nav-btn" onclick="showTab('myOrders')" id="tab-myOrders">📋 أوردراتي</button>`;
-  if (sections.allOrders) opsHtml += `<button class="nav-btn" onclick="showTab('allOrders')" id="tab-allOrders">📊 كل الأوردرات</button>`;
+  if (sections.myOrders) opsHtml += `<button class="nav-btn" onclick="showTab('myOrders')" id="tab-myOrders">📋 أوردراتي <span class="nav-count hidden" id="navcount-myOrders"></span></button>`;
+  if (sections.allOrders) opsHtml += `<button class="nav-btn" onclick="showTab('allOrders')" id="tab-allOrders">📊 كل الأوردرات <span class="nav-count hidden" id="navcount-allOrders"></span></button>`;
   if (sections.doneOrders) opsHtml += `<button class="nav-btn" onclick="showTab('doneOrders')" id="tab-doneOrders">✅ Done</button>`;
   if (sections.cancelOrders) opsHtml += `<button class="nav-btn" onclick="showTab('cancelOrders')" id="tab-cancelOrders">❌ Cancel</button>`;
   if (opsHtml) nav.innerHTML += `<div class="nav-group-label">📋 العمليات</div>` + opsHtml;
 
   // ====== قسم أوردرات ونواقص الأبلكيشن ======
   let appHtml = '';
-  if (sections.allAppOrders) appHtml += `<button class="nav-btn" onclick="showTab('allAppOrders')" id="tab-allAppOrders">📊 كل أوردرات الأبلكيشن</button>`;
+  if (sections.allAppOrders) appHtml += `<button class="nav-btn" onclick="showTab('allAppOrders')" id="tab-allAppOrders">📊 كل أوردرات الأبلكيشن <span class="nav-count hidden" id="navcount-allAppOrders"></span></button>`;
   if (sections.shortages) appHtml += `<button class="nav-btn" onclick="showTab('shortages')" id="tab-shortages">📱 نواقص الأبلكيشن</button>`;
   if (appHtml) nav.innerHTML += `<div class="nav-group-label">📱 نواقص وأوردرات الأبلكيشن</div>` + appHtml;
 
@@ -1411,6 +1447,22 @@ function setupNavByRole() {
   if (sections.products) adminHtml += `<button class="nav-btn" onclick="showTab('products')" id="tab-products">📦 الأصناف</button>`;
   if (sections.customers) adminHtml += `<button class="nav-btn" onclick="showTab('customers')" id="tab-customers">👤 العملاء</button>`;
   if (adminHtml) nav.innerHTML += `<div class="nav-group-label">⚙️ الإدارة</div>` + adminHtml;
+
+  updateNavBadges();
+}
+
+// تعديل: تبويبات أذكى - عرض عدد الأوردرات "في الانتظار" كبادچ على التبويب مباشرة حتى لا يحتاج المستخدم لفتحه ليعرف
+function updateNavBadges() {
+  if (!currentUser) return;
+  const setBadge = (elId, count) => {
+    const el = document.getElementById(elId);
+    if (!el) return;
+    if (count > 0) { el.textContent = count > 99 ? '99+' : count; el.classList.remove('hidden'); }
+    else { el.classList.add('hidden'); }
+  };
+  setBadge('navcount-allOrders', ordersData.filter(o => o.status === 'pending').length);
+  setBadge('navcount-allAppOrders', appOrdersData.filter(o => o.status === 'pending').length);
+  if (currentUser) setBadge('navcount-myOrders', ordersData.filter(o => o.employeeId === currentUser.id && o.status === 'pending').length);
 }
 
 // تعديل: مسح البيانات عند الضغط على أوردر جديد
@@ -1427,6 +1479,7 @@ function clearNewOrderForm() {
   // تعديل: إعادة ضبط خانة "هل هذا الأوردر أبلكيشن؟"
   document.getElementById('isAppOrderChk').checked = false;
   document.getElementById('newOrderApp').value = '';
+  document.getElementById('newOrderAppNumber').value = '';
   document.getElementById('newOrderAppField').classList.add('hidden');
   orderItems = [];
   renderOrderItems();
@@ -1789,9 +1842,11 @@ function submitOrder() {
   // تعديل: تحديد ما إذا كان الأوردر أبلكيشن أم عادي من نفس نموذج "أوردر جديد"
   const isAppOrder = document.getElementById('isAppOrderChk').checked;
   const appName = isAppOrder ? document.getElementById('newOrderApp').value : '';
+  const appOrderNumber = isAppOrder ? document.getElementById('newOrderAppNumber').value.trim() : '';
   if (!customer) { showToast('❌ اختر العميل', true); return; }
   if (!branch) { showToast('❌ اختر الفرع', true); return; }
   if (isAppOrder && !appName) { showToast('❌ اختر الأبلكيشن', true); return; }
+  if (isAppOrder && !appOrderNumber) { showToast('❌ أدخل رقم الأوردر على الأبلكيشن', true); return; }
   if (orderItems.length === 0) { showToast('❌ أضف صنف واحد على الأقل', true); return; }
   const itemsText = orderItems.map(i => `${i.code} - ${i.name} (x${i.qty}) = ${(i.price * i.qty).toFixed(2)} ج.م`).join('\n');
   const total = getOrderTotal();
@@ -1803,7 +1858,7 @@ function submitOrder() {
     notes, timestamp: firebase.database.ServerValue.TIMESTAMP
   };
   // تعديل: توجيه الأوردر - لو "أبلكيشن" يتحفظ في app_orders (يظهر في ريبورت الأبلكيشن)، ولو "عادي" يتحفظ في orders (يظهر في كل الأوردرات)
-  if (isAppOrder) orderData.appName = appName;
+  if (isAppOrder) { orderData.appName = appName; orderData.appOrderNumber = appOrderNumber; }
   const targetRef = isAppOrder ? rtdb.ref('app_orders') : rtdb.ref('orders');
   targetRef.push(orderData).then(() => {
     showToast(isAppOrder ? '✅ تم حفظ أوردر الأبلكيشن' : '✅ تم حفظ الأوردر');
@@ -1975,7 +2030,8 @@ function renderAllAppOrders() {
       (o.branch && o.branch.toLowerCase().includes(searchQ)) ||
       (o.customer && o.customer.toLowerCase().includes(searchQ)) ||
       (o.customerCode && o.customerCode.toLowerCase().includes(searchQ)) ||
-      (o.appName && o.appName.toLowerCase().includes(searchQ))
+      (o.appName && o.appName.toLowerCase().includes(searchQ)) ||
+      (o.appOrderNumber && o.appOrderNumber.toLowerCase().includes(searchQ))
     );
   }
 
@@ -1995,7 +2051,7 @@ function renderAllAppOrders() {
     <div class="stat-card"><div class="stat-number" style="color:#7c3aed;">${todayOrders}</div><div class="stat-label">اليوم</div></div>
   `;
 
-  if (filtered.length === 0) { table.innerHTML = `<tr><td colspan="12" class="empty-state">لا يوجد أوردرات أبلكيشن</td></tr>`; return; }
+  if (filtered.length === 0) { table.innerHTML = `<tr><td colspan="13" class="empty-state">لا يوجد أوردرات أبلكيشن</td></tr>`; return; }
 
   table.innerHTML = filtered.map((o, i) => {
     const statusClass = STATUS_CLASSES[o.status] || 'status-pending';
@@ -2023,6 +2079,7 @@ function renderAllAppOrders() {
       <td><strong>${o.customer}</strong>${o.customerCode?`<br><span style="font-size:11px;color:#64748b;">${o.customerCode}</span>`:''}</td>
       <td><span class="badge badge-blue">${o.branch}</span></td>
       <td><span class="badge badge-purple">${o.appName||'-'}</span></td>
+      <td><span class="badge badge-pink">#${o.appOrderNumber||'-'}</span></td>
       <td style="max-width:200px;font-size:12px;white-space:pre-line;">${o.items||'-'}</td>
       <td><strong style="color:#16a34a;">${o.total?o.total.toFixed(2):'0'}</strong></td>
       <td><span class="badge badge-orange">${o.supplyType||'مقاصة'}</span></td>
@@ -2086,7 +2143,8 @@ function renderDoneOrders() {
       (o.branch && o.branch.toLowerCase().includes(searchQ)) ||
       (o.customer && o.customer.toLowerCase().includes(searchQ)) ||
       (o.customerCode && o.customerCode.toLowerCase().includes(searchQ)) ||
-      (o.appName && o.appName.toLowerCase().includes(searchQ))
+      (o.appName && o.appName.toLowerCase().includes(searchQ)) ||
+      (o.appOrderNumber && o.appOrderNumber.toLowerCase().includes(searchQ))
     );
   }
 
@@ -2098,7 +2156,7 @@ function renderDoneOrders() {
     <div class="stat-card"><div class="stat-number" style="color:#7c3aed;">${totalApp}</div><div class="stat-label">أبلكيشن</div></div>
   `;
 
-  if (list.length === 0) { table.innerHTML = `<tr><td colspan="12" class="empty-state">لا يوجد أوردرات تم تنفيذها</td></tr>`; return; }
+  if (list.length === 0) { table.innerHTML = `<tr><td colspan="13" class="empty-state">لا يوجد أوردرات تم تنفيذها</td></tr>`; return; }
 
   const canEdit = currentUser.role === 'admin';
   const canChangeStatus = currentUser.role === 'admin' || currentUser.role === 'manager' || currentUser.role === 'appuser';
@@ -2128,6 +2186,7 @@ function renderDoneOrders() {
       <td><strong>${o.customer}</strong>${o.customerCode?`<br><span style="font-size:11px;color:#64748b;">${o.customerCode}</span>`:''}</td>
       <td><span class="badge badge-blue">${o.branch}</span></td>
       <td>${o.appName?`<span class="badge badge-purple">${o.appName}</span>`:'-'}</td>
+      <td>${o.appOrderNumber?`<span class="badge badge-pink">#${o.appOrderNumber}</span>`:'-'}</td>
       <td style="max-width:200px;font-size:12px;white-space:pre-line;">${o.items||'-'}</td>
       <td><strong style="color:#16a34a;">${o.total?o.total.toFixed(2):'0'}</strong></td>
       <td>${statusCell}</td>
@@ -2168,7 +2227,8 @@ function renderCancelOrders() {
       (o.branch && o.branch.toLowerCase().includes(searchQ)) ||
       (o.customer && o.customer.toLowerCase().includes(searchQ)) ||
       (o.customerCode && o.customerCode.toLowerCase().includes(searchQ)) ||
-      (o.appName && o.appName.toLowerCase().includes(searchQ))
+      (o.appName && o.appName.toLowerCase().includes(searchQ)) ||
+      (o.appOrderNumber && o.appOrderNumber.toLowerCase().includes(searchQ))
     );
   }
 
@@ -2180,7 +2240,7 @@ function renderCancelOrders() {
     <div class="stat-card"><div class="stat-number" style="color:#7c3aed;">${totalApp}</div><div class="stat-label">أبلكيشن</div></div>
   `;
 
-  if (list.length === 0) { table.innerHTML = `<tr><td colspan="13" class="empty-state">لا يوجد أوردرات ملغية</td></tr>`; return; }
+  if (list.length === 0) { table.innerHTML = `<tr><td colspan="14" class="empty-state">لا يوجد أوردرات ملغية</td></tr>`; return; }
 
   const canEdit = currentUser.role === 'admin';
   const canChangeStatus = currentUser.role === 'admin' || currentUser.role === 'manager' || currentUser.role === 'appuser';
@@ -2210,6 +2270,7 @@ function renderCancelOrders() {
       <td><strong>${o.customer}</strong>${o.customerCode?`<br><span style="font-size:11px;color:#64748b;">${o.customerCode}</span>`:''}</td>
       <td><span class="badge badge-blue">${o.branch}</span></td>
       <td>${o.appName?`<span class="badge badge-purple">${o.appName}</span>`:'-'}</td>
+      <td>${o.appOrderNumber?`<span class="badge badge-pink">#${o.appOrderNumber}</span>`:'-'}</td>
       <td style="max-width:200px;font-size:12px;white-space:pre-line;">${o.items||'-'}</td>
       <td><strong style="color:#16a34a;">${o.total?o.total.toFixed(2):'0'}</strong></td>
       <td>${statusCell}</td>
@@ -2312,7 +2373,8 @@ function renderArchive() {
       (o.employee && o.employee.toLowerCase().includes(searchQ)) ||
       (o.branch && o.branch.toLowerCase().includes(searchQ)) ||
       (o.customer && o.customer.toLowerCase().includes(searchQ)) ||
-      (o.customerCode && o.customerCode.toLowerCase().includes(searchQ))
+      (o.customerCode && o.customerCode.toLowerCase().includes(searchQ)) ||
+      (o.appOrderNumber && o.appOrderNumber.toLowerCase().includes(searchQ))
     );
   }
   statsBox.innerHTML = `<div class="stat-card"><div class="stat-number" style="color:#7c3aed;">${archiveData.length}</div><div class="stat-label">الأوردرات المؤرشفة</div></div>`;
@@ -2320,7 +2382,9 @@ function renderArchive() {
   table.innerHTML = filtered.map((o, i) => {
     const statusLabel = STATUS_LABELS[o.status] || o.status;
     const statusClass = STATUS_CLASSES[o.status] || 'status-pending';
-    const typeBadge = o._sourceTable === 'app_orders' ? `<span class="badge badge-purple">📱 أبلكيشن</span>` : `<span class="badge badge-blue">📊 عادي</span>`;
+    const typeBadge = o._sourceTable === 'app_orders'
+      ? `<span class="badge badge-purple">📱 أبلكيشن</span>${o.appOrderNumber?`<br><span class="badge badge-pink" style="margin-top:4px;">#${o.appOrderNumber}</span>`:''}`
+      : `<span class="badge badge-blue">📊 عادي</span>`;
     return `<tr>
       <td>${i+1}</td>
       <td>${typeBadge}</td>
@@ -2451,7 +2515,8 @@ function openReviewAppOrder(id) {
 
   document.getElementById('reviewContent').innerHTML = `
     <div style="margin-bottom:16px;"><div class="grid-2"><div><strong>العميل:</strong> ${o.customer}</div><div><strong>الفرع:</strong> <span class="badge badge-blue">${o.branch}</span></div></div></div>
-    <div style="margin-bottom:16px;"><div class="grid-2"><div><strong>الأبلكيشن:</strong> <span class="badge badge-purple">${o.appName||'-'}</span></div><div><strong>الموظف:</strong> <span class="badge badge-gray">${o.employee}</span></div></div></div>
+    <div style="margin-bottom:16px;"><div class="grid-2"><div><strong>الأبلكيشن:</strong> <span class="badge badge-purple">${o.appName||'-'}</span></div><div><strong>رقم الأوردر:</strong> <span class="badge badge-pink">#${o.appOrderNumber||'-'}</span></div></div></div>
+    <div style="margin-bottom:16px;"><div class="grid-2"><div><strong>الموظف:</strong> <span class="badge badge-gray">${o.employee}</span></div><div></div></div></div>
     <div style="margin-bottom:16px;"><div class="grid-2"><div><strong>تاريخ التسجيل:</strong> ${o.date||'-'}</div><div><strong>طريقة التوفير:</strong> <span class="badge badge-orange">${o.supplyType||'مقاصة'}</span></div></div></div>
     <div style="margin-bottom:16px;"><div class="grid-2"><div><strong>الحالة:</strong> <span class="badge ${statusClass}">${statusLabel}</span></div><div><strong>ميعاد الخروج:</strong> <span class="badge badge-cyan">${o.deliveryDate||'-'}</span></div></div></div>
     <div style="margin-bottom:16px;"><strong>الإجمالي:</strong> <span style="color:#16a34a;font-size:18px;font-weight:700;">${o.total?o.total.toFixed(2):'0'} ج.م</span></div>
@@ -2473,6 +2538,7 @@ function openEditAppOrder(id) {
   populateAppOrderBranch(); populateAppOrderAppSelect();
   document.getElementById('editAppOrderBranch').value = order.branch || '';
   document.getElementById('editAppOrderApp').value = order.appName || '';
+  document.getElementById('editAppOrderNumber').value = order.appOrderNumber || '';
   document.getElementById('editAppOrderItems').value = order.items || '';
   const supplyRadio = document.querySelector(`input[name="editAppOrderSupplyType"][value="${order.supplyType}"]`);
   if (supplyRadio) supplyRadio.checked = true;
@@ -2501,6 +2567,7 @@ function saveEditAppOrder() {
   const customer = document.getElementById('editAppOrderCustomerName').value.trim();
   const branch = document.getElementById('editAppOrderBranch').value;
   const appName = document.getElementById('editAppOrderApp').value;
+  const appOrderNumber = document.getElementById('editAppOrderNumber').value.trim();
   const items = document.getElementById('editAppOrderItems').value.trim();
   const supplyType = document.querySelector('input[name="editAppOrderSupplyType"]:checked')?.value || 'مقاصة';
   const deliveryDate = document.getElementById('editAppOrderDeliveryDate').value;
@@ -2508,7 +2575,7 @@ function saveEditAppOrder() {
   const cancelReason = document.getElementById('editAppOrderCancelReason').value.trim();
   const notes = document.getElementById('editAppOrderNotes').value.trim();
 
-  if (!customer || !branch || !appName || !items) { showToast('❌ أكمل جميع الحقول المطلوبة', true); return; }
+  if (!customer || !branch || !appName || !appOrderNumber || !items) { showToast('❌ أكمل جميع الحقول المطلوبة', true); return; }
 
   if (status === 'cancelled' && !cancelReason) {
     showToast('❌ يجب كتابة سبب الإلغاء', true);
@@ -2516,7 +2583,7 @@ function saveEditAppOrder() {
     return;
   }
 
-  const data = { customer, branch, appName, items, supplyType, deliveryDate, status, notes };
+  const data = { customer, branch, appName, appOrderNumber, items, supplyType, deliveryDate, status, notes };
   if (status === 'cancelled') data.cancelReason = cancelReason; else data.cancelReason = '';
   db.ref('app_orders/' + id).update(data)
     .then(() => { showToast('✅ تم حفظ التعديلات'); closeEditAppOrderModal(); })
@@ -2824,6 +2891,7 @@ window.addEventListener('DOMContentLoaded', () => {
   initApp();
   setupDropZone('productDropZone', handleProductFile);
   setupDropZone('customerDropZone', handleCustomerFile);
+  setupIdleWatcher();
 });
 </script>
 
