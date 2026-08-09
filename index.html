@@ -1006,7 +1006,7 @@ function downloadInstashop(branchId){
 function buildInstashopFile(branchId){
   const r = getReports(branchId);
   if(!r) return null;
-  const aoa = [['كود الصنف','اسم الصنف','سعر البيع','الرصيد']];
+  const aoa = [['كود الصنف','إسم الصنف','سعر البيع','الرصيد']];
   r.items.forEach(it => aoa.push([it.code, it.name, it.price, it.balance]));
   const ws = XLSX.utils.aoa_to_sheet(aoa);
   ws['!cols'] = [{wch:14},{wch:34},{wch:12},{wch:10}];
