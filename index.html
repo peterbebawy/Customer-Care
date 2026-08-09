@@ -79,15 +79,24 @@ html, body { overflow-x: hidden; }
 .sidebar-close-btn { background: rgba(255,255,255,0.12); border: none; color: #fff; width: 30px; height: 30px; border-radius: 9px; font-size: 18px; cursor: pointer; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
 .sidebar-close-btn:hover { background: rgba(255,255,255,0.22); }
 .nav { display: flex; flex-direction: column; gap: 4px; padding: 14px 12px 24px; }
-.nav-group-label { display: flex; align-items: center; gap: 8px; font-size: 11px; font-weight: 800; color: #94a3b8; letter-spacing: .5px; text-transform: uppercase; margin: 14px 4px 4px; }
-.nav-group-label:first-child { margin-top: 2px; }
+.nav-group { display: flex; flex-direction: column; margin: 6px 0; }
+.nav-group:first-child { margin-top: 0; }
+.nav-group-label { display: flex; align-items: center; gap: 8px; font-size: 11px; font-weight: 800; color: #94a3b8; letter-spacing: .5px; text-transform: uppercase; margin: 8px 4px 4px; border: none; background: transparent; cursor: pointer; width: 100%; padding: 6px 4px; border-radius: 8px; font-family: inherit; text-align: right; transition: background 0.15s ease; }
+.nav-group-label:hover { background: #f8fafc; color: #64748b; }
 .nav-group-label::after { content: ''; flex: 1; height: 1px; background: #eef2f7; }
+.nav-group-caret { font-size: 10px; color: #94a3b8; transition: transform 0.2s ease; flex-shrink: 0; }
+.nav-group.open .nav-group-caret { transform: rotate(180deg); }
+.nav-group-body { display: flex; flex-direction: column; gap: 4px; overflow: hidden; max-height: 0; transition: max-height 0.25s ease; }
+.nav-group.open .nav-group-body { max-height: 1000px; }
 .nav-btn { padding: 11px 14px; border-radius: 11px; border: 1px solid transparent; background: transparent; cursor: pointer; font-weight: 700; color: #475569; font-size: 13.5px; transition: all 0.16s ease; white-space: nowrap; position: relative; display: flex; align-items: center; gap: 8px; width: 100%; text-align: right; }
 .nav-btn:hover { background: #f1f5f9; }
 .nav-btn.active { background: linear-gradient(135deg, #2563eb, #1d4ed8); color: #fff; border-color: #2563eb; box-shadow: 0 4px 14px rgba(37,99,235,0.32); }
 .nav-count { display: inline-flex; align-items: center; justify-content: center; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: #dc2626; color: #fff; font-size: 10.5px; font-weight: 800; line-height: 1; margin-right: auto; }
 .nav-btn.active .nav-count { background: rgba(255,255,255,0.28); }
 .nav-divider { display: none; }
+.nav-account-group { margin-top: 14px; padding-top: 10px; border-top: 1px solid #eef2f7; }
+.nav-btn.nav-btn-danger { color: #dc2626; }
+.nav-btn.nav-btn-danger:hover { background: #fef2f2; }
 @media (max-width: 600px) {
   #appShell.nav-shifted { transform: translateX(-82vw); }
   .sidebar-nav { width: 82vw; }
@@ -105,24 +114,24 @@ th { background: #f1f5f9; font-weight: 600; color: #475569; }
 .login-orb.orb2 { width: 300px; height: 300px; background: radial-gradient(circle, #2563eb 0%, transparent 70%); bottom: -100px; left: -80px; animation-delay: 3s; }
 .login-orb.orb3 { width: 220px; height: 220px; background: radial-gradient(circle, #16a34a 0%, transparent 70%); top: 50%; left: 8%; animation-delay: 6s; opacity: 0.2; }
 @keyframes floatOrb { 0%, 100% { transform: translate(0,0) scale(1); } 50% { transform: translate(20px,-25px) scale(1.08); } }
-.login-box { max-width: 430px; width: 100%; background: rgba(255,255,255,0.98); backdrop-filter: blur(6px); border-radius: 26px; box-shadow: 0 30px 90px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.06); padding: 44px 40px 36px; position: relative; overflow: hidden; z-index:1; animation: loginBoxIn 0.5s cubic-bezier(.2,.7,.3,1); }
+.login-box { max-width: 340px; width: 100%; background: rgba(255,255,255,0.98); backdrop-filter: blur(6px); border-radius: 22px; box-shadow: 0 30px 90px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.06); padding: 30px 26px 24px; position: relative; overflow: hidden; z-index:1; animation: loginBoxIn 0.5s cubic-bezier(.2,.7,.3,1); }
 @keyframes loginBoxIn { from { opacity: 0; transform: translateY(18px) scale(0.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
 .login-box::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 6px; background: linear-gradient(90deg, #d0a72e, #34333a, #d0a72e); background-size: 200% 100%; animation: shimmerBar 3.5s linear infinite; }
 @keyframes shimmerBar { 0% { background-position: 0% 0; } 100% { background-position: 200% 0; } }
-.login-logo-wrap { display:flex; justify-content:center; margin-bottom: 22px; }
-.login-logo-img { max-width: 220px; width: 100%; height: auto; filter: drop-shadow(0 10px 18px rgba(0,0,0,0.18)); }
-.login-title { text-align: center; margin-bottom: 8px; }
-.login-title h1 { color: #1e293b; margin: 0; font-size: 23px; font-weight: 800; letter-spacing: .2px; }
-.login-title p { color: #94836b; margin: 6px 0 0; font-size: 13px; font-weight: 600; letter-spacing: .3px; }
-.login-input-group { margin-bottom: 16px; position: relative; }
+.login-logo-wrap { display:flex; justify-content:center; margin-bottom: 16px; }
+.login-logo-img { max-width: 160px; width: 100%; height: auto; filter: drop-shadow(0 10px 18px rgba(0,0,0,0.18)); }
+.login-title { text-align: center; margin-bottom: 6px; }
+.login-title h1 { color: #1e293b; margin: 0; font-size: 19px; font-weight: 800; letter-spacing: .2px; }
+.login-title p { color: #94836b; margin: 5px 0 0; font-size: 11.5px; font-weight: 600; letter-spacing: .3px; }
+.login-input-group { margin-bottom: 13px; position: relative; }
 .login-input-group .input { margin-bottom: 0; padding-right: 44px; border-color:#e5e0d5; transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease; }
 .login-input-group .input:focus { border-color: #d0a72e; box-shadow: 0 0 0 3px rgba(208,167,46,0.15); transform: translateY(-1px); }
 .login-icon { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); color: #b8ac95; font-size: 18px; transition: color 0.15s ease; }
 .login-input-group .input:focus ~ .login-icon { color: #d0a72e; }
 
-.login-btn { width: 100%; padding: 14px; font-size: 16px; border-radius: 12px; margin-top: 8px; background: linear-gradient(135deg, #34333a, #17171a); box-shadow: 0 10px 24px rgba(23,23,26,0.3); position: relative; overflow: hidden; }
+.login-btn { width: 100%; padding: 12px; font-size: 14.5px; border-radius: 11px; margin-top: 6px; background: linear-gradient(135deg, #34333a, #17171a); box-shadow: 0 10px 24px rgba(23,23,26,0.3); position: relative; overflow: hidden; }
 .login-btn:hover { background: linear-gradient(135deg, #45444c, #232226); box-shadow: 0 12px 28px rgba(23,23,26,0.4); transform: translateY(-1px); }
-.login-footer { text-align: center; margin-top: 22px; color: #94a3b8; font-size: 11.5px; display:flex; align-items:center; justify-content:center; gap:6px; }
+.login-footer { text-align: center; margin-top: 16px; color: #94a3b8; font-size: 10.5px; display:flex; align-items:center; justify-content:center; gap:6px; }
 
 .brand-bar { max-width: 1320px; margin: 0 auto 14px; background: linear-gradient(135deg, #1f1e22, #302f35); border-radius: 16px; padding: 13px 22px; display: flex; align-items: center; gap: 14px; box-shadow: 0 10px 26px rgba(0,0,0,0.18); position: relative; overflow: hidden; }
 .brand-bar::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, #d0a72e, #4a4950, #d0a72e); }
@@ -216,7 +225,7 @@ th { background: #f1f5f9; font-weight: 600; color: #475569; }
   .filter-btn { padding: 7px 12px; font-size: 12.5px; }
   .search-bar input { min-width: 0; width: 100%; }
   .user-row { padding: 12px; }
-  .login-box { padding: 26px 20px; border-radius: 18px; }
+  .login-box { padding: 22px 18px; border-radius: 16px; max-width: 300px; }
   .toast { left: 14px; right: 14px; top: 14px; text-align: center; }
 }
 .loading { text-align: center; color: #64748b; padding: 40px; }
@@ -325,13 +334,6 @@ th { background: #f1f5f9; font-weight: 600; color: #475569; }
   <div class="sidebar-backdrop" id="sidebarBackdrop" onclick="toggleNavPanel(false)"></div>
 
   <div id="appShell">
-    <div class="topbar">
-      <button type="button" class="topbar-menu-btn" onclick="toggleNavPanel()" aria-label="القائمة">
-        <span class="topbar-menu-icon" id="topbarMenuIcon">☰</span>
-      </button>
-      <div class="topbar-title"><span id="curTabLabel">القائمة</span></div>
-    </div>
-
   <div class="brand-bar">
     <img src="" id="brandLogoImg" class="brand-logo-img" alt="Dr. Wells Pharmacy">
     <div class="brand-bar-text">
@@ -339,30 +341,27 @@ th { background: #f1f5f9; font-weight: 600; color: #475569; }
       <div class="brand-bar-sub">نظام إدارة الأوردرات</div>
     </div>
   </div>
+    <div class="topbar">
+      <button type="button" class="topbar-menu-btn" onclick="toggleNavPanel()" aria-label="القائمة">
+        <span class="topbar-menu-icon" id="topbarMenuIcon">☰</span>
+      </button>
+      <div class="topbar-title"><span id="curTabLabel">القائمة</span></div>
+    </div>
+
   <div class="card user-bar-card">
     <div class="user-menu-wrap" id="userMenuWrap">
-      <div class="user-info user-menu-trigger" id="userMenuTrigger" onclick="toggleUserMenu(event)">
+      <div class="user-info" id="userMenuTrigger">
         <div class="user-avatar" id="userAvatar">أ</div>
         <div>
           <div class="user-name-text" id="userName">أحمد</div>
           <div class="user-role-text" id="userRole">Call Center</div>
         </div>
-        <span class="user-menu-caret" id="userMenuCaret">▾</span>
-      </div>
-      <div class="user-dropdown" id="userDropdown">
-        <button type="button" class="user-dropdown-item" onclick="openChangePassModal(); closeUserMenu();">
-          <span class="udi-icon">🔐</span><span>تغيير كلمة المرور</span>
-        </button>
-        <div class="user-dropdown-divider"></div>
-        <button type="button" class="user-dropdown-item danger" onclick="closeUserMenu(); doLogout();">
-          <span class="udi-icon">🚪</span><span>تسجيل الخروج</span>
-        </button>
       </div>
     </div>
   </div>
 
   <div id="newOrder" class="card">
-    <h2 style="margin-top:0;color:#1e293b;">تسجيل أوردر جديد</h2>
+    <h2 style="margin-top:0;color:#1e293b;">تسجيل أوردر كول سنتر جديد</h2>
     <label class="label">العميل</label>
     <div class="search-wrap">
       <input type="text" id="customerSearch" class="input" placeholder="اكتب كود العميل أو الاسم..." oninput="searchCustomers()" onkeydown="handleCustomerKey(event)" autocomplete="off">
@@ -409,12 +408,12 @@ th { background: #f1f5f9; font-weight: 600; color: #475569; }
   </div>
 
   <div id="myOrders" class="hidden">
-    <div class="card"><h2 style="margin-top:0;color:#1e293b;">أوردراتي</h2><div id="myOrdersList"></div></div>
+    <div class="card"><h2 style="margin-top:0;color:#1e293b;">أوردراتي (كول سنتر)</h2><div id="myOrdersList"></div></div>
   </div>
 
   <div id="allOrders" class="hidden">
     <div class="card">
-      <h2 style="margin-top:0;color:#1e293b;">كل الأوردرات</h2>
+      <h2 style="margin-top:0;color:#1e293b;">كل أوردرات الكول سنتر</h2>
       <p style="margin:-8px 0 16px;color:#94a3b8;font-size:12.5px;">ℹ️ الأوردرات التي تصبح حالتها "تم" أو "ملغي" تنتقل تلقائياً لتبويب ✅ Done أو ❌ Cancel</p>
       <div class="stats" id="statsBox"></div>
       <div class="search-bar">
@@ -474,7 +473,7 @@ th { background: #f1f5f9; font-weight: 600; color: #475569; }
       <div class="filter-bar">
         <span style="font-weight:600;color:#374151;">تصفية:</span>
         <button class="filter-btn active" onclick="setDoneSourceFilter('all')" id="filter-done-all">الكل</button>
-        <button class="filter-btn" onclick="setDoneSourceFilter('normal')" id="filter-done-normal">📊 أوردرات عادية</button>
+        <button class="filter-btn" onclick="setDoneSourceFilter('normal')" id="filter-done-normal">📊 أوردرات كول سنتر</button>
         <button class="filter-btn" onclick="setDoneSourceFilter('app')" id="filter-done-app">📱 أوردرات أبلكيشن</button>
       </div>
       <div class="table-wrap">
@@ -500,7 +499,7 @@ th { background: #f1f5f9; font-weight: 600; color: #475569; }
       <div class="filter-bar">
         <span style="font-weight:600;color:#374151;">تصفية:</span>
         <button class="filter-btn active" onclick="setCancelSourceFilter('all')" id="filter-cancel-all">الكل</button>
-        <button class="filter-btn" onclick="setCancelSourceFilter('normal')" id="filter-cancel-normal">📊 أوردرات عادية</button>
+        <button class="filter-btn" onclick="setCancelSourceFilter('normal')" id="filter-cancel-normal">📊 أوردرات كول سنتر</button>
         <button class="filter-btn" onclick="setCancelSourceFilter('app')" id="filter-cancel-app">📱 أوردرات أبلكيشن</button>
       </div>
       <div class="table-wrap">
@@ -640,9 +639,9 @@ th { background: #f1f5f9; font-weight: 600; color: #475569; }
         </select>
         <label class="label">الأقسام المتاحة لهذا المستخدم (تحديد يدوي)</label>
         <div class="radio-group" id="userSectionsBox">
-          <label class="radio-item"><input type="checkbox" class="userSectionChk" value="newOrder"> ➕ أوردر جديد</label>
-          <label class="radio-item"><input type="checkbox" class="userSectionChk" value="myOrders"> 📋 أوردراتي</label>
-          <label class="radio-item"><input type="checkbox" class="userSectionChk" value="allOrders"> 📊 كل الأوردرات</label>
+          <label class="radio-item"><input type="checkbox" class="userSectionChk" value="newOrder"> ➕ أوردر كول سنتر</label>
+          <label class="radio-item"><input type="checkbox" class="userSectionChk" value="myOrders"> 📋 أوردراتي (كول سنتر)</label>
+          <label class="radio-item"><input type="checkbox" class="userSectionChk" value="allOrders"> 📊 كل أوردرات الكول سنتر</label>
           <label class="radio-item"><input type="checkbox" class="userSectionChk" value="allAppOrders"> 📊 كل أوردرات الأبلكيشن</label>
           <label class="radio-item"><input type="checkbox" class="userSectionChk" value="doneOrders"> ✅ تبويب Done</label>
           <label class="radio-item"><input type="checkbox" class="userSectionChk" value="cancelOrders"> ❌ تبويب Cancel</label>
@@ -670,6 +669,10 @@ th { background: #f1f5f9; font-weight: 600; color: #475569; }
       <div style="margin-bottom:24px;padding:20px;background:#f8fafc;border-radius:12px;">
         <h3 style="margin-top:0;color:#374151;font-size:16px;">➕ إضافة فرع جديد</h3>
         <input type="text" id="newBranchName" class="input" placeholder="اسم الفرع">
+        <div class="radio-item" style="margin-bottom:16px;display:inline-flex;">
+          <input type="checkbox" id="newBranchIsAppChk" style="width:auto;margin-left:8px;">
+          <label for="newBranchIsAppChk" style="cursor:pointer;font-weight:600;color:#374151;">📱 هذا الفرع يستخدم الأبلكيشن (يظهر في أوردر جديد وأبلكيشن ونواقص الأبلكيشن)</label>
+        </div>
         <button class="btn btn-primary" onclick="addBranch()">💾 إضافة الفرع</button>
       </div>
       <div id="branchesList"></div>
@@ -982,6 +985,19 @@ function initApp() {
     if (currentUser) { renderAllAppOrders(); renderDoneOrders(); renderCancelOrders(); updateNavBadges(); }
   }, error => console.error('App Orders:', error));
 
+  rtdb.ref('branches').once('value').then(snap => {
+    // تعديل: تجهيز الفروع الافتراضية الستة فقط لو قاعدة البيانات فاضية من الفروع
+    if (!snap.exists() || snap.numChildren() === 0) {
+      const defaultBranches = ['Awl gamal', 'j. tito', 'Dar elyosr', 'Watanya', 'Midtwon', 'Abaasya'];
+      const updates = {};
+      defaultBranches.forEach(name => {
+        const key = rtdb.ref('branches').push().key;
+        updates[key] = { name, isApp: true };
+      });
+      rtdb.ref('branches').update(updates).catch(err => console.error('Seed branches:', err));
+    }
+  }).catch(err => console.error('Branches seed check:', err));
+
   rtdb.ref('branches').on('value', snapshot => {
     branchesData = [];
     snapshot.forEach(child => { branchesData.push({ id: child.key, ...child.val() }); });
@@ -1035,20 +1051,31 @@ function initApp() {
   }, error => console.error('Archive:', error));
 }
 
-function populateBranchSelect() {
-  [document.getElementById('branch'), document.getElementById('editBranch')].forEach(sel => {
-    if(!sel) return; const v=sel.value; sel.innerHTML='<option value="">اختر الفرع</option>'; 
-    branchesData.forEach(b=>sel.innerHTML+=`<option value="${b.name}">${b.name}</option>`); 
-    if(v) sel.value=v;
-  });
+// تعديل: فلترة الفروع - فرع عام يظهر فقط في السياقات العادية، وفرع الأبلكيشن (isApp) يظهر أيضاً في سياقات الأبلكيشن
+function populateBranchSelect(appOnly) {
+  const list = appOnly ? branchesData.filter(b => b.isApp) : branchesData;
+  const sel = document.getElementById('branch');
+  if (sel) {
+    const v = sel.value; sel.innerHTML = '<option value="">اختر الفرع</option>';
+    list.forEach(b => sel.innerHTML += `<option value="${b.name}">${b.name}</option>`);
+    if (v && list.some(b => b.name === v)) sel.value = v;
+  }
+  const editSel = document.getElementById('editBranch');
+  if (editSel) {
+    const v = editSel.value; editSel.innerHTML = '<option value="">اختر الفرع</option>';
+    branchesData.forEach(b => editSel.innerHTML += `<option value="${b.name}">${b.name}</option>`);
+    if (v) editSel.value = v;
+  }
 }
 function populateShortageBranch() {
+  // تعديل: نواقص الأبلكيشن تعرض فقط الفروع المفعّل لها الأبلكيشن
   const sel = document.getElementById('shortageBranch'); if(!sel) return; const v=sel.value; 
   sel.innerHTML='<option value="">اختر الفرع</option>'; 
-  branchesData.forEach(b=>sel.innerHTML+=`<option value="${b.name}">${b.name}</option>`); 
+  branchesData.filter(b => b.isApp).forEach(b=>sel.innerHTML+=`<option value="${b.name}">${b.name}</option>`); 
   if(v) sel.value=v;
 }
 function populateCCBranch() {
+  // نواقص كول سنتر: كل الفروع (مش خاصة بالأبلكيشن)
   const sel = document.getElementById('ccBranch'); if(!sel) return; const v=sel.value; 
   sel.innerHTML='<option value="">اختر الفرع</option>'; 
   branchesData.forEach(b=>sel.innerHTML+=`<option value="${b.name}">${b.name}</option>`); 
@@ -1063,7 +1090,7 @@ function populateShortageApp() {
 function populateAppOrderBranch() {
   [document.getElementById('appOrderBranch'), document.getElementById('editAppOrderBranch')].forEach(sel => {
     if(!sel) return; const v=sel.value; sel.innerHTML='<option value="">اختر الفرع</option>';
-    branchesData.forEach(b=>sel.innerHTML+=`<option value="${b.name}">${b.name}</option>`);
+    branchesData.filter(b => b.isApp).forEach(b=>sel.innerHTML+=`<option value="${b.name}">${b.name}</option>`);
     if(v) sel.value=v;
   });
 }
@@ -1101,9 +1128,12 @@ function enterDashboard(user, silent) {
   document.getElementById('loginPage').classList.add('hidden');
   document.getElementById('dashboard').classList.remove('hidden');
   document.getElementById('userName').textContent = user.name;
-  // تعديل: عرض "Call Center" ثابتاً تحت اسم المستخدم بدلاً من الدور
+  // تعديل: عرض "Call Center" تحت اسم المستخدم مع توضيح الدور بين قوسين للأدمن ومستخدم الأبلكيشن فقط
   const userRoleEl = document.getElementById('userRole');
-  userRoleEl.textContent = 'Call Center';
+  let roleLabel = 'Call Center';
+  if (user.role === 'admin') roleLabel = 'Call Center (Admin)';
+  else if (user.role === 'appuser') roleLabel = 'Call Center (App)';
+  userRoleEl.textContent = roleLabel;
   userRoleEl.classList.remove('hidden');
   document.getElementById('userAvatar').textContent = user.name.charAt(0);
   setupNavByRole();
@@ -1278,20 +1308,29 @@ function renderBranches() {
   if (branchesData.length === 0) { list.innerHTML = '<div class="empty-state">لا يوجد فروع بعد</div>'; return; }
   list.innerHTML = branchesData.map(b => `
     <div class="user-row">
-      <div style="font-weight:700;color:#1e293b;">🏢 ${b.name || ''}</div>
-      <div>${currentUser.role==='admin'?`<span class="delete-link" onclick="deleteBranch('${b.id}')">🗑️ حذف</span>`:''}</div>
+      <div style="font-weight:700;color:#1e293b;">🏢 ${b.name || ''} ${b.isApp ? '<span class="badge badge-purple" style="margin-right:6px;">📱 أبلكيشن</span>' : '<span class="badge badge-gray" style="margin-right:6px;">عام</span>'}</div>
+      <div>${currentUser.role==='admin'?`<span class="edit-link" onclick="toggleBranchApp('${b.id}', ${!b.isApp})">${b.isApp ? '❎ إلغاء الأبلكيشن' : '📱 تفعيل الأبلكيشن'}</span><span class="delete-link" onclick="deleteBranch('${b.id}')">🗑️ حذف</span>`:''}</div>
     </div>
   `).join('');
 }
 function addBranch() {
   const input = document.getElementById('newBranchName');
   const name = input.value.trim();
+  const isAppChk = document.getElementById('newBranchIsAppChk');
+  const isApp = !!(isAppChk && isAppChk.checked);
   if (!name) { showToast('❌ أدخل اسم الفرع', true); return; }
   const duplicate = branchesData.some(b => (b.name || '').toLowerCase() === name.toLowerCase());
   if (duplicate) { showToast('❌ الفرع موجود بالفعل', true); return; }
-  rtdb.ref('branches').push({ name })
-    .then(() => { showToast('✅ تم إضافة الفرع'); input.value = ''; })
+  rtdb.ref('branches').push({ name, isApp })
+    .then(() => { showToast('✅ تم إضافة الفرع'); input.value = ''; if (isAppChk) isAppChk.checked = false; })
     .catch(err => { showToast('❌ خطأ في الإضافة', true); console.error(err); });
+}
+// تعديل: تفعيل/إلغاء تفعيل الأبلكيشن لفرع موجود بالفعل
+function toggleBranchApp(id, newVal) {
+  if (currentUser.role !== 'admin') { showToast('❌ هذه الميزة متاحة للأدمن فقط', true); return; }
+  rtdb.ref('branches/' + id).update({ isApp: newVal })
+    .then(() => showToast(newVal ? '📱 تم تفعيل الأبلكيشن لهذا الفرع' : '✅ تم إلغاء الأبلكيشن لهذا الفرع'))
+    .catch(err => { showToast('❌ خطأ في التحديث', true); console.error(err); });
 }
 function deleteBranch(id) {
   if (currentUser.role !== 'admin') { showToast('❌ هذه الميزة متاحة للأدمن فقط', true); return; }
@@ -1528,6 +1567,24 @@ function setupDropZone(zoneId, onFile) {
 // ============================================
 // Navigation & Tabs - MODIFIED
 // ============================================
+// تعديل: كل قسم في القائمة الجانبية أصبح قائمة منسدلة (اضغط على العنوان لفتح/طي الأزرار جواه)
+function buildNavGroup(key, label, bodyHtml) {
+  if (!bodyHtml) return '';
+  return `<div class="nav-group" data-group="${key}">
+    <button type="button" class="nav-group-label" onclick="toggleNavGroup(this)">
+      <span>${label}</span><span class="nav-group-caret">▾</span>
+    </button>
+    <div class="nav-group-body">${bodyHtml}</div>
+  </div>`;
+}
+
+function toggleNavGroup(labelEl, forceOpen) {
+  const group = labelEl.closest ? labelEl.closest('.nav-group') : labelEl;
+  if (!group) return;
+  const shouldOpen = typeof forceOpen === 'boolean' ? forceOpen : !group.classList.contains('open');
+  group.classList.toggle('open', shouldOpen);
+}
+
 function setupNavByRole() {
   const nav = document.getElementById('mainNav');
   nav.innerHTML = '';
@@ -1535,32 +1592,32 @@ function setupNavByRole() {
   // تعديل: الأقسام أصبحت تُحدد يدوياً لكل مستخدم عند إضافته، وإن لم تكن محددة يتم استخدام افتراضيات الدور
   const sections = currentUser.sections || getDefaultSectionsForRole(role);
 
-  // ====== قسم العمليات (أوردرات عادية) ======
+  // ====== قسم العمليات (أوردرات كول سنتر) ======
   let opsHtml = '';
-  if (sections.newOrder) opsHtml += `<button class="nav-btn" onclick="showTab('newOrder')" id="tab-newOrder">➕ أوردر جديد</button>`;
+  if (sections.newOrder) opsHtml += `<button class="nav-btn" onclick="showTab('newOrder')" id="tab-newOrder">➕ أوردر كول سنتر</button>`;
   if (sections.myOrders) opsHtml += `<button class="nav-btn" onclick="showTab('myOrders')" id="tab-myOrders">📋 أوردراتي <span class="nav-count hidden" id="navcount-myOrders"></span></button>`;
-  if (sections.allOrders) opsHtml += `<button class="nav-btn" onclick="showTab('allOrders')" id="tab-allOrders">📊 كل الأوردرات <span class="nav-count hidden" id="navcount-allOrders"></span></button>`;
+  if (sections.allOrders) opsHtml += `<button class="nav-btn" onclick="showTab('allOrders')" id="tab-allOrders">📊 كل أوردرات الكول سنتر <span class="nav-count hidden" id="navcount-allOrders"></span></button>`;
   if (sections.doneOrders) opsHtml += `<button class="nav-btn" onclick="showTab('doneOrders')" id="tab-doneOrders">✅ Done</button>`;
   if (sections.cancelOrders) opsHtml += `<button class="nav-btn" onclick="showTab('cancelOrders')" id="tab-cancelOrders">❌ Cancel</button>`;
-  if (opsHtml) nav.innerHTML += `<div class="nav-group-label">📋 العمليات</div>` + opsHtml;
+  nav.innerHTML += buildNavGroup('ops', '📋 العمليات', opsHtml);
 
   // ====== قسم أوردرات ونواقص الأبلكيشن ======
   let appHtml = '';
   if (sections.allAppOrders) appHtml += `<button class="nav-btn" onclick="showTab('allAppOrders')" id="tab-allAppOrders">📊 كل أوردرات الأبلكيشن <span class="nav-count hidden" id="navcount-allAppOrders"></span></button>`;
   if (sections.shortages) appHtml += `<button class="nav-btn" onclick="showTab('shortages')" id="tab-shortages">📱 نواقص الأبلكيشن</button>`;
-  if (appHtml) nav.innerHTML += `<div class="nav-group-label">📱 نواقص وأوردرات الأبلكيشن</div>` + appHtml;
+  nav.innerHTML += buildNavGroup('app', '📱 نواقص وأوردرات الأبلكيشن', appHtml);
 
   // ====== قسم نواقص الكول سنتر ======
   let ccHtml = '';
   if (sections.callcenterShortages) ccHtml += `<button class="nav-btn" onclick="showTab('callcenterShortages')" id="tab-callcenterShortages">📞 نواقص كول سنتر</button>`;
-  if (ccHtml) nav.innerHTML += `<div class="nav-group-label">📞 نواقص كول سنتر</div>` + ccHtml;
+  nav.innerHTML += buildNavGroup('cc', '📞 نواقص كول سنتر', ccHtml);
 
   // ====== قسم التقارير ======
   let reportHtml = '';
   if (sections.shortagesReport) reportHtml += `<button class="nav-btn" onclick="showTab('shortagesReport')" id="tab-shortagesReport">📊 ريبورت نواقص الأبلكيشن</button>`;
   if (sections.ccShortagesReport) reportHtml += `<button class="nav-btn" onclick="showTab('ccShortagesReport')" id="tab-ccShortagesReport">📊 ريبورت نواقص كول سنتر</button>`;
   if (sections.archive) reportHtml += `<button class="nav-btn" onclick="showTab('archive')" id="tab-archive">📦 أرشيف الأوردرات</button>`;
-  if (reportHtml) nav.innerHTML += `<div class="nav-group-label">📊 التقارير</div>` + reportHtml;
+  nav.innerHTML += buildNavGroup('reports', '📊 التقارير', reportHtml);
 
   // ====== قسم الإدارة ======
   let adminHtml = '';
@@ -1569,7 +1626,12 @@ function setupNavByRole() {
   if (sections.apps) adminHtml += `<button class="nav-btn" onclick="showTab('apps')" id="tab-apps">📱 الأبلكيشنز</button>`;
   if (sections.products) adminHtml += `<button class="nav-btn" onclick="showTab('products')" id="tab-products">📦 الأصناف</button>`;
   if (sections.customers) adminHtml += `<button class="nav-btn" onclick="showTab('customers')" id="tab-customers">👤 العملاء</button>`;
-  if (adminHtml) nav.innerHTML += `<div class="nav-group-label">⚙️ الإدارة</div>` + adminHtml;
+  nav.innerHTML += buildNavGroup('admin', '⚙️ الإدارة', adminHtml);
+
+  // ====== قسم الحساب (تغيير كلمة المرور وتسجيل الخروج) - يظهر دائماً بالأسفل خالص ======
+  const accountHtml = `<button type="button" class="nav-btn" onclick="openChangePassModal()"><span class="udi-icon">🔐</span><span>تغيير كلمة المرور</span></button>
+    <button type="button" class="nav-btn nav-btn-danger" onclick="doLogout()"><span class="udi-icon">🚪</span><span>تسجيل الخروج</span></button>`;
+  nav.innerHTML += `<div class="nav-account-group">` + buildNavGroup('account', '👤 الحساب', accountHtml) + `</div>`;
 
   updateNavBadges();
 }
@@ -1604,6 +1666,7 @@ function clearNewOrderForm() {
   document.getElementById('newOrderApp').value = '';
   document.getElementById('newOrderAppNumber').value = '';
   document.getElementById('newOrderAppField').classList.add('hidden');
+  populateBranchSelect(false);
   const notifyOption = document.getElementById('supplyTypeNotifyOption');
   if (notifyOption) notifyOption.classList.remove('hidden');
   orderItems = [];
@@ -1617,6 +1680,8 @@ function clearNewOrderForm() {
 function toggleNewOrderAppField() {
   const isApp = document.getElementById('isAppOrderChk').checked;
   document.getElementById('newOrderAppField').classList.toggle('hidden', !isApp);
+  // تعديل: عند اختيار أبلكيشن، الفروع المتاحة تبقى فقط الفروع المفعّل لها الأبلكيشن
+  populateBranchSelect(isApp);
   const notifyOption = document.getElementById('supplyTypeNotifyOption');
   if (notifyOption) {
     notifyOption.classList.toggle('hidden', isApp);
@@ -1669,7 +1734,13 @@ function showTab(tab) {
   const target = document.getElementById(tab); 
   const targetBtn = document.getElementById('tab-'+tab);
   if(target) target.classList.remove('hidden'); 
-  if(targetBtn) { targetBtn.classList.add('active'); const lbl = document.getElementById('curTabLabel'); if (lbl) lbl.textContent = targetBtn.textContent.trim(); }
+  if(targetBtn) {
+    targetBtn.classList.add('active');
+    const lbl = document.getElementById('curTabLabel'); if (lbl) lbl.textContent = targetBtn.textContent.trim();
+    // تعديل: فتح القائمة المنسدلة التي بها القسم النشط تلقائياً
+    const parentGroup = targetBtn.closest('.nav-group');
+    if (parentGroup) toggleNavGroup(parentGroup, true);
+  }
 
   // تعديل: طي القائمة تلقائياً بعد اختيار القسم لترك كامل مساحة الشاشة للاستعراض
   toggleNavPanel(false);
@@ -2265,7 +2336,7 @@ function getCombinedOrdersByStatus(status) {
 }
 
 function renderOrderTypeCell(o) {
-  return o._type === 'app' ? `<span class="badge badge-purple">📱 أبلكيشن</span>` : `<span class="badge badge-blue">📊 عادي</span>`;
+  return o._type === 'app' ? `<span class="badge badge-purple">📱 أبلكيشن</span>` : `<span class="badge badge-blue">📊 كول سنتر</span>`;
 }
 
 function renderDoneOrders() {
@@ -2293,7 +2364,7 @@ function renderDoneOrders() {
   const totalApp = appOrdersData.filter(o => o.status === 'completed').length;
   statsBox.innerHTML = `
     <div class="stat-card"><div class="stat-number" style="color:#16a34a;">${totalNormal + totalApp}</div><div class="stat-label">إجمالي تم</div></div>
-    <div class="stat-card"><div class="stat-number" style="color:#2563eb;">${totalNormal}</div><div class="stat-label">عادي</div></div>
+    <div class="stat-card"><div class="stat-number" style="color:#2563eb;">${totalNormal}</div><div class="stat-label">كول سنتر</div></div>
     <div class="stat-card"><div class="stat-number" style="color:#7c3aed;">${totalApp}</div><div class="stat-label">أبلكيشن</div></div>
   `;
 
@@ -2380,7 +2451,7 @@ function renderCancelOrders() {
   const totalApp = appOrdersData.filter(o => o.status === 'cancelled').length;
   statsBox.innerHTML = `
     <div class="stat-card"><div class="stat-number" style="color:#dc2626;">${totalNormal + totalApp}</div><div class="stat-label">إجمالي ملغي</div></div>
-    <div class="stat-card"><div class="stat-number" style="color:#2563eb;">${totalNormal}</div><div class="stat-label">عادي</div></div>
+    <div class="stat-card"><div class="stat-number" style="color:#2563eb;">${totalNormal}</div><div class="stat-label">كول سنتر</div></div>
     <div class="stat-card"><div class="stat-number" style="color:#7c3aed;">${totalApp}</div><div class="stat-label">أبلكيشن</div></div>
   `;
 
@@ -2534,7 +2605,7 @@ function renderArchive() {
     const statusClass = STATUS_CLASSES[o.status] || 'status-pending';
     const typeBadge = o._sourceTable === 'app_orders'
       ? `<span class="badge badge-purple">📱 أبلكيشن</span>${o.appOrderNumber?`<br><span class="badge badge-pink" style="margin-top:4px;">#${o.appOrderNumber}</span>`:''}`
-      : `<span class="badge badge-blue">📊 عادي</span>`;
+      : `<span class="badge badge-blue">📊 كول سنتر</span>`;
     return `<tr>
       <td>${i+1}</td>
       <td>${typeBadge}</td>
