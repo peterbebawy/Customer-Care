@@ -64,6 +64,25 @@ button, input, select, textarea { font-family: 'Cairo', Tahoma, 'Segoe UI', Aria
 .topbar-menu-icon { display: inline-block; transition: transform 0.2s ease; }
 .topbar-title { font-weight: 800; font-size: 15px; color: #1e293b; }
 .topbar-title .cur-tab-emoji { margin-left: 6px; }
+.star-rating { font-size: 30px; color: #d1d5db; cursor: pointer; margin-bottom: 14px; user-select: none; letter-spacing: 4px; }
+.star-rating span { transition: color 0.12s ease; }
+.star-rating.filled span { color: #f59e0b; }
+.star-rating span.active { color: #f59e0b; }
+.review-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px 16px; margin-bottom: 12px; }
+.review-stars { color: #f59e0b; font-size: 16px; letter-spacing: 2px; }
+.notif-bell-btn { position: relative; border: 1px solid #e2e8f0; background: #fff; color: #374151; width: 42px; height: 42px; border-radius: 12px; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.notif-bell-btn:hover { background: #f8fafc; }
+.notif-badge { position: absolute; top: -4px; left: -4px; background: #dc2626; color: #fff; font-size: 10.5px; font-weight: 800; min-width: 18px; height: 18px; border-radius: 9px; display: flex; align-items: center; justify-content: center; padding: 0 4px; }
+.notif-panel { position: fixed; top: 0; left: 0; height: 100vh; width: 380px; max-width: 92vw; background: #fff; z-index: 400; box-shadow: 10px 0 40px rgba(15,23,42,0.18); transform: translateX(-100%); transition: transform 0.3s cubic-bezier(.4,0,.2,1); overflow-y: auto; display: flex; flex-direction: column; }
+.notif-panel.open { transform: translateX(0); }
+.notif-panel-header { display: flex; align-items: center; justify-content: space-between; padding: 16px 18px; border-bottom: 1px solid #eef2f7; position: sticky; top: 0; background: #fff; z-index: 2; }
+.notif-item { padding: 12px 16px; border-bottom: 1px solid #f1f5f9; position: relative; }
+.notif-item.unread { background: #eff6ff; }
+.notif-item.unread::before { content: ''; position: absolute; top: 16px; right: 6px; width: 8px; height: 8px; border-radius: 50%; background: #2563eb; }
+.notif-item-title { font-weight: 700; color: #1e293b; font-size: 13.5px; }
+.notif-item-body { color: #475569; font-size: 13px; margin-top: 3px; white-space: pre-wrap; }
+.notif-item-meta { color: #94a3b8; font-size: 11px; margin-top: 6px; }
+.notif-compose-box { padding: 14px 16px; border-top: 1px solid #eef2f7; background: #f8fafc; }
 
 /* ===== Off-canvas sidebar ===== */
 html, body { overflow-x: hidden; }
@@ -342,6 +361,26 @@ th { background: #f1f5f9; font-weight: 600; color: #475569; }
   </aside>
   <div class="sidebar-backdrop" id="sidebarBackdrop" onclick="toggleNavPanel(false)"></div>
 
+  <div class="sidebar-backdrop" id="notifBackdrop" onclick="toggleNotifPanel(false)"></div>
+  <aside class="notif-panel" id="notifPanel">
+    <div class="notif-panel-header">
+      <h3 style="margin:0;font-size:16px;">🔔 الإشعارات</h3>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <button type="button" class="btn btn-secondary btn-sm" onclick="markAllNotifsRead()">✔️ تعليم الكل كمقروء</button>
+        <button type="button" class="sidebar-close-btn" onclick="toggleNotifPanel(false)" aria-label="إغلاق" style="background:#f1f5f9;color:#374151;">&times;</button>
+      </div>
+    </div>
+    <div id="notifList" style="flex:1;"></div>
+    <div class="notif-compose-box">
+      <label class="label" style="margin-bottom:6px;">✉️ إرسال رسالة لمستخدم آخر</label>
+      <select id="notifToUser" class="input" style="margin-bottom:8px;">
+        <option value="all">📢 كل المستخدمين</option>
+      </select>
+      <textarea id="notifMessageText" class="input" rows="2" placeholder="اكتب رسالتك هنا..." style="margin-bottom:8px;"></textarea>
+      <button class="btn btn-primary" style="width:100%;" onclick="sendUserNotification()">📨 إرسال</button>
+    </div>
+  </aside>
+
   <div id="appShell">
   <div class="brand-bar">
     <img src="" id="brandLogoImg" class="brand-logo-img" alt="Dr. Wells Pharmacy">
@@ -355,7 +394,10 @@ th { background: #f1f5f9; font-weight: 600; color: #475569; }
         <span class="topbar-menu-icon" id="topbarMenuIcon">☰</span>
       </button>
       <div class="topbar-title"><span id="curTabLabel">القائمة</span></div>
-      <button type="button" id="langToggleBtn" onclick="toggleAppLanguage()" style="margin-inline-start:auto;border:1px solid #e2e8f0;background:#fff;color:#374151;font-weight:800;font-size:13px;border-radius:10px;padding:8px 14px;cursor:pointer;flex-shrink:0;">EN</button>
+      <button type="button" class="notif-bell-btn" onclick="toggleNotifPanel()" aria-label="الإشعارات" style="margin-inline-start:auto;">
+        🔔<span class="notif-badge hidden" id="notifBadge">0</span>
+      </button>
+      <button type="button" id="langToggleBtn" onclick="toggleAppLanguage()" style="border:1px solid #e2e8f0;background:#fff;color:#374151;font-weight:800;font-size:13px;border-radius:10px;padding:8px 14px;cursor:pointer;flex-shrink:0;">EN</button>
     </div>
 
   <div class="card user-bar-card">
@@ -382,8 +424,6 @@ th { background: #f1f5f9; font-weight: 600; color: #475569; }
       <div><label class="label">رقم التليفون</label><input type="text" id="customerPhone" class="input" readonly placeholder="يتم التعبئة تلقائياً"></div>
       <div><label class="label">العنوان</label><input type="text" id="customerAddress" class="input" readonly placeholder="يتم التعبئة تلقائياً"></div>
     </div>
-    <label class="label">الفرع</label>
-    <select id="branch" class="input"><option value="">اختر الفرع</option></select>
     <div class="radio-item" style="margin-bottom:16px;display:inline-flex;">
       <input type="checkbox" id="isAppOrderChk" onchange="toggleNewOrderAppField()" style="width:auto;margin-left:8px;">
       <label for="isAppOrderChk" style="cursor:pointer;font-weight:600;color:#374151;">📱 هل هذا الأوردر أبلكيشن؟</label>
@@ -394,6 +434,8 @@ th { background: #f1f5f9; font-weight: 600; color: #475569; }
       <label class="label">رقم الأوردر على الأبلكيشن <span style="color:#dc2626;">*</span></label>
       <input type="text" id="newOrderAppNumber" class="input" placeholder="أدخل رقم الأوردر كما يظهر في الأبلكيشن" autocomplete="off">
     </div>
+    <label class="label">الفرع</label>
+    <select id="branch" class="input"><option value="">اختر الفرع</option></select>
     <label class="label">الأصناف المطلوبة</label>
     <div class="search-wrap">
       <input type="text" id="productSearch" class="input" placeholder="اكتب كود الصنف أو الاسم..." oninput="searchProducts()" onkeydown="handleProductKey(event)" autocomplete="off">
@@ -410,8 +452,12 @@ th { background: #f1f5f9; font-weight: 600; color: #475569; }
       <label class="radio-item"><input type="radio" name="supplyType" value="مشتريات"> مشتريات</label>
       <label class="radio-item" id="supplyTypeNotifyOption"><input type="radio" name="supplyType" value="إبلاغ العميل"> عند توفير الصنف يتم إبلاغ العميل</label>
     </div>
-    <label class="label">ميعاد خروج الأوردر</label>
-    <input type="date" id="deliveryDate" class="input">
+    <label class="label">ميعاد خروج الأوردر (تاريخ ووقت)</label>
+    <div class="grid-2">
+      <input type="date" id="deliveryDate" class="input">
+      <input type="time" id="deliveryTime" class="input">
+    </div>
+    <p style="margin:-8px 0 12px;color:#94a3b8;font-size:12.5px;">⏰ عند حلول هذا الموعد سيصلك إشعار تلقائي بضرورة إخراج الأوردر</p>
     <label class="label">ملاحظات</label>
     <textarea id="notes" class="input" rows="2" placeholder="أي ملاحظات إضافية..."></textarea>
     <button class="btn btn-success" onclick="submitOrder()">✅ حفظ الأوردر</button>
@@ -629,6 +675,56 @@ th { background: #f1f5f9; font-weight: 600; color: #475569; }
     </div>
   </div>
 
+  <div id="history" class="hidden">
+    <div class="card">
+      <h2 style="margin-top:0;color:#1e293b;">🕒 سجل الأحداث</h2>
+      <p style="margin:-8px 0 16px;color:#94a3b8;font-size:12.5px;">ℹ️ يتم هنا تسجيل كل عملية تتم على الموقع تلقائياً (إضافة / تعديل / حذف / دخول / خروج) مع اسم المستخدم وتاريخ ووقت العملية.</p>
+      <div class="stats" id="historyStatsBox"></div>
+      <div class="search-bar">
+        <input type="text" id="historySearch" class="input" style="margin-bottom:0;" placeholder="🔍 ابحث باسم المستخدم أو نوع العملية أو القسم..." oninput="renderHistory()">
+      </div>
+      <div class="filter-bar">
+        <span style="font-weight:600;color:#374151;">تصفية:</span>
+        <button class="filter-btn active" onclick="setHistoryFilter('all')" id="filter-hist-all">الكل</button>
+        <button class="filter-btn" onclick="setHistoryFilter('push')" id="filter-hist-push">➕ إضافة</button>
+        <button class="filter-btn" onclick="setHistoryFilter('update')" id="filter-hist-update">✏️ تعديل</button>
+        <button class="filter-btn" onclick="setHistoryFilter('remove')" id="filter-hist-remove">🗑️ حذف</button>
+        <button class="filter-btn" onclick="setHistoryFilter('auth')" id="filter-hist-auth">🔑 دخول/خروج</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>#</th><th>المستخدم</th><th>الدور</th><th>القسم</th><th>نوع العملية</th><th>تفاصيل</th><th>التاريخ والوقت</th></tr></thead>
+          <tbody id="historyTable"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div id="reviews" class="hidden">
+    <div class="card">
+      <h2 style="margin-top:0;color:#1e293b;">⭐ تقييمات العملاء</h2>
+      <div style="margin-bottom:24px;padding:20px;background:#f8fafc;border-radius:12px;">
+        <h3 style="margin-top:0;color:#374151;font-size:16px;">➕ إضافة تقييم جديد</h3>
+        <div class="grid-2">
+          <div><label class="label">اسم العميل</label><input type="text" id="reviewCustomerName" class="input" placeholder="اسم العميل"></div>
+          <div><label class="label">الفرع</label><select id="reviewBranch" class="input"><option value="">اختر الفرع (اختياري)</option></select></div>
+        </div>
+        <label class="label">التقييم</label>
+        <div class="star-rating" id="reviewStarInput" data-value="5">
+          <span data-star="1" class="active">★</span><span data-star="2" class="active">★</span><span data-star="3" class="active">★</span><span data-star="4" class="active">★</span><span data-star="5" class="active">★</span>
+        </div>
+        <label class="label" style="margin-top:12px;">التعليق</label>
+        <textarea id="reviewComment" class="input" rows="2" placeholder="نص التقييم / رأي العميل..."></textarea>
+        <button class="btn btn-success" onclick="submitReview()">✅ حفظ التقييم</button>
+      </div>
+      <div class="stats" id="reviewsStatsBox"></div>
+      <div class="search-bar">
+        <input type="text" id="reviewsSearch" class="input" style="margin-bottom:0;" placeholder="🔍 ابحث باسم العميل أو الفرع..." oninput="renderReviews()">
+      </div>
+      <div id="reviewsList"></div>
+    </div>
+  </div>
+
   <div id="users" class="hidden">
     <div class="card">
       <h2 style="margin-top:0;color:#1e293b;">إدارة المستخدمين</h2>
@@ -784,7 +880,8 @@ th { background: #f1f5f9; font-weight: 600; color: #475569; }
       <label class="radio-item"><input type="radio" name="editSupplyType" value="مشتريات"> مشتريات</label>
       <label class="radio-item"><input type="radio" name="editSupplyType" value="إبلاغ العميل"> عند توفير الصنف يتم إبلاغ العميل</label>
     </div>
-    <label class="label">ميعاد خروج الأوردر</label><input type="date" id="editDeliveryDate" class="input">
+    <label class="label">ميعاد خروج الأوردر</label>
+    <div class="grid-2"><input type="date" id="editDeliveryDate" class="input"><input type="time" id="editDeliveryTime" class="input"></div>
     <label class="label">الحالة</label>
     <select id="editStatus" class="input" onchange="toggleCancelReason()">
       <option value="pending">في الانتظار</option><option value="completed">تم</option><option value="outdelivery">Out of Delivery</option><option value="cancelled">ملغي</option>
@@ -817,7 +914,8 @@ th { background: #f1f5f9; font-weight: 600; color: #475569; }
       <label class="radio-item"><input type="radio" name="editAppOrderSupplyType" value="مقاصة"> مقاصة</label>
       <label class="radio-item"><input type="radio" name="editAppOrderSupplyType" value="مشتريات"> مشتريات</label>
     </div>
-    <label class="label">ميعاد خروج الأوردر</label><input type="date" id="editAppOrderDeliveryDate" class="input">
+    <label class="label">ميعاد خروج الأوردر</label>
+    <div class="grid-2"><input type="date" id="editAppOrderDeliveryDate" class="input"><input type="time" id="editAppOrderDeliveryTime" class="input"></div>
     <label class="label">الحالة</label>
     <select id="editAppOrderStatus" class="input" onchange="toggleAppCancelReason()">
       <option value="pending">في الانتظار</option><option value="completed">تم</option><option value="outdelivery">Out of Delivery</option><option value="cancelled">ملغي</option>
@@ -913,6 +1011,61 @@ window.rtdb = rtdb;
 const db = rtdb;
 window.db = db;
 
+// ============================================
+// تعديل: نظام سجل الأحداث (History) - يسجل تلقائياً كل عملية إضافة/تعديل/حذف
+// تتم على أي مسار في قاعدة البيانات بدون الحاجة لتعديل كل دالة على حدة
+// ============================================
+const PATH_LABELS_AR = {
+  users: '👤 المستخدمين', branches: '🏢 الفروع', apps: '📱 الأبلكيشنز', products: '📦 الأصناف',
+  customers: '👤 العملاء', orders: '📋 الأوردرات', app_orders: '📱 أوردرات الأبلكيشن',
+  shortages: '📱 نواقص الأبلكيشن', callcenter_shortages: '📞 نواقص كول سنتر',
+  archived_orders: '📦 أرشيف الأوردرات', archived_shortages: '📦 أرشيف نواقص الأبلكيشن',
+  archived_cc_shortages: '📦 أرشيف نواقص كول سنتر', notifications: '🔔 الإشعارات', reviews: '⭐ التقييمات'
+};
+const ACTION_LABELS_AR = { push: 'إضافة ➕', update: 'تعديل ✏️', remove: 'حذف 🗑️', set: 'حفظ 💾' };
+const NO_LOG_PATHS = ['history']; // لا نسجل الكتابة في History نفسه لتفادي التكرار اللانهائي
+
+function recordHistory(actionType, rawPath, data) {
+  try {
+    if (!currentUser) return; // لا تسجيل قبل تسجيل الدخول (مثال: تجهيز بيانات أولية)
+    const pathRoot = (rawPath || '').split('/')[0] || '(عام)';
+    if (NO_LOG_PATHS.includes(pathRoot)) return;
+    let summary = '';
+    if (data && typeof data === 'object') {
+      const bits = [];
+      ['customer','name','code','employee','branch','status','appName','pass','deliveryDate'].forEach(k => {
+        if (data[k] !== undefined && data[k] !== null && data[k] !== '' && k !== 'pass') bits.push(k + ': ' + data[k]);
+      });
+      summary = bits.join(' | ');
+    }
+    const entry = {
+      userId: currentUser.id, userName: currentUser.name, role: currentUser.role,
+      actionType, path: pathRoot,
+      pathLabel: PATH_LABELS_AR[pathRoot] || pathRoot,
+      summary: summary || (actionType === 'remove' ? 'حذف عنصر' : ''),
+      timestamp: firebase.database.ServerValue.TIMESTAMP
+    };
+    rtdb.ref('history').push(entry);
+  } catch (e) { console.warn('history log error', e); }
+}
+
+// تعديل: نلف دالة ref() الأصلية بحيث تُسجَّل تلقائياً أي عملية push/update/remove/set
+const _origRefFn = rtdb.ref.bind(rtdb);
+function loggedRef(path) {
+  const ref = _origRefFn(path);
+  const _push = ref.push.bind(ref);
+  const _update = ref.update.bind(ref);
+  const _remove = ref.remove.bind(ref);
+  const _set = ref.set.bind(ref);
+  ref.push = function(data) { const r = _push(data); recordHistory('push', path, data); return r; };
+  ref.update = function(data) { const r = _update(data); recordHistory('update', path, data); return r; };
+  ref.remove = function() { const r = _remove(); recordHistory('remove', path, null); return r; };
+  ref.set = function(data) { const r = _set(data); recordHistory('set', path, data); return r; };
+  return ref;
+}
+rtdb.ref = loggedRef;
+window.rtdb = rtdb;
+
 let currentUser = null;
 let usersData = [], ordersData = [], appOrdersData = [], branchesData = [], productsData = [], customersData = [], appsData = [], shortagesData = [], ccShortagesData = [], archiveData = [];
 let orderItems = [], selectedCustomer = null, selectedShortageProduct = null, selectedCCProduct = null;
@@ -926,7 +1079,36 @@ let quickProductContext = 'order', quickCustomerContext = 'order';
 const ROLES = { admin: 'أدمن', manager: 'مانجر', employee: 'موظف', appuser: 'مستخدم أبلكيشن' };
 const STATUS_LABELS = { pending: 'في الانتظار', completed: 'تم', outdelivery: 'Out of Delivery', cancelled: 'ملغي' };
 const STATUS_CLASSES = { pending: 'status-pending', completed: 'status-completed', outdelivery: 'status-outdelivery', cancelled: 'status-cancelled' };
-const ALL_SECTION_KEYS = ['newOrder','myOrders','allOrders','allAppOrders','doneOrders','cancelOrders','shortages','shortagesReport','callcenterShortages','ccShortagesReport','archive','users','branches','apps','products','customers'];
+const ALL_SECTION_KEYS = ['newOrder','myOrders','allOrders','allAppOrders','doneOrders','cancelOrders','shortages','shortagesReport','callcenterShortages','ccShortagesReport','archive','history','reviews','users','branches','apps','products','customers'];
+let historyData = [], reviewsData = [], notificationsData = [];
+
+// ============================================
+// تعديل: أدوات عرض التاريخ والوقت في كل مكان
+// ============================================
+function fmtDeliveryDT(o) {
+  if (!o || !o.deliveryDate) return '-';
+  return o.deliveryDate + (o.deliveryTime ? ' ⏰ ' + o.deliveryTime : '');
+}
+function fmtCreatedDT(o) {
+  if (!o) return '';
+  if (o.timestamp) {
+    const d = new Date(o.timestamp);
+    if (!isNaN(d.getTime())) {
+      const hh = String(d.getHours()).padStart(2, '0');
+      const mm = String(d.getMinutes()).padStart(2, '0');
+      return (o.date || d.toISOString().split('T')[0]) + ' 🕐 ' + hh + ':' + mm;
+    }
+  }
+  return o.date || '';
+}
+function fmtTs(ts) {
+  if (!ts) return '-';
+  const d = new Date(ts);
+  if (isNaN(d.getTime())) return '-';
+  const hh = String(d.getHours()).padStart(2, '0');
+  const mm = String(d.getMinutes()).padStart(2, '0');
+  return d.toISOString().split('T')[0] + ' 🕐 ' + hh + ':' + mm;
+}
 
 // ============================================
 // تعديل: نظام تعريب/تعديل اللغة (عربي/إنجليزي) لكل الموقع
@@ -1306,6 +1488,10 @@ function getDefaultSectionsForRole(role) {
     s.ccShortagesReport = true; s.archive = true;
     s.users = true; s.branches = true; s.apps = true; s.products = true; s.customers = true;
   }
+  // تعديل: قسم سجل الأحداث (History) - للأدمن والمانجر لمتابعة كل ما يحدث في الموقع
+  if (role === 'admin' || role === 'manager') s.history = true;
+  // تعديل: قسم التقييمات (Reviews) - متاح للجميع لإضافة ومتابعة تقييمات العملاء
+  s.reviews = true;
   return s;
 }
 
@@ -1321,6 +1507,7 @@ function initApp() {
       const fresh = usersData.find(u => u.id === currentUser.id);
       if (fresh) { currentUser = fresh; }
       renderUsers();
+      populateNotifToUser();
     } else {
       let savedId = null;
       try { savedId = localStorage.getItem('currentUserId'); } catch (e) {}
@@ -1414,6 +1601,30 @@ function initApp() {
     archiveData.sort((a, b) => (b.archivedAt || 0) - (a.archivedAt || 0));
     if (currentUser) renderArchive();
   }, error => console.error('Archive:', error));
+
+  // تعديل: سجل الأحداث (History)
+  rtdb.ref('history').on('value', snapshot => {
+    historyData = [];
+    snapshot.forEach(child => { historyData.push({ id: child.key, ...child.val() }); });
+    historyData.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+    if (currentUser && typeof renderHistory === 'function') renderHistory();
+  }, error => console.error('History:', error));
+
+  // تعديل: التقييمات (Reviews)
+  rtdb.ref('reviews').on('value', snapshot => {
+    reviewsData = [];
+    snapshot.forEach(child => { reviewsData.push({ id: child.key, ...child.val() }); });
+    reviewsData.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+    if (currentUser && typeof renderReviews === 'function') renderReviews();
+  }, error => console.error('Reviews:', error));
+
+  // تعديل: الإشعارات (Notifications) - تواصل اليوزرز مع بعض + تنبيه ميعاد خروج الأوردر
+  rtdb.ref('notifications').on('value', snapshot => {
+    notificationsData = [];
+    snapshot.forEach(child => { notificationsData.push({ id: child.key, ...child.val() }); });
+    notificationsData.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+    if (currentUser) { renderNotifications(); updateNotifBadge(); }
+  }, error => console.error('Notifications:', error));
 }
 
 // تعديل: فلترة الفروع - فرع عام يظهر فقط في السياقات العادية، وفرع الأبلكيشن (isApp) يظهر أيضاً في سياقات الأبلكيشن
@@ -1504,7 +1715,10 @@ function enterDashboard(user, silent) {
   setupNavByRole();
   populateBranchSelect(); populateShortageBranch(); populateCCBranch(); populateShortageApp(); populateAppOrderBranch(); populateAppOrderAppSelect();
   document.getElementById('deliveryDate').value = new Date().toISOString().split('T')[0];
-  document.getElementById('appOrderDeliveryDate').value = new Date().toISOString().split('T')[0];
+  const appOrderDateEl = document.getElementById('appOrderDeliveryDate');
+  if (appOrderDateEl) appOrderDateEl.value = new Date().toISOString().split('T')[0];
+  renderNotifications(); updateNotifBadge();
+  startDispatchWatcher();
   // تعديل: تحديد أول قسم متاح للمستخدم كصفحة افتراضية بناءً على الأقسام المسموحة له
   const userSections = user.sections || getDefaultSectionsForRole(user.role);
   let defaultTab = 'newOrder';
@@ -1515,6 +1729,7 @@ function enterDashboard(user, silent) {
   showTab(defaultTab);
   if (!silent) showToast('👋 مرحباً ' + user.name);
   resetIdleTimer();
+  try { rtdb.ref('history').push({ userId: user.id, userName: user.name, role: user.role, actionType: 'login', path: 'auth', pathLabel: '🔑 الدخول والخروج', summary: 'تسجيل دخول', timestamp: firebase.database.ServerValue.TIMESTAMP }); } catch(e) {}
 }
 
 function doLogin() {
@@ -1548,6 +1763,9 @@ document.addEventListener('click', (e) => {
 });
 
 function doLogout() {
+  if (currentUser) {
+    try { rtdb.ref('history').push({ userId: currentUser.id, userName: currentUser.name, role: currentUser.role, actionType: 'logout', path: 'auth', pathLabel: '🔑 الدخول والخروج', summary: 'تسجيل خروج', timestamp: firebase.database.ServerValue.TIMESTAMP }); } catch(e) {}
+  }
   currentUser = null;
   try { localStorage.removeItem('currentUserId'); } catch (e) {}
   document.getElementById('dashboard').classList.add('hidden');
@@ -1982,7 +2200,13 @@ function setupNavByRole() {
   if (sections.shortagesReport) reportHtml += `<button class="nav-btn" onclick="showTab('shortagesReport')" id="tab-shortagesReport">📊 ريبورت نواقص الأبلكيشن</button>`;
   if (sections.ccShortagesReport) reportHtml += `<button class="nav-btn" onclick="showTab('ccShortagesReport')" id="tab-ccShortagesReport">📊 ريبورت نواقص كول سنتر</button>`;
   if (sections.archive) reportHtml += `<button class="nav-btn" onclick="showTab('archive')" id="tab-archive">📦 أرشيف الأوردرات</button>`;
+  if (sections.history) reportHtml += `<button class="nav-btn" onclick="showTab('history')" id="tab-history">🕒 سجل الأحداث</button>`;
   nav.innerHTML += buildNavGroup('reports', '📊 التقارير', reportHtml);
+
+  // ====== قسم التقييمات ======
+  let reviewsHtml = '';
+  if (sections.reviews) reviewsHtml += `<button class="nav-btn" onclick="showTab('reviews')" id="tab-reviews">⭐ التقييمات</button>`;
+  nav.innerHTML += buildNavGroup('reviewsGroup', '⭐ تقييمات العملاء', reviewsHtml);
 
   // ====== قسم الإدارة ======
   let adminHtml = '';
@@ -2025,6 +2249,7 @@ function clearNewOrderForm() {
   document.getElementById('branch').value = '';
   document.getElementById('notes').value = '';
   document.getElementById('deliveryDate').value = new Date().toISOString().split('T')[0];
+  document.getElementById('deliveryTime').value = '';
   document.querySelector('input[name="supplyType"][value="مقاصة"]').checked = true;
   // تعديل: إعادة ضبط خانة "هل هذا الأوردر أبلكيشن؟"
   document.getElementById('isAppOrderChk').checked = false;
@@ -2090,7 +2315,7 @@ function toggleNavPanel(forceOpen) {
 }
 
 function showTab(tab) {
-  ['newOrder','myOrders','allOrders','allAppOrders','doneOrders','cancelOrders','shortages','shortagesReport','callcenterShortages','ccShortagesReport','archive','users','branches','apps','products','customers'].forEach(t => {
+  ['newOrder','myOrders','allOrders','allAppOrders','doneOrders','cancelOrders','shortages','shortagesReport','callcenterShortages','ccShortagesReport','archive','history','reviews','users','branches','apps','products','customers'].forEach(t => {
     const el = document.getElementById(t); 
     const btn = document.getElementById('tab-'+t);
     if(el) el.classList.add('hidden'); 
@@ -2122,6 +2347,8 @@ function showTab(tab) {
   if(tab==='callcenterShortages') renderCCShortages();
   if(tab==='ccShortagesReport') renderCCShortagesReport();
   if(tab==='archive') renderArchive();
+  if(tab==='history') renderHistory();
+  if(tab==='reviews') renderReviews();
   if(tab==='users') renderUsers();
   if(tab==='branches') renderBranches();
   if(tab==='apps') renderApps();
@@ -2415,6 +2642,7 @@ function submitOrder() {
   const notes = document.getElementById('notes').value.trim();
   const supplyType = document.querySelector('input[name="supplyType"]:checked')?.value || 'مقاصة';
   const deliveryDate = document.getElementById('deliveryDate').value;
+  const deliveryTime = document.getElementById('deliveryTime').value;
   // تعديل: تحديد ما إذا كان الأوردر أبلكيشن أم عادي من نفس نموذج "أوردر جديد"
   const isAppOrder = document.getElementById('isAppOrderChk').checked;
   const appName = isAppOrder ? document.getElementById('newOrderApp').value : '';
@@ -2428,7 +2656,7 @@ function submitOrder() {
   const total = getOrderTotal();
   const orderData = {
     customer, customerCode, branch, items: itemsText, itemsArray: orderItems, total,
-    supplyType, status: 'pending', deliveryDate,
+    supplyType, status: 'pending', deliveryDate, deliveryTime, dispatchNotified: false,
     employee: currentUser.name, employeeId: currentUser.id,
     date: new Date().toISOString().split('T')[0],
     notes, timestamp: firebase.database.ServerValue.TIMESTAMP
@@ -2454,7 +2682,7 @@ function renderMyOrders() {
     const statusLabel = STATUS_LABELS[o.status] || o.status;
     const statusClass = STATUS_CLASSES[o.status] || 'status-pending';
     return `<div class="order-card">
-      <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;"><strong>${o.customer}</strong><span style="color:#64748b;font-size:13px;">${o.date||''}</span></div>
+      <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;"><strong>${o.customer}</strong><span style="color:#64748b;font-size:13px;">${fmtCreatedDT(o)}</span></div>
       <div style="margin:8px 0;">
         <span class="badge badge-blue">${o.branch}</span>
         <span class="badge badge-orange">${o.supplyType||'مقاصة'}</span>
@@ -2462,7 +2690,7 @@ function renderMyOrders() {
       </div>
       <div style="color:#374151;font-size:14px;margin-bottom:6px;white-space:pre-line;"><strong>الأصناف:</strong><br>${o.items||'-'}</div>
       <div style="color:#16a34a;font-weight:700;font-size:15px;">الإجمالي: ${o.total?o.total.toFixed(2):'0'} ج.م</div>
-      ${o.deliveryDate?`<div style="color:#7c3aed;font-size:13px;margin-top:4px;">📅 ميعاد الخروج: ${o.deliveryDate}</div>`:''}
+      ${o.deliveryDate?`<div style="color:#7c3aed;font-size:13px;margin-top:4px;">📅 ميعاد الخروج: ${fmtDeliveryDT(o)}</div>`:''}
       ${o.notes?`<div style="color:#64748b;font-size:14px;margin-top:4px;">📝 ${o.notes}</div>`:''}
     </div>`;
   }).join('');
@@ -2550,9 +2778,9 @@ function renderAllOrders() {
       <td><strong style="color:#16a34a;">${o.total?o.total.toFixed(2):'0'}</strong></td>
       <td><span class="badge badge-orange">${o.supplyType||'مقاصة'}</span></td>
       <td>${statusCell}</td>
-      <td><span class="badge ${isUrgent?'badge-red':'badge-cyan'}">${o.deliveryDate||'-'}</span></td>
+      <td><span class="badge ${isUrgent?'badge-red':'badge-cyan'}">${fmtDeliveryDT(o)}</span></td>
       <td><span class="badge badge-purple">${o.employee}</span></td>
-      <td>${o.date||''}</td>
+      <td>${fmtCreatedDT(o)}</td>
       <td>${actions}</td>
     </tr>`;
   }).join('');
@@ -2662,9 +2890,9 @@ function renderAllAppOrders() {
       <td><strong style="color:#16a34a;">${o.total?o.total.toFixed(2):'0'}</strong></td>
       <td><span class="badge badge-orange">${o.supplyType||'مقاصة'}</span></td>
       <td>${statusCell}</td>
-      <td><span class="badge ${isUrgent?'badge-red':'badge-cyan'}">${o.deliveryDate||'-'}</span></td>
+      <td><span class="badge ${isUrgent?'badge-red':'badge-cyan'}">${fmtDeliveryDT(o)}</span></td>
       <td><span class="badge badge-gray">${o.employee}</span></td>
-      <td>${o.date||''}</td>
+      <td>${fmtCreatedDT(o)}</td>
       <td>${actions}</td>
     </tr>`;
   }).join('');
@@ -2773,9 +3001,9 @@ function renderDoneOrders() {
       <td style="max-width:200px;font-size:12px;white-space:pre-line;">${o.items||'-'}</td>
       <td><strong style="color:#16a34a;">${o.total?o.total.toFixed(2):'0'}</strong></td>
       <td>${statusCell}</td>
-      <td><span class="badge badge-cyan">${o.deliveryDate||'-'}</span></td>
+      <td><span class="badge badge-cyan">${fmtDeliveryDT(o)}</span></td>
       <td><span class="badge badge-gray">${o.employee}</span></td>
-      <td>${o.date||''}</td>
+      <td>${fmtCreatedDT(o)}</td>
       <td>${actions}</td>
     </tr>`;
   }).join('');
@@ -2862,10 +3090,10 @@ function renderCancelOrders() {
       <td style="max-width:200px;font-size:12px;white-space:pre-line;">${o.items||'-'}</td>
       <td><strong style="color:#16a34a;">${o.total?o.total.toFixed(2):'0'}</strong></td>
       <td>${statusCell}</td>
-      <td><span class="badge badge-cyan">${o.deliveryDate||'-'}</span></td>
+      <td><span class="badge badge-cyan">${fmtDeliveryDT(o)}</span></td>
       <td style="max-width:180px;font-size:12px;color:#991b1b;">${o.cancelReason||'-'}</td>
       <td><span class="badge badge-gray">${o.employee}</span></td>
-      <td>${o.date||''}</td>
+      <td>${fmtCreatedDT(o)}</td>
       <td>${actions}</td>
     </tr>`;
   }).join('');
@@ -2985,7 +3213,7 @@ function renderArchive() {
       <td><strong style="color:#16a34a;">${o.total?o.total.toFixed(2):'0'}</strong></td>
       <td><span class="badge ${statusClass}">${statusLabel}</span></td>
       <td><span class="badge badge-purple">${o.employee}</span></td>
-      <td>${o.date||''}</td>
+      <td>${fmtCreatedDT(o)}</td>
       <td><span class="restore-link" onclick="restoreOrder('${o.id}')">🔄 إعادة</span>${currentUser.role==='admin'?`<span class="delete-link" onclick="deleteArchive('${o.id}')">🗑️ حذف</span>`:''}</td>
     </tr>`;
   }).join('');
@@ -2996,6 +3224,249 @@ function deleteArchive(id) {
   if (!confirm('هل أنت متأكد من الحذف النهائي؟')) return;
   db.ref('archived_orders/' + id).remove().then(() => showToast('🗑️ تم الحذف')).catch(err => { showToast('❌ خطأ', true); console.error(err); });
 }
+
+// ============================================
+// 🕒 History - سجل الأحداث
+// ============================================
+let currentHistoryFilter = 'all';
+function setHistoryFilter(f) {
+  currentHistoryFilter = f;
+  ['all','push','update','remove','auth'].forEach(k => {
+    const btn = document.getElementById('filter-hist-' + k);
+    if (btn) btn.classList.toggle('active', k === f);
+  });
+  renderHistory();
+}
+function renderHistory() {
+  const statsBox = document.getElementById('historyStatsBox');
+  const table = document.getElementById('historyTable');
+  if (!statsBox || !table) return;
+  const searchQ = (document.getElementById('historySearch')?.value || '').trim().toLowerCase();
+  let filtered = [...historyData];
+  if (currentHistoryFilter === 'auth') filtered = filtered.filter(h => h.actionType === 'login' || h.actionType === 'logout');
+  else if (currentHistoryFilter !== 'all') filtered = filtered.filter(h => h.actionType === currentHistoryFilter);
+  if (searchQ) {
+    filtered = filtered.filter(h =>
+      (h.userName && h.userName.toLowerCase().includes(searchQ)) ||
+      (h.pathLabel && h.pathLabel.toLowerCase().includes(searchQ)) ||
+      (h.summary && h.summary.toLowerCase().includes(searchQ))
+    );
+  }
+  const todayStr = new Date().toISOString().split('T')[0];
+  const todayCount = historyData.filter(h => h.timestamp && new Date(h.timestamp).toISOString().split('T')[0] === todayStr).length;
+  statsBox.innerHTML = `
+    <div class="stat-card"><div class="stat-number">${historyData.length}</div><div class="stat-label">إجمالي الأحداث</div></div>
+    <div class="stat-card"><div class="stat-number" style="color:#7c3aed;">${todayCount}</div><div class="stat-label">اليوم</div></div>
+  `;
+  if (filtered.length === 0) { table.innerHTML = `<tr><td colspan="7" class="empty-state">لا يوجد أحداث</td></tr>`; return; }
+  const actionBadge = { push: 'badge-green', update: 'badge-blue', remove: 'badge-red', set: 'badge-purple', login: 'badge-cyan', logout: 'badge-gray' };
+  table.innerHTML = filtered.slice(0, 500).map((h, i) => {
+    const cls = actionBadge[h.actionType] || 'badge-gray';
+    const label = ACTION_LABELS_AR[h.actionType] || (h.actionType === 'login' ? 'تسجيل دخول 🔑' : h.actionType === 'logout' ? 'تسجيل خروج 🚪' : h.actionType);
+    return `<tr>
+      <td>${i+1}</td>
+      <td><span class="badge badge-purple">${h.userName||'-'}</span></td>
+      <td>${ROLES[h.role]||h.role||'-'}</td>
+      <td>${h.pathLabel||'-'}</td>
+      <td><span class="badge ${cls}">${label}</span></td>
+      <td style="max-width:220px;font-size:12px;white-space:pre-line;">${h.summary||'-'}</td>
+      <td>${fmtTs(h.timestamp)}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ============================================
+// ⭐ Reviews - تقييمات العملاء
+// ============================================
+function populateReviewBranch() {
+  const sel = document.getElementById('reviewBranch'); if (!sel) return;
+  const v = sel.value; sel.innerHTML = '<option value="">اختر الفرع (اختياري)</option>';
+  branchesData.forEach(b => sel.innerHTML += `<option value="${b.name}">${b.name}</option>`);
+  if (v) sel.value = v;
+}
+(function setupStarInput() {
+  document.addEventListener('click', function(e) {
+    const star = e.target.closest('#reviewStarInput span');
+    if (!star) return;
+    const wrap = document.getElementById('reviewStarInput');
+    const val = star.getAttribute('data-star');
+    wrap.setAttribute('data-value', val);
+    Array.from(wrap.children).forEach(s => s.classList.toggle('active', Number(s.getAttribute('data-star')) <= Number(val)));
+  });
+})();
+function submitReview() {
+  const customer = document.getElementById('reviewCustomerName').value.trim();
+  const branch = document.getElementById('reviewBranch').value;
+  const rating = Number(document.getElementById('reviewStarInput').getAttribute('data-value')) || 5;
+  const comment = document.getElementById('reviewComment').value.trim();
+  if (!customer) { showToast('❌ اكتب اسم العميل', true); return; }
+  rtdb.ref('reviews').push({
+    customer, branch, rating, comment,
+    reviewer: currentUser.name, reviewerId: currentUser.id,
+    date: new Date().toISOString().split('T')[0],
+    timestamp: firebase.database.ServerValue.TIMESTAMP
+  }).then(() => {
+    showToast('✅ تم حفظ التقييم');
+    document.getElementById('reviewCustomerName').value = '';
+    document.getElementById('reviewComment').value = '';
+    document.getElementById('reviewBranch').value = '';
+    document.getElementById('reviewStarInput').setAttribute('data-value', '5');
+    Array.from(document.getElementById('reviewStarInput').children).forEach(s => s.classList.add('active'));
+  }).catch(err => { showToast('❌ حدث خطأ أثناء الحفظ', true); console.error(err); });
+}
+function deleteReview(id) {
+  if (currentUser.role !== 'admin') { showToast('❌ هذه الميزة متاحة للأدمن فقط', true); return; }
+  if (!confirm('هل أنت متأكد من حذف هذا التقييم؟')) return;
+  rtdb.ref('reviews/' + id).remove().then(() => showToast('🗑️ تم الحذف')).catch(err => { showToast('❌ خطأ', true); console.error(err); });
+}
+function renderReviews() {
+  populateReviewBranch();
+  const statsBox = document.getElementById('reviewsStatsBox');
+  const list = document.getElementById('reviewsList');
+  if (!statsBox || !list) return;
+  const searchQ = (document.getElementById('reviewsSearch')?.value || '').trim().toLowerCase();
+  let filtered = [...reviewsData];
+  if (searchQ) {
+    filtered = filtered.filter(r =>
+      (r.customer && r.customer.toLowerCase().includes(searchQ)) ||
+      (r.branch && r.branch.toLowerCase().includes(searchQ))
+    );
+  }
+  const avg = reviewsData.length ? (reviewsData.reduce((s, r) => s + (r.rating||0), 0) / reviewsData.length).toFixed(1) : '0';
+  const oneStar = reviewsData.filter(r => r.rating === 1).length;
+  statsBox.innerHTML = `
+    <div class="stat-card"><div class="stat-number">${reviewsData.length}</div><div class="stat-label">إجمالي التقييمات</div></div>
+    <div class="stat-card"><div class="stat-number" style="color:#f59e0b;">${avg} ⭐</div><div class="stat-label">متوسط التقييم</div></div>
+    <div class="stat-card"><div class="stat-number" style="color:#dc2626;">${oneStar}</div><div class="stat-label">تقييمات سيئة (1⭐)</div></div>
+  `;
+  if (filtered.length === 0) { list.innerHTML = `<div class="empty-state">لا يوجد تقييمات</div>`; return; }
+  list.innerHTML = filtered.map(r => `
+    <div class="review-card">
+      <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+        <strong>${r.customer}</strong>
+        <span class="review-stars">${'★'.repeat(r.rating||0)}${'☆'.repeat(5-(r.rating||0))}</span>
+      </div>
+      ${r.branch?`<div style="color:#64748b;font-size:12.5px;margin-top:2px;">🏢 ${r.branch}</div>`:''}
+      ${r.comment?`<div style="margin-top:8px;color:#374151;font-size:13.5px;">${r.comment}</div>`:''}
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;">
+        <span style="color:#94a3b8;font-size:11.5px;">✍️ ${r.reviewer||'-'} — ${fmtTs(r.timestamp)}</span>
+        ${currentUser.role==='admin'?`<span class="delete-link" onclick="deleteReview('${r.id}')">🗑️ حذف</span>`:''}
+      </div>
+    </div>`).join('');
+}
+
+// ============================================
+// 🔔 Notifications - إشعارات وتواصل بين المستخدمين
+// ============================================
+function toggleNotifPanel(forceOpen) {
+  const panel = document.getElementById('notifPanel');
+  const backdrop = document.getElementById('notifBackdrop');
+  if (!panel) return;
+  const shouldOpen = typeof forceOpen === 'boolean' ? forceOpen : !panel.classList.contains('open');
+  panel.classList.toggle('open', shouldOpen);
+  if (backdrop) backdrop.classList.toggle('open', shouldOpen);
+  if (shouldOpen) { populateNotifToUser(); renderNotifications(); }
+}
+function populateNotifToUser() {
+  const sel = document.getElementById('notifToUser'); if (!sel) return;
+  const v = sel.value;
+  sel.innerHTML = '<option value="all">📢 كل المستخدمين</option>';
+  usersData.filter(u => !currentUser || u.id !== currentUser.id).forEach(u => {
+    sel.innerHTML += `<option value="${u.id}">👤 ${u.name} (${ROLES[u.role]||u.role})</option>`;
+  });
+  if (v) sel.value = v;
+}
+function myNotifications() {
+  if (!currentUser) return [];
+  return notificationsData.filter(n => n.toUserId === 'all' || n.toUserId === currentUser.id);
+}
+function updateNotifBadge() {
+  const badge = document.getElementById('notifBadge');
+  if (!badge || !currentUser) return;
+  const unread = myNotifications().filter(n => !(n.readBy && n.readBy[currentUser.id])).length;
+  if (unread > 0) { badge.textContent = unread > 99 ? '99+' : unread; badge.classList.remove('hidden'); }
+  else { badge.classList.add('hidden'); }
+}
+function renderNotifications() {
+  const list = document.getElementById('notifList');
+  if (!list || !currentUser) return;
+  const mine = myNotifications();
+  if (mine.length === 0) { list.innerHTML = `<div class="empty-state" style="padding:24px;">لا يوجد إشعارات</div>`; return; }
+  list.innerHTML = mine.map(n => {
+    const isRead = !!(n.readBy && n.readBy[currentUser.id]);
+    const typeIcon = n.type === 'dispatch' ? '⏰' : n.type === 'system' ? '⚙️' : '✉️';
+    return `<div class="notif-item ${isRead?'':'unread'}" onclick="markNotifRead('${n.id}')">
+      <div class="notif-item-title">${typeIcon} ${n.title || 'إشعار'}</div>
+      <div class="notif-item-body">${n.body || ''}</div>
+      <div class="notif-item-meta">من: ${n.fromUserName || 'النظام'} — ${fmtTs(n.timestamp)}${n.toUserId==='all' ? ' — 📢 للجميع' : ''}</div>
+    </div>`;
+  }).join('');
+}
+function markNotifRead(id) {
+  if (!currentUser) return;
+  rtdb.ref('notifications/' + id + '/readBy/' + currentUser.id).set(true).then(() => updateNotifBadge());
+}
+function markAllNotifsRead() {
+  if (!currentUser) return;
+  const updates = {};
+  myNotifications().forEach(n => { if (!(n.readBy && n.readBy[currentUser.id])) updates['notifications/' + n.id + '/readBy/' + currentUser.id] = true; });
+  if (Object.keys(updates).length === 0) { showToast('لا يوجد إشعارات غير مقروءة'); return; }
+  db.ref().update(updates).then(() => { showToast('✅ تم تعليم الكل كمقروء'); updateNotifBadge(); });
+}
+function sendUserNotification() {
+  const toUserId = document.getElementById('notifToUser').value;
+  const body = document.getElementById('notifMessageText').value.trim();
+  if (!body) { showToast('❌ اكتب نص الرسالة', true); return; }
+  const toName = toUserId === 'all' ? 'الجميع' : (usersData.find(u => u.id === toUserId)?.name || '');
+  rtdb.ref('notifications').push({
+    toUserId, title: '✉️ رسالة من ' + currentUser.name, body, type: 'message',
+    fromUserId: currentUser.id, fromUserName: currentUser.name,
+    readBy: { [currentUser.id]: true },
+    timestamp: firebase.database.ServerValue.TIMESTAMP
+  }).then(() => {
+    showToast('📨 تم إرسال الرسالة إلى ' + toName);
+    document.getElementById('notifMessageText').value = '';
+  }).catch(err => { showToast('❌ حدث خطأ أثناء الإرسال', true); console.error(err); });
+}
+
+// ============================================
+// ⏰ متابعة ميعاد خروج الأوردر - إشعار تلقائي عند حلول الموعد
+// ============================================
+let _dispatchWatcherStarted = false;
+function startDispatchWatcher() {
+  if (_dispatchWatcherStarted) return;
+  _dispatchWatcherStarted = true;
+  checkDispatchDue();
+  setInterval(checkDispatchDue, 30000);
+}
+function checkDispatchDue() {
+  if (!currentUser) return;
+  const now = new Date();
+  const checkList = [
+    { arr: ordersData, table: 'orders' },
+    { arr: appOrdersData, table: 'app_orders' }
+  ];
+  checkList.forEach(({ arr, table }) => {
+    arr.forEach(o => {
+      if (!o.deliveryDate || !o.deliveryTime) return;
+      if (o.status === 'completed' || o.status === 'cancelled') return;
+      if (o.dispatchNotified) return;
+      const due = new Date(o.deliveryDate + 'T' + o.deliveryTime + ':00');
+      if (isNaN(due.getTime())) return;
+      if (due <= now) {
+        rtdb.ref(table + '/' + o.id).update({ dispatchNotified: true });
+        rtdb.ref('notifications').push({
+          toUserId: 'all', title: '⏰ حان ميعاد خروج أوردر',
+          body: `أوردر العميل "${o.customer||'-'}" (فرع ${o.branch||'-'}) كان مقرر خروجه الساعة ${o.deliveryTime} بتاريخ ${o.deliveryDate}. برجاء المتابعة.`,
+          type: 'dispatch', fromUserId: 'system', fromUserName: 'النظام',
+          readBy: {}, orderId: o.id,
+          timestamp: firebase.database.ServerValue.TIMESTAMP
+        });
+      }
+    });
+  });
+}
+
 
 // ============================================
 // تعديل: أرشفة/حذف أوردرات Done و Cancel بالإجمال (متاح للأدمن فقط)
@@ -3056,9 +3527,9 @@ function openReviewOrder(id) {
 
   document.getElementById('reviewContent').innerHTML = `
     <div style="margin-bottom:16px;"><div class="grid-2"><div><strong>العميل:</strong> ${o.customer}</div><div><strong>الفرع:</strong> <span class="badge badge-blue">${o.branch}</span></div></div></div>
-    <div style="margin-bottom:16px;"><div class="grid-2"><div><strong>الموظف:</strong> <span class="badge badge-purple">${o.employee}</span></div><div><strong>تاريخ التسجيل:</strong> ${o.date||'-'}</div></div></div>
+    <div style="margin-bottom:16px;"><div class="grid-2"><div><strong>الموظف:</strong> <span class="badge badge-purple">${o.employee}</span></div><div><strong>تاريخ التسجيل:</strong> ${fmtCreatedDT(o)}</div></div></div>
     <div style="margin-bottom:16px;"><div class="grid-2"><div><strong>طريقة التوفير:</strong> <span class="badge badge-orange">${o.supplyType||'مقاصة'}</span></div><div><strong>الحالة:</strong> <span class="badge ${statusClass}">${statusLabel}</span></div></div></div>
-    <div style="margin-bottom:16px;"><div class="grid-2"><div><strong>ميعاد الخروج:</strong> <span class="badge badge-cyan">${o.deliveryDate||'-'}</span></div><div><strong>الإجمالي:</strong> <span style="color:#16a34a;font-size:18px;font-weight:700;">${o.total?o.total.toFixed(2):'0'} ج.م</span></div></div></div>
+    <div style="margin-bottom:16px;"><div class="grid-2"><div><strong>ميعاد الخروج:</strong> <span class="badge badge-cyan">${fmtDeliveryDT(o)}</span></div><div><strong>الإجمالي:</strong> <span style="color:#16a34a;font-size:18px;font-weight:700;">${o.total?o.total.toFixed(2):'0'} ج.م</span></div></div></div>
     ${cancelReasonHtml}
     <hr style="border:0;border-top:1px solid #e2e8f0;margin:16px 0;">
     <h4 style="margin:0 0 8px;color:#374151;">📝 الأصناف المطلوبة</h4>${itemsHtml}
@@ -3081,6 +3552,7 @@ function openEditOrder(id) {
   const supplyRadio = document.querySelector(`input[name="editSupplyType"][value="${order.supplyType}"]`);
   if (supplyRadio) supplyRadio.checked = true;
   document.getElementById('editDeliveryDate').value = order.deliveryDate || '';
+  document.getElementById('editDeliveryTime').value = order.deliveryTime || '';
   document.getElementById('editStatus').value = order.status || 'pending';
   document.getElementById('editCancelReason').value = order.cancelReason || '';
   toggleCancelReason();
@@ -3108,6 +3580,7 @@ function saveEditOrder() {
   const items = document.getElementById('editItems').value.trim();
   const supplyType = document.querySelector('input[name="editSupplyType"]:checked')?.value || 'مقاصة';
   const deliveryDate = document.getElementById('editDeliveryDate').value;
+  const deliveryTime = document.getElementById('editDeliveryTime').value;
   const status = document.getElementById('editStatus').value;
   const cancelReason = document.getElementById('editCancelReason').value.trim();
   const notes = document.getElementById('editNotes').value.trim();
@@ -3121,7 +3594,7 @@ function saveEditOrder() {
     return;
   }
 
-  const data = { customer, branch, items, supplyType, deliveryDate, status, notes };
+  const data = { customer, branch, items, supplyType, deliveryDate, deliveryTime, status, notes, dispatchNotified: false };
   if (status === 'cancelled') data.cancelReason = cancelReason; else data.cancelReason = '';
   db.ref('orders/' + id).update(data)
     .then(() => { showToast('✅ تم حفظ التعديلات'); closeEditModal(); })
@@ -3149,8 +3622,8 @@ function openReviewAppOrder(id) {
     <div style="margin-bottom:16px;"><div class="grid-2"><div><strong>العميل:</strong> ${o.customer}</div><div><strong>الفرع:</strong> <span class="badge badge-blue">${o.branch}</span></div></div></div>
     <div style="margin-bottom:16px;"><div class="grid-2"><div><strong>الأبلكيشن:</strong> <span class="badge badge-purple">${o.appName||'-'}</span></div><div><strong>رقم الأوردر:</strong> <span class="badge badge-pink">#${o.appOrderNumber||'-'}</span></div></div></div>
     <div style="margin-bottom:16px;"><div class="grid-2"><div><strong>الموظف:</strong> <span class="badge badge-gray">${o.employee}</span></div><div></div></div></div>
-    <div style="margin-bottom:16px;"><div class="grid-2"><div><strong>تاريخ التسجيل:</strong> ${o.date||'-'}</div><div><strong>طريقة التوفير:</strong> <span class="badge badge-orange">${o.supplyType||'مقاصة'}</span></div></div></div>
-    <div style="margin-bottom:16px;"><div class="grid-2"><div><strong>الحالة:</strong> <span class="badge ${statusClass}">${statusLabel}</span></div><div><strong>ميعاد الخروج:</strong> <span class="badge badge-cyan">${o.deliveryDate||'-'}</span></div></div></div>
+    <div style="margin-bottom:16px;"><div class="grid-2"><div><strong>تاريخ التسجيل:</strong> ${fmtCreatedDT(o)}</div><div><strong>طريقة التوفير:</strong> <span class="badge badge-orange">${o.supplyType||'مقاصة'}</span></div></div></div>
+    <div style="margin-bottom:16px;"><div class="grid-2"><div><strong>الحالة:</strong> <span class="badge ${statusClass}">${statusLabel}</span></div><div><strong>ميعاد الخروج:</strong> <span class="badge badge-cyan">${fmtDeliveryDT(o)}</span></div></div></div>
     <div style="margin-bottom:16px;"><strong>الإجمالي:</strong> <span style="color:#16a34a;font-size:18px;font-weight:700;">${o.total?o.total.toFixed(2):'0'} ج.م</span></div>
     ${cancelReasonHtml}
     <hr style="border:0;border-top:1px solid #e2e8f0;margin:16px 0;">
@@ -3175,6 +3648,7 @@ function openEditAppOrder(id) {
   const supplyRadio = document.querySelector(`input[name="editAppOrderSupplyType"][value="${order.supplyType}"]`);
   if (supplyRadio) supplyRadio.checked = true;
   document.getElementById('editAppOrderDeliveryDate').value = order.deliveryDate || '';
+  document.getElementById('editAppOrderDeliveryTime').value = order.deliveryTime || '';
   document.getElementById('editAppOrderStatus').value = order.status || 'pending';
   document.getElementById('editAppOrderCancelReason').value = order.cancelReason || '';
   toggleAppCancelReason();
@@ -3203,6 +3677,7 @@ function saveEditAppOrder() {
   const items = document.getElementById('editAppOrderItems').value.trim();
   const supplyType = document.querySelector('input[name="editAppOrderSupplyType"]:checked')?.value || 'مقاصة';
   const deliveryDate = document.getElementById('editAppOrderDeliveryDate').value;
+  const deliveryTime = document.getElementById('editAppOrderDeliveryTime').value;
   const status = document.getElementById('editAppOrderStatus').value;
   const cancelReason = document.getElementById('editAppOrderCancelReason').value.trim();
   const notes = document.getElementById('editAppOrderNotes').value.trim();
@@ -3215,7 +3690,7 @@ function saveEditAppOrder() {
     return;
   }
 
-  const data = { customer, branch, appName, appOrderNumber, items, supplyType, deliveryDate, status, notes };
+  const data = { customer, branch, appName, appOrderNumber, items, supplyType, deliveryDate, deliveryTime, status, notes, dispatchNotified: false };
   if (status === 'cancelled') data.cancelReason = cancelReason; else data.cancelReason = '';
   db.ref('app_orders/' + id).update(data)
     .then(() => { showToast('✅ تم حفظ التعديلات'); closeEditAppOrderModal(); })
