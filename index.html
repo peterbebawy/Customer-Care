@@ -122,6 +122,10 @@ html, body { overflow-x: hidden; }
 @media (max-width: 600px) {
   #appShell.nav-shifted { transform: translateX(-82vw); }
   .sidebar-nav { width: 82vw; }
+  .topbar { flex-wrap: wrap; row-gap: 8px; }
+  .topbar-title { order: 5; flex-basis: 100%; }
+  .notif-bell-btn { width: 38px; height: 38px; }
+  #langToggleBtn { padding: 8px 10px; }
 }
 
 .table-wrap { overflow-x: auto; }
@@ -397,6 +401,8 @@ th { background: #f1f5f9; font-weight: 600; color: #475569; }
       <button type="button" class="notif-bell-btn" onclick="toggleNotifPanel()" aria-label="الإشعارات" style="margin-inline-start:auto;">
         🔔<span class="notif-badge hidden" id="notifBadge">0</span>
       </button>
+      <button type="button" class="notif-bell-btn" onclick="openChangePassModal()" aria-label="تغيير كلمة المرور" title="تغيير كلمة المرور">🔐</button>
+      <button type="button" class="notif-bell-btn" onclick="confirmTopbarLogout()" aria-label="تسجيل الخروج" title="تسجيل الخروج" style="color:#dc2626;border-color:#fecaca;">🚪</button>
       <button type="button" id="langToggleBtn" onclick="toggleAppLanguage()" style="border:1px solid #e2e8f0;background:#fff;color:#374151;font-weight:800;font-size:13px;border-radius:10px;padding:8px 14px;cursor:pointer;flex-shrink:0;">EN</button>
     </div>
 
@@ -1762,6 +1768,9 @@ document.addEventListener('click', (e) => {
   if (wrap && !wrap.contains(e.target)) closeUserMenu();
 });
 
+function confirmTopbarLogout() {
+  if (confirm('هل أنت متأكد من تسجيل الخروج؟')) doLogout();
+}
 function doLogout() {
   if (currentUser) {
     try { rtdb.ref('history').push({ userId: currentUser.id, userName: currentUser.name, role: currentUser.role, actionType: 'logout', path: 'auth', pathLabel: '🔑 الدخول والخروج', summary: 'تسجيل خروج', timestamp: firebase.database.ServerValue.TIMESTAMP }); } catch(e) {}
