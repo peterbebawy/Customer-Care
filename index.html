@@ -1326,7 +1326,7 @@ let quickProductContext = 'order', quickCustomerContext = 'order';
 const ROLES = { admin: 'أدمن', manager: 'مانجر', employee: 'Call Center', appuser: 'مستخدم أبلكيشن' };
 const STATUS_LABELS = { pending: 'في الانتظار', completed: 'تم', outdelivery: 'Out of Delivery', cancelled: 'ملغي' };
 const STATUS_CLASSES = { pending: 'status-pending', completed: 'status-completed', outdelivery: 'status-outdelivery', cancelled: 'status-cancelled' };
-const ALL_SECTION_KEYS = ['newOrder','myOrders','allOrders','allAppOrders','doneOrders','cancelOrders','shortages','shortagesReport','callcenterShortages','ccShortagesReport','archive','users','branches','apps','products','customers','requestReopen','requestItems','editOrders','editShortages','editStatus','inventoryAccess','inventoryBulkAddShortage','inventoryBulkRemoveShortage','inventorySearchChain','inventoryUnavailable'];
+const ALL_SECTION_KEYS = ['newOrder','myOrders','allOrders','allAppOrders','doneOrders','cancelOrders','shortages','shortagesReport','callcenterShortages','ccShortagesReport','archive','users','branches','apps','products','customers','requests','requestReopen','requestItems','requestBranchData','editOrders','editShortages','editStatus','inventoryAccess','inventoryBulkAddShortage','inventoryBulkRemoveShortage','inventorySearchChain','inventoryUnavailable'];
 
 // تعديل: الأقسام الافتراضية حسب الدور (تُستخدم كـ fallback للمستخدمين القدامى بدون تحديد يدوي للأقسام)
 // تعديل: أوردر الأبلكيشن أصبح خانة داخل "أوردر جديد" وليس قسم منفصل
@@ -2119,31 +2119,39 @@ function toggleNavGroup(labelEl, forceOpen) {
   group.classList.toggle('open', shouldOpen);
 }
 
-const BRANCH_DATA_TXT = `Dr Wells Pharmacy
+const BRANCH_DATA_TXT = `Dr Wells Pharmacy                  صيدليات د ويلز
 695754
 
 
-Wael Hafez Pharmacies (1110721)
+Wael Hafez Pharmacies (1110721)              صيدليات د وائل حافظ
 
 
-
+العبور دار اليسر
 Dr Wells Pharmacy, El Obour - El Hay 1
-761230 , 
+761230 ,
 
+
+العبور وطنية
 Dr Wells Pharmacy, El Obour - El Hay 2
-764155 , 
+764155 ,
 
+
+جوزيف تيتو
 Dr Wells Pharmacy, New Nozha
-761461 , 
+761461 ,
 
+
+التجمع
 Dr Wells Pharmacy, Tagammoa 5 - AUC
 761462 ,
 
 
+العباسية
 Dr Wells Pharmacy, Abasiya 3
 796706 ,
 
 
+اول جمال
 Wael Hafez Pharmacies, Ain Shams - Taksim Omar Ebn Al Khatab (1111859)`;
 
 function openBranchDataTxt(){
