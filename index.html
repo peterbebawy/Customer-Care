@@ -346,6 +346,217 @@ table th{background:#f8fafc!important;color:#475467!important;font-weight:700!im
 
 </style>
 <base target="_blank">
+<style>
+/* =========================================================
+   V3 — Professional UI polish
+   ========================================================= */
+:root{
+  --ui-navy:#0f172a;
+  --ui-navy-2:#172033;
+  --ui-gold:#c9a227;
+  --ui-bg:#f4f7fb;
+  --ui-border:#e7ebf2;
+  --ui-text:#182235;
+  --ui-muted:#667085;
+  --ui-radius:16px;
+}
+
+html{scroll-behavior:smooth}
+body{
+  background:
+    radial-gradient(circle at 10% 0%,rgba(201,162,39,.045),transparent 24%),
+    linear-gradient(180deg,#f7f9fc 0%,#eef3f8 100%);
+  color:var(--ui-text);
+}
+
+/* Sidebar */
+.sidebar-nav{
+  width:328px!important;
+  background:linear-gradient(180deg,#0b1220 0%,#101827 52%,#0a111e 100%)!important;
+  box-shadow:-24px 0 60px rgba(15,23,42,.30)!important;
+}
+.sidebar-header{
+  padding:21px 19px!important;
+  min-height:68px;
+}
+.sidebar-header-title{font-size:15px!important;letter-spacing:.15px}
+.sidebar-header-sub{font-size:11.5px!important}
+.nav{padding:17px 13px 28px!important}
+.nav-group{margin:5px 0 12px!important}
+.nav-group-label{
+  font-size:12px!important;
+  font-weight:800!important;
+  letter-spacing:.35px!important;
+  padding:8px 7px!important;
+  margin:8px 3px 5px!important;
+  color:#94a3b8!important;
+}
+.nav-btn{
+  min-height:45px!important;
+  padding:11px 14px!important;
+  border-radius:12px!important;
+  font-size:14.5px!important;
+  font-weight:700!important;
+  line-height:1.45!important;
+  color:#c4ccd8!important;
+  transition:transform .16s ease,background .16s ease,box-shadow .16s ease,color .16s ease!important;
+}
+.nav-btn:hover{
+  transform:translateX(-2px);
+  background:rgba(255,255,255,.065)!important;
+  color:#fff!important;
+}
+.nav-btn.active{
+  background:linear-gradient(135deg,rgba(201,162,39,.18),rgba(37,51,72,.92))!important;
+  border-color:rgba(201,162,39,.25)!important;
+  box-shadow:inset 3px 0 0 var(--ui-gold),0 8px 22px rgba(0,0,0,.18)!important;
+}
+.nav-count{
+  min-width:22px;
+  height:22px;
+  border-radius:8px!important;
+  font-size:11px!important;
+  font-weight:800!important;
+}
+.nav-account-group{
+  margin-top:12px!important;
+  padding-top:12px!important;
+}
+
+/* Main surface */
+#dashboard{
+  min-height:100vh;
+}
+.main-content{
+  padding:22px!important;
+}
+.header{
+  margin-bottom:18px!important;
+}
+.header h1{
+  font-size:31px!important;
+  letter-spacing:-.45px!important;
+  color:#111827!important;
+}
+.header p{
+  font-size:14px!important;
+}
+
+/* Cards / panels */
+.card,.home-panel,.stat-card,.table-card{
+  border:1px solid var(--ui-border)!important;
+  border-radius:var(--ui-radius)!important;
+  box-shadow:0 8px 28px rgba(15,23,42,.055)!important;
+}
+.card:hover,.home-panel:hover{
+  box-shadow:0 12px 32px rgba(15,23,42,.075)!important;
+}
+.stat-card{
+  transition:transform .18s ease,box-shadow .18s ease!important;
+}
+.stat-card:hover{
+  transform:translateY(-2px);
+}
+
+/* Inputs */
+.input,select,textarea{
+  border-color:#dce2ea!important;
+  border-radius:11px!important;
+  min-height:42px;
+  background:#fff!important;
+  transition:border-color .15s ease,box-shadow .15s ease!important;
+}
+.input:focus,select:focus,textarea:focus{
+  border-color:#b9a04a!important;
+  box-shadow:0 0 0 3px rgba(201,162,39,.12)!important;
+  outline:none!important;
+}
+
+/* Buttons */
+.btn{
+  border-radius:11px!important;
+  font-weight:800!important;
+  transition:transform .15s ease,box-shadow .15s ease!important;
+}
+.btn:hover{
+  transform:translateY(-1px);
+}
+
+/* Tables */
+table thead th{
+  background:#f7f9fc!important;
+  color:#475467!important;
+  font-weight:800!important;
+  font-size:12px!important;
+  border-bottom:1px solid #e5e9f0!important;
+}
+table tbody td{
+  font-size:13px!important;
+}
+table tbody tr{
+  transition:background .12s ease!important;
+}
+table tbody tr:hover{
+  background:#fafbfc!important;
+}
+
+/* Badges */
+.badge{
+  border-radius:8px!important;
+  font-weight:800!important;
+  padding:5px 8px!important;
+}
+
+/* Home dashboard */
+.home-panel{
+  padding:20px!important;
+}
+.home-panel-head h3{
+  font-size:16px!important;
+  font-weight:850!important;
+}
+.quick-action{
+  border-radius:14px!important;
+  padding:15px!important;
+  background:linear-gradient(180deg,#fff,#f9fbfd)!important;
+}
+.quick-action b{font-size:13px!important}
+.quick-action span{font-size:10.5px!important}
+
+/* Login */
+.login-box{
+  border-radius:24px!important;
+  box-shadow:0 24px 70px rgba(15,23,42,.20)!important;
+  border:1px solid rgba(255,255,255,.65)!important;
+}
+.login-title h1{
+  letter-spacing:-.3px;
+}
+.login-input-group .input{
+  min-height:46px!important;
+}
+
+/* Scrollbar */
+*{
+  scrollbar-width:thin;
+  scrollbar-color:#cbd5e1 transparent;
+}
+*::-webkit-scrollbar{width:8px;height:8px}
+*::-webkit-scrollbar-track{background:transparent}
+*::-webkit-scrollbar-thumb{
+  background:#cbd5e1;
+  border-radius:999px;
+}
+*::-webkit-scrollbar-thumb:hover{background:#94a3b8}
+
+/* Mobile */
+@media(max-width:700px){
+  .sidebar-nav{width:min(88vw,340px)!important}
+  .main-content{padding:14px!important}
+  .header h1{font-size:24px!important}
+  .nav-btn{font-size:14px!important}
+}
+</style>
 </head>
 <body>
 
