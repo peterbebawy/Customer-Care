@@ -636,12 +636,7 @@ table tbody tr:hover{
     </div>
     <div class="kpi-grid" id="homeKpis"></div>
     <div class="home-grid">
-      <div class="home-panel"><div class="home-panel-head"><h3>إجراءات سريعة</h3><span>Quick actions</span></div><div class="quick-grid">
-        <button class="quick-action" onclick="showTab('newOrder')"><b>➕ تسجيل أوردر</b><span>إنشاء أوردر جديد</span></button>
-        <button class="quick-action" onclick="showTab('allOrders')"><b>📦 متابعة الأوردرات</b><span>عرض الأوردرات الحالية</span></button>
-        <button class="quick-action" onclick="showTab('allAppOrders')"><b>📱 أوردرات الأبلكيشن</b><span>متابعة طلبات التطبيقات</span></button>
-        <button class="quick-action" onclick="showTab('shortages')"><b>⚠️ النواقص</b><span>متابعة نواقص الأبلكيشن</span></button>
-      </div></div>
+      <div class="home-panel"><div class="home-panel-head"><h3>إجراءات سريعة</h3><span>Quick actions</span></div><div class="quick-grid" id="homeQuickActions"></div></div>
       <div class="home-panel"><div class="home-panel-head"><h3>حالة التشغيل</h3><span>Live status</span></div><div class="status-list" id="homeStatusList"></div></div>
     </div>
   </section>
@@ -945,6 +940,7 @@ table tbody tr:hover{
           <div style="width:100%;margin-top:8px;padding-top:12px;border-top:1px solid #e5e7eb;font-weight:800;color:#475569;">🔐 صلاحيات العمليات</div>
           <label class="radio-item"><input type="checkbox" class="userSectionChk" value="editOrders"> ✏️ السماح بتعديل الأوردرات</label>
           <label class="radio-item"><input type="checkbox" class="userSectionChk" value="editShortages"> ✏️ السماح بتعديل النواقص المدخلة</label>
+          <label class="radio-item"><input type="checkbox" class="userSectionChk" value="editStatus"> 🔄 السماح بتعديل حالة الأوردر</label>
         </div>
         <button class="btn btn-primary" onclick="addUser()">💾 حفظ المستخدم</button>
         <button class="btn btn-secondary hidden" id="cancelEditBtn" onclick="cancelEditUser()">إلغاء التعديل</button>
@@ -1226,7 +1222,7 @@ let quickProductContext = 'order', quickCustomerContext = 'order';
 const ROLES = { admin: 'أدمن', manager: 'مانجر', employee: 'Call Center', appuser: 'مستخدم أبلكيشن' };
 const STATUS_LABELS = { pending: 'في الانتظار', completed: 'تم', outdelivery: 'Out of Delivery', cancelled: 'ملغي' };
 const STATUS_CLASSES = { pending: 'status-pending', completed: 'status-completed', outdelivery: 'status-outdelivery', cancelled: 'status-cancelled' };
-const ALL_SECTION_KEYS = ['newOrder','myOrders','allOrders','allAppOrders','doneOrders','cancelOrders','shortages','shortagesReport','callcenterShortages','ccShortagesReport','archive','users','branches','apps','products','customers','editOrders','editShortages'];
+const ALL_SECTION_KEYS = ['newOrder','myOrders','allOrders','allAppOrders','doneOrders','cancelOrders','shortages','shortagesReport','callcenterShortages','ccShortagesReport','archive','users','branches','apps','products','customers','editOrders','editShortages','editStatus'];
 
 // تعديل: الأقسام الافتراضية حسب الدور (تُستخدم كـ fallback للمستخدمين القدامى بدون تحديد يدوي للأقسام)
 // تعديل: أوردر الأبلكيشن أصبح خانة داخل "أوردر جديد" وليس قسم منفصل
@@ -1252,6 +1248,7 @@ function getDefaultSectionsForRole(role) {
     s.users = true; s.branches = true; s.apps = true; s.products = true; s.customers = true;
     s.editOrders = true;
     s.editShortages = true;
+    s.editStatus = true;
   }
   return s;
 }
@@ -1261,7 +1258,9 @@ function hasPermission(permissionKey) {
   if (!currentUser) return false;
   if (currentUser.role === 'admin') return true;
   const sections = currentUser.sections || getDefaultSectionsForRole(currentUser.role);
-  return sections[permissionKey] === true;
+  if (Object.prototype.hasOwnProperty.call(sections, permissionKey)) return sections[permissionKey] === true;
+  if (permissionKey === 'editStatus') return ['admin','manager','appuser'].includes(currentUser.role);
+  return false;
 }
 
 function initApp() {
@@ -1460,14 +1459,9 @@ function enterDashboard(user, silent) {
   populateBranchSelect(); populateShortageBranch(); populateCCBranch(); populateShortageApp(); populateAppOrderBranch(); populateAppOrderAppSelect();
   document.getElementById('deliveryDate').value = new Date().toISOString().split('T')[0];
   document.getElementById('appOrderDeliveryDate').value = new Date().toISOString().split('T')[0];
-  // تعديل: تحديد أول قسم متاح للمستخدم كصفحة افتراضية بناءً على الأقسام المسموحة له
-  const userSections = user.sections || getDefaultSectionsForRole(user.role);
-  let defaultTab = 'dashboardHome';
-  if (userSections.newOrder) defaultTab = 'dashboardHome';
-  else if (userSections.allOrders) defaultTab = 'allOrders';
-  else if (userSections.allAppOrders) defaultTab = 'allAppOrders';
-  else { const firstAvail = Object.keys(userSections).find(k => userSections[k]); if (firstAvail) defaultTab = firstAvail; }
-  showTab(defaultTab);
+  // تعديل: بعد تسجيل الدخول يبدأ كل مستخدم دائماً من الرئيسية
+  // أما باقي الأقسام فتظهر فقط حسب الصلاحيات الممنوحة له.
+  showTab('dashboardHome');
   if (!silent) showToast('👋 مرحباً ' + user.name);
   resetIdleTimer();
 }
@@ -1598,7 +1592,7 @@ function editUser(id) {
   document.getElementById('newUserName').value = u.name || '';
   document.getElementById('newUserPass').value = u.pass || '';
   document.getElementById('newUserRole').value = u.role || '';
-  const sections = u.sections || getDefaultSectionsForRole(u.role);
+  const sections = { ...getDefaultSectionsForRole(u.role), ...(u.sections || {}) };
   document.querySelectorAll('.userSectionChk').forEach(chk => { chk.checked = !!sections[chk.value]; });
   document.getElementById('cancelEditBtn').classList.remove('hidden');
   window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -1912,9 +1906,11 @@ function setupNavByRole() {
   const role = currentUser.role;
   const sections = currentUser.sections || getDefaultSectionsForRole(role);
 
-  // العمليات: تسجيل أوردر جديد + نواقص كول سنتر فقط
+  // العمليات: كل قسم يظهر فقط إذا كانت صلاحيته مفعلة للمستخدم
   let opsHtml = '';
   if (sections.newOrder) opsHtml += `<button class="nav-btn" onclick="showTab('newOrder')" id="tab-newOrder">➕ تسجيل أوردر جديد</button>`;
+  if (sections.myOrders) opsHtml += `<button class="nav-btn" onclick="showTab('myOrders')" id="tab-myOrders">📋 أوردراتي <span class="nav-count hidden" id="navcount-myOrders"></span></button>`;
+  if (sections.allOrders) opsHtml += `<button class="nav-btn" onclick="showTab('allOrders')" id="tab-allOrders">📊 كل أوردرات الكول سنتر <span class="nav-count hidden" id="navcount-allOrders"></span></button>`;
   if (sections.callcenterShortages) opsHtml += `<button class="nav-btn" onclick="showTab('callcenterShortages')" id="tab-callcenterShortages">📞 نواقص كول سنتر</button>`;
   if (opsHtml) nav.innerHTML += buildNavGroup('ops', '📋 العمليات', opsHtml);
 
@@ -2062,11 +2058,36 @@ function renderDashboardHome(){
   ];
   const box=document.getElementById('homeKpis');
   if(box) box.innerHTML=kpis.map(k=>`<div class="kpi-card" style="--accent:${k[4]}"><div class="kpi-top"><span>${k[1]}</span><span class="kpi-icon">${k[0]}</span></div><div class="kpi-value">${k[2]}</div><div class="kpi-note">${k[3]}</div></div>`).join('');
+
+  // الرئيسية متاحة للجميع، لكن الاختصارات لا تظهر إلا للأقسام المسموحة للمستخدم.
+  const sections = currentUser ? (currentUser.sections || getDefaultSectionsForRole(currentUser.role)) : {};
+  const quick = [];
+  if (sections.newOrder) quick.push(`<button class="quick-action" onclick="showTab('newOrder')"><b>➕ تسجيل أوردر</b><span>إنشاء أوردر جديد</span></button>`);
+  if (sections.myOrders) quick.push(`<button class="quick-action" onclick="showTab('myOrders')"><b>📋 أوردراتي</b><span>عرض أوردراتك الحالية</span></button>`);
+  if (sections.allOrders) quick.push(`<button class="quick-action" onclick="showTab('allOrders')"><b>📦 كل الأوردرات</b><span>متابعة أوردرات الكول سنتر</span></button>`);
+  if (sections.allAppOrders) quick.push(`<button class="quick-action" onclick="showTab('allAppOrders')"><b>📱 أوردرات الأبلكيشن</b><span>متابعة طلبات التطبيقات</span></button>`);
+  if (sections.shortages) quick.push(`<button class="quick-action" onclick="showTab('shortages')"><b>⚠️ النواقص</b><span>متابعة نواقص الأبلكيشن</span></button>`);
+  if (sections.callcenterShortages) quick.push(`<button class="quick-action" onclick="showTab('callcenterShortages')"><b>📞 نواقص كول سنتر</b><span>متابعة النواقص</span></button>`);
+  const quickBox=document.getElementById('homeQuickActions');
+  if(quickBox) quickBox.innerHTML=quick.length ? quick.join('') : `<div style="color:#64748b;padding:12px;">لا توجد أقسام تشغيلية إضافية متاحة لهذا المستخدم.</div>`;
+
   const st=document.getElementById('homeStatusList');
   if(st) st.innerHTML=`<div class="status-row"><span class="status-label"><i class="status-dot" style="--dot:#f59e0b"></i>في الانتظار</span><b class="status-num">${pending}</b></div><div class="status-row"><span class="status-label"><i class="status-dot" style="--dot:#2563eb"></i>قيد التوصيل</span><b class="status-num">${out}</b></div><div class="status-row"><span class="status-label"><i class="status-dot" style="--dot:#16a34a"></i>تم التنفيذ</span><b class="status-num">${done}</b></div><div class="status-row"><span class="status-label"><i class="status-dot" style="--dot:#dc2626"></i>ملغي</span><b class="status-num">${cancelled}</b></div><div class="status-row"><span class="status-label"><i class="status-dot" style="--dot:#7c3aed"></i>أوردرات اليوم</span><b class="status-num">${todayOrders}</b></div>`;
 }
 
+function hasSectionPermission(section) {
+  if (!currentUser) return false;
+  if (currentUser.role === 'admin') return true;
+  const sections = currentUser.sections || getDefaultSectionsForRole(currentUser.role);
+  return !!sections[section];
+}
+
 function showTab(tab) {
+  // الرئيسية متاحة دائماً بعد تسجيل الدخول. أي قسم آخر يحتاج صلاحية صريحة.
+  if (tab !== 'dashboardHome' && !hasSectionPermission(tab)) {
+    showToast('⛔ ليس لديك صلاحية للوصول إلى هذا القسم', true);
+    tab = 'dashboardHome';
+  }
   ['dashboardHome','newOrder','myOrders','allOrders','allAppOrders','doneOrders','cancelOrders','shortages','shortagesReport','callcenterShortages','ccShortagesReport','archive','users','branches','apps','products','customers'].forEach(t => {
     const el = document.getElementById(t); 
     const btn = document.getElementById('tab-'+t);
@@ -2504,7 +2525,7 @@ function renderAllOrders() {
     const isUrgent = o.deliveryDate === today && o.status !== 'completed' && o.status !== 'cancelled';
     const canEdit = hasPermission('editOrders');
     // تعديل: السماح لموظف الأبلكيشن بتعديل الحالة أيضاً
-    const canChangeStatus = currentUser.role === 'admin' || currentUser.role === 'manager' || currentUser.role === 'appuser';
+    const canChangeStatus = hasPermission('editStatus');
 
     let statusCell = `<span class="badge ${statusClass}">${statusLabel}</span>`;
     if (canChangeStatus) {
@@ -2537,6 +2558,7 @@ function renderAllOrders() {
 }
 
 function updateOrderStatus(id, newStatus) {
+  if (!hasPermission('editStatus')) { showToast('❌ ليس لديك صلاحية تعديل حالة الأوردر', true); return; }
   // تعديل: عند اختيار "ملغي" يفتح مربع نصي لكتابة سبب الإلغاء قبل الحفظ
   if (newStatus === 'cancelled') {
     openQuickCancelReasonModal(id, 'orders');
@@ -2613,7 +2635,7 @@ function renderAllAppOrders() {
     const statusLabel = STATUS_LABELS[o.status] || o.status;
     const isUrgent = o.deliveryDate === today && o.status !== 'completed' && o.status !== 'cancelled';
     const canEdit = hasPermission('editOrders');
-    const canChangeStatus = currentUser.role === 'admin' || currentUser.role === 'manager';
+    const canChangeStatus = hasPermission('editStatus');
 
     let statusCell = `<span class="badge ${statusClass}">${statusLabel}</span>`;
     if (canChangeStatus) {
@@ -2648,6 +2670,7 @@ function renderAllAppOrders() {
 }
 
 function updateAppOrderStatus(id, newStatus) {
+  if (!hasPermission('editStatus')) { showToast('❌ ليس لديك صلاحية تعديل حالة الأوردر', true); return; }
   // تعديل: عند اختيار "ملغي" يفتح مربع نصي لكتابة سبب الإلغاء قبل الحفظ
   if (newStatus === 'cancelled') {
     openQuickCancelReasonModal(id, 'app_orders');
@@ -2717,7 +2740,7 @@ function renderDoneOrders() {
   if (list.length === 0) { table.innerHTML = `<tr><td colspan="13" class="empty-state">لا يوجد أوردرات تم تنفيذها</td></tr>`; return; }
 
   const canEdit = hasPermission('editOrders');
-  const canChangeStatus = currentUser.role === 'admin' || currentUser.role === 'manager' || currentUser.role === 'appuser';
+  const canChangeStatus = hasPermission('editStatus');
 
   table.innerHTML = list.map((o, i) => {
     const fn = o._type === 'app' ? 'updateAppOrderStatus' : 'updateOrderStatus';
@@ -2804,7 +2827,7 @@ function renderCancelOrders() {
   if (list.length === 0) { table.innerHTML = `<tr><td colspan="14" class="empty-state">لا يوجد أوردرات ملغية</td></tr>`; return; }
 
   const canEdit = hasPermission('editOrders');
-  const canChangeStatus = currentUser.role === 'admin' || currentUser.role === 'manager' || currentUser.role === 'appuser';
+  const canChangeStatus = hasPermission('editStatus');
 
   table.innerHTML = list.map((o, i) => {
     const fn = o._type === 'app' ? 'updateAppOrderStatus' : 'updateOrderStatus';
