@@ -3,18 +3,18 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Dr. Wells Pharmacy | نظام إدارة الأوردرات</title>
+<title>Dr.Wells Pharmacy | Call Center</title>
 <link rel="icon" id="faviconLink" type="image/png" href="">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Cairo:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 * { box-sizing: border-box; }
-body { font-family: 'Cairo', Tahoma, 'Segoe UI', Arial, sans-serif; direction: rtl; background: #eef2f7; margin: 0; padding: 20px; -webkit-font-smoothing: antialiased; }
-button, input, select, textarea { font-family: 'Cairo', Tahoma, 'Segoe UI', Arial, sans-serif; }
+body { font-family: 'IBM Plex Sans Arabic', 'Cairo', Tahoma, 'Segoe UI', Arial, sans-serif; direction: rtl; background: #eef2f7; margin: 0; padding: 20px; -webkit-font-smoothing: antialiased; }
+button, input, select, textarea { font-family: 'IBM Plex Sans Arabic', 'Cairo', Tahoma, 'Segoe UI', Arial, sans-serif; }
 .hidden { display: none !important; }
 .card { background: #fff; border-radius: 18px; box-shadow: 0 4px 24px rgba(15,23,42,0.07); padding: 28px; margin-bottom: 20px; max-width: 1320px; margin-left: auto; margin-right: auto; position: relative; overflow: hidden; transition: box-shadow 0.2s ease; }
 .card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 5px; background: linear-gradient(90deg, #2563eb, #06b6d4, #16a34a); }
@@ -101,6 +101,31 @@ html, body { overflow-x: hidden; }
   #appShell.nav-shifted { transform: translateX(-82vw); }
   .sidebar-nav { width: 82vw; }
 }
+
+
+/* ===== Professional Dashboard UI v2 ===== */
+:root{
+  --ink:#172033;--muted:#718096;--line:#e8edf4;--surface:#fff;--bg:#f5f7fb;
+  --navy:#172033;--gold:#c9a227;--blue:#2563eb;--green:#16a34a;--red:#dc2626;--purple:#7c3aed;
+}
+body{background:radial-gradient(circle at 8% 0%,rgba(201,162,39,.07),transparent 28%),linear-gradient(180deg,#f8fafc 0%,#f3f6fa 100%);padding:18px;}
+#appShell{min-height:100vh;}
+.brand-bar{max-width:1440px!important;border-radius:20px!important;padding:15px 22px!important;background:linear-gradient(135deg,#111827,#202938)!important;box-shadow:0 14px 36px rgba(15,23,42,.16)!important;margin-bottom:12px!important;}
+.brand-bar::before{height:2px!important;background:linear-gradient(90deg,transparent,var(--gold),transparent)!important;}
+.brand-bar-title{font-size:16px!important;letter-spacing:.2px}.brand-bar-sub{font-size:11px!important;color:#c7ccd5!important}
+.topbar{max-width:1440px!important;margin:0 auto 18px!important;padding:10px 12px!important;border:1px solid #e7ebf1!important;background:rgba(255,255,255,.88)!important;backdrop-filter:blur(14px);border-radius:16px!important;box-shadow:0 8px 28px rgba(15,23,42,.07)!important;}
+.topbar-menu-btn{background:#172033!important;width:40px;height:40px;border-radius:11px;box-shadow:none!important}.topbar-title{font-size:14px!important;color:#172033!important;flex:1}
+.topbar-title::before{content:'Workspace';display:block;font-size:10px;color:#9aa4b2;font-weight:600;margin-bottom:1px;letter-spacing:.4px}.topbar-title .cur-tab-emoji{margin-left:4px}
+.prof-user-bar{display:flex;align-items:center;justify-content:space-between;gap:16px;max-width:1440px;margin:0 auto 18px;background:rgba(255,255,255,.96);border:1px solid #e7ebf1;border-radius:18px;padding:14px 18px;box-shadow:0 8px 28px rgba(15,23,42,.06);}
+.prof-welcome{display:flex;align-items:center;gap:12px}.prof-welcome-icon{width:42px;height:42px;border-radius:13px;background:linear-gradient(135deg,#172033,#2b364a);display:grid;place-items:center;color:#fff;font-size:18px;box-shadow:0 7px 16px rgba(23,32,51,.18)}
+.prof-welcome h3{margin:0;font-size:15px;color:#172033}.prof-welcome p{margin:2px 0 0;color:#8a95a5;font-size:11px}.prof-actions{display:flex;align-items:center;gap:8px}.prof-chip{border:1px solid #e7ebf1;background:#f8fafc;border-radius:10px;padding:7px 10px;color:#667085;font-size:11px;font-weight:700}
+.home-wrap{max-width:1440px;margin:0 auto 24px}.home-hero{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;margin-bottom:18px}.home-kicker{color:var(--gold);font-size:11px;font-weight:800;letter-spacing:.8px}.home-title{margin:2px 0 4px;font-size:27px;line-height:1.25;color:#172033;font-weight:900}.home-subtitle{margin:0;color:#7b8798;font-size:12px}.home-date{background:#fff;border:1px solid var(--line);border-radius:13px;padding:10px 14px;color:#667085;font-size:11px;font-weight:700;box-shadow:0 5px 18px rgba(15,23,42,.05)}
+.kpi-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;margin-bottom:18px}.kpi-card{position:relative;overflow:hidden;background:#fff;border:1px solid #e8edf4;border-radius:16px;padding:16px;box-shadow:0 7px 22px rgba(15,23,42,.055);min-height:118px}.kpi-card::after{content:'';position:absolute;inset:auto -20px -34px auto;width:90px;height:90px;border-radius:50%;background:var(--accent,#2563eb);opacity:.07}.kpi-top{display:flex;align-items:center;justify-content:space-between;color:#7d8796;font-size:11px;font-weight:700}.kpi-icon{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;background:color-mix(in srgb,var(--accent,#2563eb) 10%,white);color:var(--accent,#2563eb);font-size:16px}.kpi-value{font-size:27px;font-weight:900;color:#172033;margin-top:12px}.kpi-note{font-size:10px;color:#98a2b3;margin-top:2px}
+.home-grid{display:grid;grid-template-columns:1.45fr .9fr;gap:14px}.home-panel{background:#fff;border:1px solid #e8edf4;border-radius:18px;padding:18px;box-shadow:0 7px 22px rgba(15,23,42,.05)}.home-panel-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}.home-panel-head h3{margin:0;color:#172033;font-size:15px}.home-panel-head span{font-size:10px;color:#9aa4b2}.quick-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}.quick-action{border:1px solid #e8edf4;background:#f9fbfd;border-radius:13px;padding:13px;text-align:right;cursor:pointer;transition:.18s;font-family:inherit}.quick-action:hover{transform:translateY(-2px);border-color:#d6deea;box-shadow:0 8px 18px rgba(15,23,42,.06);background:#fff}.quick-action b{display:block;color:#253047;font-size:12px}.quick-action span{display:block;color:#98a2b3;font-size:10px;margin-top:3px}.status-list{display:flex;flex-direction:column;gap:9px}.status-row{display:flex;align-items:center;justify-content:space-between;padding:10px 11px;background:#f8fafc;border-radius:11px}.status-label{display:flex;align-items:center;gap:8px;font-size:11px;font-weight:700;color:#475467}.status-dot{width:8px;height:8px;border-radius:50%;background:var(--dot)}.status-num{font-size:13px;font-weight:900;color:#172033}.empty-mini{color:#98a2b3;font-size:11px;padding:10px 0}
+.card{border-radius:17px;box-shadow:0 6px 24px rgba(15,23,42,.055);border:1px solid #e8edf4}.card::before{height:2px;background:linear-gradient(90deg,#172033,var(--gold),transparent)}
+.sidebar-nav{width:320px;background:#111827;color:#fff;box-shadow:-18px 0 50px rgba(15,23,42,.28)}.sidebar-header{padding:20px 18px;background:linear-gradient(145deg,#0f172a,#1f2937);border-bottom:1px solid rgba(255,255,255,.08)}.sidebar-header::before{height:2px;background:linear-gradient(90deg,transparent,var(--gold),transparent)}.nav{padding:15px 12px 24px}.nav-group{margin:4px 0 9px}.nav-group-label{color:#7f8ba0;font-size:10px;letter-spacing:.8px}.nav-group-label:hover{background:rgba(255,255,255,.05);color:#cbd5e1}.nav-group-label::after{background:rgba(255,255,255,.08)}.nav-btn{color:#b7c0cf;border-color:transparent;padding:11px 13px;border-radius:11px}.nav-btn:hover{background:rgba(255,255,255,.065);color:#fff}.nav-btn.active{background:linear-gradient(135deg,#263246,#1c2738);border-color:rgba(201,162,39,.24);box-shadow:inset 3px 0 0 var(--gold),0 8px 18px rgba(0,0,0,.16);color:#fff}.nav-count{background:#d33b4b}.nav-account-group{border-top-color:rgba(255,255,255,.08)}.nav-btn.nav-btn-danger{color:#f87171}.sidebar-close-btn{background:rgba(255,255,255,.08)}
+@media(max-width:900px){.kpi-grid{grid-template-columns:repeat(3,1fr)}.home-grid{grid-template-columns:1fr}}
+@media(max-width:640px){body{padding:10px}.brand-bar{padding:12px 14px!important}.home-hero{align-items:flex-start;flex-direction:column}.home-title{font-size:22px}.home-date{width:100%}.kpi-grid{grid-template-columns:repeat(2,1fr)}.kpi-card{min-height:105px;padding:13px}.kpi-value{font-size:23px}.prof-user-bar{padding:12px}.prof-actions{display:none}.quick-grid{grid-template-columns:1fr}.home-panel{padding:14px}}
 
 .table-wrap { overflow-x: auto; }
 table { width: 100%; border-collapse: collapse; }
@@ -285,6 +310,40 @@ th { background: #f1f5f9; font-weight: 600; color: #475569; }
 .cancel-reason-box { background: #fef2f2; border: 1px solid #fecaca; border-radius: 10px; padding: 12px; margin-bottom: 12px; }
 .cancel-reason-box .label { color: #991b1b; }
 .cancel-reason-display { background: #fef2f2; border-right: 4px solid #dc2626; padding: 10px 14px; border-radius: 8px; margin-top: 8px; color: #991b1b; font-size: 13px; }
+
+/* ===== Premium Call Center UI ===== */
+:root{--cc-navy:#101828;--cc-navy2:#172033;--cc-gold:#c9a227;--cc-bg:#f5f7fb;--cc-text:#172033;--cc-muted:#667085;--cc-border:#e4e7ec}
+body{background:radial-gradient(circle at 15% 0%,rgba(201,162,39,.06),transparent 30%),linear-gradient(180deg,#f8fafc 0%,#f3f5f9 100%);color:var(--cc-text);letter-spacing:-.1px}
+.card{border:1px solid rgba(16,24,40,.06);box-shadow:0 10px 35px rgba(16,24,40,.07);border-radius:20px}
+.card::before{height:3px;background:linear-gradient(90deg,var(--cc-gold),#e6d28b,var(--cc-gold))}
+.input,select.input,textarea.input{border:1px solid #dfe3ea;background:#fff;border-radius:12px;min-height:44px;transition:border-color .18s,box-shadow .18s}
+.input:focus,select.input:focus,textarea.input:focus{border-color:#b99a2b;box-shadow:0 0 0 4px rgba(201,162,39,.10);outline:none}
+.label{font-weight:600;color:#344054;margin-bottom:7px}
+.btn{border-radius:11px;font-weight:700;box-shadow:none}
+.btn-primary{background:linear-gradient(135deg,#172033,#0f172a)}
+.btn-primary:hover{background:linear-gradient(135deg,#243047,#111827)}
+.btn-success{background:linear-gradient(135deg,#159957,#0f7a45)}
+.topbar{border:1px solid rgba(16,24,40,.07)!important;background:rgba(255,255,255,.92)!important;box-shadow:0 10px 30px rgba(16,24,40,.07)!important;min-height:60px}
+.topbar-menu-btn{background:linear-gradient(145deg,#172033,#0f172a)!important;border:1px solid rgba(201,162,39,.25)!important}
+.topbar-title{font-size:15px!important;font-weight:700!important}
+.sidebar-nav{background:linear-gradient(180deg,#0d1422 0%,#111827 55%,#0b1220 100%)!important;border-left:1px solid rgba(255,255,255,.06)}
+.sidebar-header{background:linear-gradient(145deg,#111827,#182234)!important;border-bottom:1px solid rgba(255,255,255,.08)}
+.sidebar-header-title{font-size:14px!important}.sidebar-header-sub{color:#d6bd68!important}
+.nav-group-label{font-weight:700!important;color:#cbd5e1!important}
+.nav-btn{border-radius:10px!important;margin:3px 8px!important;color:#cbd5e1!important;transition:.18s!important}
+.nav-btn:hover{background:rgba(255,255,255,.07)!important;color:#fff!important;transform:translateX(-2px)}
+.nav-btn.active{background:linear-gradient(90deg,rgba(201,162,39,.20),rgba(201,162,39,.07))!important;color:#fff!important;border-right:3px solid var(--cc-gold)!important}
+.home-hero{border:1px solid rgba(201,162,39,.18)!important;background:linear-gradient(135deg,#101828,#1b2638)!important;box-shadow:0 18px 45px rgba(16,24,40,.16)!important}
+.home-hero h1,.home-hero p{color:#fff!important}.home-date{color:#d6bd68!important}
+.kpi-card{border:1px solid var(--cc-border)!important;border-radius:18px!important;box-shadow:0 8px 24px rgba(16,24,40,.055)!important}
+.quick-action{border:1px solid var(--cc-border)!important;background:#fff!important;border-radius:16px!important;transition:.2s!important}
+.quick-action:hover{border-color:rgba(201,162,39,.5)!important;transform:translateY(-2px);box-shadow:0 12px 28px rgba(16,24,40,.08)!important}
+table th{background:#f8fafc!important;color:#475467!important;font-weight:700!important}table td{border-bottom-color:#eef1f5!important}
+@media(max-width:700px){body{padding:10px}.card{padding:18px;border-radius:16px}.topbar{border-radius:14px!important}.nav-btn{margin:2px 5px!important}}
+
+
+.selected-items-list{display:grid;gap:8px;margin:10px 0 16px}.selected-items-empty{padding:12px 14px;border:1px dashed #d0d5dd;border-radius:11px;background:#fafbfc;color:#98a2b3;font-size:13px}.selected-shortage-item{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 12px;border:1px solid #e4e7ec;background:#fff;border-radius:12px;box-shadow:0 3px 10px rgba(16,24,40,.04)}.selected-shortage-item>div{display:flex;align-items:center;gap:8px;min-width:0}.selected-item-index{width:24px;height:24px;border-radius:7px;background:#f5efd8;color:#8b6f13;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex:none}.selected-item-code{font-size:12px;color:#667085;background:#f2f4f7;padding:3px 7px;border-radius:6px}.selected-item-remove{width:28px;height:28px;border:0;border-radius:8px;background:#fef3f2;color:#d92d20;font-size:20px;line-height:1;cursor:pointer}.selected-item-remove:hover{background:#fee4e2}
+
 </style>
 <base target="_blank">
 </head>
@@ -297,7 +356,7 @@ th { background: #f1f5f9; font-weight: 600; color: #475569; }
   <div class="login-box">
     <div class="login-logo-wrap"><img class="login-logo-img" id="loginLogoImg" alt="Dr. Wells Pharmacy"></div>
     <div class="login-title">
-      <h1>نظام إدارة الأوردرات</h1>
+      <h1>Call Center</h1>
       <p>DR. WELLS PHARMACY</p>
     </div>
     <div id="loginLoading" class="login-loading">
@@ -314,7 +373,7 @@ th { background: #f1f5f9; font-weight: 600; color: #475569; }
         <input type="password" id="loginPass" class="input" placeholder="كلمة المرور" onkeydown="if(event.key==='Enter')doLogin()">
       </div>
       <button class="btn btn-primary login-btn" onclick="doLogin()">تسجيل الدخول</button>
-      <div class="login-footer">🔒 نظام آمن | جميع البيانات محمية</div>
+      <div class="login-footer">🔒 Call Center | جميع البيانات محمية</div>
     </div>
   </div>
 </div>
@@ -325,7 +384,7 @@ th { background: #f1f5f9; font-weight: 600; color: #475569; }
       <img src="" id="sidebarLogoImg" class="sidebar-logo-img" alt="Dr. Wells Pharmacy">
       <div class="sidebar-header-text">
         <div class="sidebar-header-title">Dr. Wells Pharmacy</div>
-        <div class="sidebar-header-sub">نظام إدارة الأوردرات</div>
+        <div class="sidebar-header-sub">Call Center</div>
       </div>
       <button type="button" class="sidebar-close-btn" onclick="toggleNavPanel(false)" aria-label="إغلاق">&times;</button>
     </div>
@@ -338,7 +397,7 @@ th { background: #f1f5f9; font-weight: 600; color: #475569; }
     <img src="" id="brandLogoImg" class="brand-logo-img" alt="Dr. Wells Pharmacy">
     <div class="brand-bar-text">
       <div class="brand-bar-title">Dr. Wells Pharmacy</div>
-      <div class="brand-bar-sub">نظام إدارة الأوردرات</div>
+      <div class="brand-bar-sub">Call Center</div>
     </div>
   </div>
     <div class="topbar">
@@ -348,20 +407,36 @@ th { background: #f1f5f9; font-weight: 600; color: #475569; }
       <div class="topbar-title"><span id="curTabLabel">القائمة</span></div>
     </div>
 
-  <div class="card user-bar-card">
-    <div class="user-menu-wrap" id="userMenuWrap">
-      <div class="user-info" id="userMenuTrigger">
-        <div class="user-avatar" id="userAvatar">أ</div>
-        <div>
-          <div class="user-name-text" id="userName">أحمد</div>
-          <div class="user-role-text" id="userRole">Call Center</div>
-        </div>
+  <div class="prof-user-bar">
+    <div class="prof-welcome">
+      <div class="user-avatar" id="userAvatar">أ</div>
+      <div>
+        <h3 id="userName">أحمد</h3>
+        <p id="userRole">Call Center</p>
       </div>
     </div>
+    <div class="prof-actions"><span class="prof-chip">● النظام متصل</span><span class="prof-chip">Firebase</span></div>
   </div>
 
+  <section id="dashboardHome" class="home-wrap hidden">
+    <div class="home-hero">
+      <div><div class="home-kicker">DR. WELLS PHARMACY</div><h1 class="home-title">لوحة التحكم الرئيسية</h1><p class="home-subtitle">نظرة سريعة على حالة التشغيل والأوردرات الحالية.</p></div>
+      <div class="home-date" id="homeDate">اليوم</div>
+    </div>
+    <div class="kpi-grid" id="homeKpis"></div>
+    <div class="home-grid">
+      <div class="home-panel"><div class="home-panel-head"><h3>إجراءات سريعة</h3><span>Quick actions</span></div><div class="quick-grid">
+        <button class="quick-action" onclick="showTab('newOrder')"><b>➕ تسجيل أوردر</b><span>إنشاء أوردر جديد</span></button>
+        <button class="quick-action" onclick="showTab('allOrders')"><b>📦 متابعة الأوردرات</b><span>عرض الأوردرات الحالية</span></button>
+        <button class="quick-action" onclick="showTab('allAppOrders')"><b>📱 أوردرات الأبلكيشن</b><span>متابعة طلبات التطبيقات</span></button>
+        <button class="quick-action" onclick="showTab('shortages')"><b>⚠️ النواقص</b><span>متابعة نواقص الأبلكيشن</span></button>
+      </div></div>
+      <div class="home-panel"><div class="home-panel-head"><h3>حالة التشغيل</h3><span>Live status</span></div><div class="status-list" id="homeStatusList"></div></div>
+    </div>
+  </section>
+
   <div id="newOrder" class="card">
-    <h2 style="margin-top:0;color:#1e293b;">تسجيل أوردر كول سنتر جديد</h2>
+    <h2 style="margin-top:0;color:#1e293b;">تسجيل أوردر جديد</h2>
     <label class="label">العميل</label>
     <div class="search-wrap">
       <input type="text" id="customerSearch" class="input" placeholder="اكتب كود العميل أو الاسم..." oninput="searchCustomers()" onkeydown="handleCustomerKey(event)" autocomplete="off">
@@ -372,12 +447,12 @@ th { background: #f1f5f9; font-weight: 600; color: #475569; }
       <div><label class="label">رقم التليفون</label><input type="text" id="customerPhone" class="input" readonly placeholder="يتم التعبئة تلقائياً"></div>
       <div><label class="label">العنوان</label><input type="text" id="customerAddress" class="input" readonly placeholder="يتم التعبئة تلقائياً"></div>
     </div>
-    <label class="label">الفرع</label>
-    <select id="branch" class="input"><option value="">اختر الفرع</option></select>
     <div class="radio-item" style="margin-bottom:16px;display:inline-flex;">
       <input type="checkbox" id="isAppOrderChk" onchange="toggleNewOrderAppField()" style="width:auto;margin-left:8px;">
       <label for="isAppOrderChk" style="cursor:pointer;font-weight:600;color:#374151;">📱 هل هذا الأوردر أبلكيشن؟</label>
     </div>
+    <label class="label">الفرع</label>
+    <select id="branch" class="input"><option value="">اختر الفرع</option></select>
     <div id="newOrderAppField" class="hidden">
       <label class="label">الأبلكيشن</label>
       <select id="newOrderApp" class="input"><option value="">اختر الأبلكيشن</option></select>
@@ -521,6 +596,7 @@ th { background: #f1f5f9; font-weight: 600; color: #475569; }
           <input type="text" id="shortageProductSearch" class="input" placeholder="اكتب كود الصنف أو الاسم..." oninput="searchShortageProducts()" onkeydown="handleShortageProductKey(event)" autocomplete="off">
           <div id="shortageProductSuggestions" class="suggestions hidden"></div>
         </div>
+        <div id="selectedShortageProducts" class="selected-items-list" aria-live="polite"></div>
         <div class="grid-2">
           <div><label class="label">الأبلكيشن</label><select id="shortageApp" class="input"><option value="">اختر الأبلكيشن</option></select></div>
           <div><label class="label">الفرع</label><select id="shortageBranch" class="input"><option value="">اختر الفرع</option></select></div>
@@ -634,12 +710,12 @@ th { background: #f1f5f9; font-weight: 600; color: #475569; }
           <option value="">اختر الدور</option>
           <option value="admin">Admin - أدمن</option>
           <option value="manager">Manager - مانجر</option>
-          <option value="employee">Employee - موظف</option>
+          <option value="employee">Call Center</option>
           <option value="appuser">App User - مستخدم أبلكيشن</option>
         </select>
         <label class="label">الأقسام المتاحة لهذا المستخدم (تحديد يدوي)</label>
         <div class="radio-group" id="userSectionsBox">
-          <label class="radio-item"><input type="checkbox" class="userSectionChk" value="newOrder"> ➕ أوردر كول سنتر</label>
+          <label class="radio-item"><input type="checkbox" class="userSectionChk" value="newOrder"> ➕ تسجيل أوردر جديد</label>
           <label class="radio-item"><input type="checkbox" class="userSectionChk" value="myOrders"> 📋 أوردراتي (كول سنتر)</label>
           <label class="radio-item"><input type="checkbox" class="userSectionChk" value="allOrders"> 📊 كل أوردرات الكول سنتر</label>
           <label class="radio-item"><input type="checkbox" class="userSectionChk" value="allAppOrders"> 📊 كل أوردرات الأبلكيشن</label>
@@ -905,7 +981,7 @@ window.db = db;
 
 let currentUser = null;
 let usersData = [], ordersData = [], appOrdersData = [], branchesData = [], productsData = [], customersData = [], appsData = [], shortagesData = [], ccShortagesData = [], archiveData = [];
-let orderItems = [], selectedCustomer = null, selectedShortageProduct = null, selectedCCProduct = null;
+let orderItems = [], selectedCustomer = null, selectedShortageProducts = [], selectedCCProduct = null;
 let appOrderItems = [], selectedAppOrderCustomer = null;
 let currentFilter = 'all';
 let currentAppFilter = 'all';
@@ -913,7 +989,7 @@ let productSelIndex = -1, customerSelIndex = -1, shortageProductSelIndex = -1, c
 let appOrderProductSelIndex = -1, appOrderCustomerSelIndex = -1;
 let quickProductContext = 'order', quickCustomerContext = 'order';
 
-const ROLES = { admin: 'أدمن', manager: 'مانجر', employee: 'موظف', appuser: 'مستخدم أبلكيشن' };
+const ROLES = { admin: 'أدمن', manager: 'مانجر', employee: 'Call Center', appuser: 'مستخدم أبلكيشن' };
 const STATUS_LABELS = { pending: 'في الانتظار', completed: 'تم', outdelivery: 'Out of Delivery', cancelled: 'ملغي' };
 const STATUS_CLASSES = { pending: 'status-pending', completed: 'status-completed', outdelivery: 'status-outdelivery', cancelled: 'status-cancelled' };
 const ALL_SECTION_KEYS = ['newOrder','myOrders','allOrders','allAppOrders','doneOrders','cancelOrders','shortages','shortagesReport','callcenterShortages','ccShortagesReport','archive','users','branches','apps','products','customers'];
@@ -936,7 +1012,7 @@ function getDefaultSectionsForRole(role) {
   if (role === 'employee' || role === 'manager' || role === 'admin') {
     s.callcenterShortages = true;
   }
-  if (role === 'admin' || role === 'manager') s.shortagesReport = true;
+  if (role === 'admin' || role === 'manager' || role === 'appuser') s.shortagesReport = true;
   if (role === 'admin') {
     s.ccShortagesReport = true; s.archive = true;
     s.users = true; s.branches = true; s.apps = true; s.products = true; s.customers = true;
@@ -1142,8 +1218,8 @@ function enterDashboard(user, silent) {
   document.getElementById('appOrderDeliveryDate').value = new Date().toISOString().split('T')[0];
   // تعديل: تحديد أول قسم متاح للمستخدم كصفحة افتراضية بناءً على الأقسام المسموحة له
   const userSections = user.sections || getDefaultSectionsForRole(user.role);
-  let defaultTab = 'newOrder';
-  if (userSections.newOrder) defaultTab = 'newOrder';
+  let defaultTab = 'dashboardHome';
+  if (userSections.newOrder) defaultTab = 'dashboardHome';
   else if (userSections.allOrders) defaultTab = 'allOrders';
   else if (userSections.allAppOrders) defaultTab = 'allAppOrders';
   else { const firstAvail = Object.keys(userSections).find(k => userSections[k]); if (firstAvail) defaultTab = firstAvail; }
@@ -1588,51 +1664,47 @@ function toggleNavGroup(labelEl, forceOpen) {
 function setupNavByRole() {
   const nav = document.getElementById('mainNav');
   nav.innerHTML = '';
+  nav.innerHTML += `<button class="nav-btn active" onclick="showTab('dashboardHome')" id="tab-dashboardHome">🏠 الرئيسية</button>`;
   const role = currentUser.role;
-  // تعديل: الأقسام أصبحت تُحدد يدوياً لكل مستخدم عند إضافته، وإن لم تكن محددة يتم استخدام افتراضيات الدور
   const sections = currentUser.sections || getDefaultSectionsForRole(role);
 
-  // ====== قسم العمليات (أوردرات كول سنتر) ======
+  // العمليات: تسجيل أوردر جديد + نواقص كول سنتر فقط
   let opsHtml = '';
-  if (sections.newOrder) opsHtml += `<button class="nav-btn" onclick="showTab('newOrder')" id="tab-newOrder">➕ أوردر كول سنتر</button>`;
-  if (sections.myOrders) opsHtml += `<button class="nav-btn" onclick="showTab('myOrders')" id="tab-myOrders">📋 أوردراتي <span class="nav-count hidden" id="navcount-myOrders"></span></button>`;
-  if (sections.allOrders) opsHtml += `<button class="nav-btn" onclick="showTab('allOrders')" id="tab-allOrders">📊 كل أوردرات الكول سنتر <span class="nav-count hidden" id="navcount-allOrders"></span></button>`;
-  if (sections.doneOrders) opsHtml += `<button class="nav-btn" onclick="showTab('doneOrders')" id="tab-doneOrders">✅ Done</button>`;
-  if (sections.cancelOrders) opsHtml += `<button class="nav-btn" onclick="showTab('cancelOrders')" id="tab-cancelOrders">❌ Cancel</button>`;
-  nav.innerHTML += buildNavGroup('ops', '📋 العمليات', opsHtml);
+  if (sections.newOrder) opsHtml += `<button class="nav-btn" onclick="showTab('newOrder')" id="tab-newOrder">➕ تسجيل أوردر جديد</button>`;
+  if (sections.callcenterShortages) opsHtml += `<button class="nav-btn" onclick="showTab('callcenterShortages')" id="tab-callcenterShortages">📞 نواقص كول سنتر</button>`;
+  if (opsHtml) nav.innerHTML += buildNavGroup('ops', '📋 العمليات', opsHtml);
 
-  // ====== قسم أوردرات ونواقص الأبلكيشن ======
+  // الأبلكيشن: نواقص + تقارير الأبلكيشن
   let appHtml = '';
-  if (sections.allAppOrders) appHtml += `<button class="nav-btn" onclick="showTab('allAppOrders')" id="tab-allAppOrders">📊 كل أوردرات الأبلكيشن <span class="nav-count hidden" id="navcount-allAppOrders"></span></button>`;
   if (sections.shortages) appHtml += `<button class="nav-btn" onclick="showTab('shortages')" id="tab-shortages">📱 نواقص الأبلكيشن</button>`;
-  nav.innerHTML += buildNavGroup('app', '📱 نواقص وأوردرات الأبلكيشن', appHtml);
+  if (sections.shortagesReport) appHtml += `<button class="nav-btn" onclick="showTab('shortagesReport')" id="tab-shortagesReport">📊 ريبورت نواقص الأبلكيشن</button>`;
+  if (sections.allAppOrders) appHtml += `<button class="nav-btn" onclick="showTab('allAppOrders')" id="tab-allAppOrders">📊 ريبورت كل أوردرات الأبلكيشن <span class="nav-count hidden" id="navcount-allAppOrders"></span></button>`;
+  if (appHtml) nav.innerHTML += buildNavGroup('app', '📱 الأبلكيشن', appHtml);
 
-  // ====== قسم نواقص الكول سنتر ======
-  let ccHtml = '';
-  if (sections.callcenterShortages) ccHtml += `<button class="nav-btn" onclick="showTab('callcenterShortages')" id="tab-callcenterShortages">📞 نواقص كول سنتر</button>`;
-  nav.innerHTML += buildNavGroup('cc', '📞 نواقص كول سنتر', ccHtml);
+  // تم: Done + Cancel
+  let doneHtml = '';
+  if (sections.doneOrders) doneHtml += `<button class="nav-btn" onclick="showTab('doneOrders')" id="tab-doneOrders">✅ Done</button>`;
+  if (sections.cancelOrders) doneHtml += `<button class="nav-btn" onclick="showTab('cancelOrders')" id="tab-cancelOrders">❌ Cancel</button>`;
+  if (doneHtml) nav.innerHTML += buildNavGroup('done', '✅ تم', doneHtml);
 
-  // ====== قسم التقارير ======
+  // التقارير: تبقى وظائف التقارير كما هي
   let reportHtml = '';
-  if (sections.shortagesReport) reportHtml += `<button class="nav-btn" onclick="showTab('shortagesReport')" id="tab-shortagesReport">📊 ريبورت نواقص الأبلكيشن</button>`;
   if (sections.ccShortagesReport) reportHtml += `<button class="nav-btn" onclick="showTab('ccShortagesReport')" id="tab-ccShortagesReport">📊 ريبورت نواقص كول سنتر</button>`;
   if (sections.archive) reportHtml += `<button class="nav-btn" onclick="showTab('archive')" id="tab-archive">📦 أرشيف الأوردرات</button>`;
-  nav.innerHTML += buildNavGroup('reports', '📊 التقارير', reportHtml);
+  if (reportHtml) nav.innerHTML += buildNavGroup('reports', '📊 التقارير', reportHtml);
 
-  // ====== قسم الإدارة ======
+  // الإدارة كما هي
   let adminHtml = '';
   if (sections.users) adminHtml += `<button class="nav-btn" onclick="showTab('users')" id="tab-users">👥 المستخدمين</button>`;
   if (sections.branches) adminHtml += `<button class="nav-btn" onclick="showTab('branches')" id="tab-branches">🏢 الفروع</button>`;
   if (sections.apps) adminHtml += `<button class="nav-btn" onclick="showTab('apps')" id="tab-apps">📱 الأبلكيشنز</button>`;
   if (sections.products) adminHtml += `<button class="nav-btn" onclick="showTab('products')" id="tab-products">📦 الأصناف</button>`;
   if (sections.customers) adminHtml += `<button class="nav-btn" onclick="showTab('customers')" id="tab-customers">👤 العملاء</button>`;
-  nav.innerHTML += buildNavGroup('admin', '⚙️ الإدارة', adminHtml);
+  if (adminHtml) nav.innerHTML += buildNavGroup('admin', '⚙️ الإدارة', adminHtml);
 
-  // ====== قسم الحساب (تغيير كلمة المرور وتسجيل الخروج) - يظهر دائماً بالأسفل خالص ======
   const accountHtml = `<button type="button" class="nav-btn" onclick="openChangePassModal()"><span class="udi-icon">🔐</span><span>تغيير كلمة المرور</span></button>
     <button type="button" class="nav-btn nav-btn-danger" onclick="doLogout()"><span class="udi-icon">🚪</span><span>تسجيل الخروج</span></button>`;
   nav.innerHTML += `<div class="nav-account-group">` + buildNavGroup('account', '👤 الحساب', accountHtml) + `</div>`;
-
   updateNavBadges();
 }
 
@@ -1724,8 +1796,34 @@ function toggleNavPanel(forceOpen) {
   if (menuIcon) menuIcon.textContent = shouldOpen ? '✕' : '☰';
 }
 
+function renderDashboardHome(){
+  const today = new Date();
+  const pad=n=>String(n).padStart(2,'0');
+  const dateEl=document.getElementById('homeDate');
+  if(dateEl) dateEl.textContent=`${pad(today.getDate())}/${pad(today.getMonth()+1)}/${today.getFullYear()}`;
+  const all=[...(ordersData||[]),...(appOrdersData||[])];
+  const pending=all.filter(o=>o.status==='pending').length;
+  const out=all.filter(o=>o.status==='outdelivery').length;
+  const done=all.filter(o=>o.status==='completed').length;
+  const cancelled=all.filter(o=>o.status==='cancelled').length;
+  const todayKey=today.toISOString().split('T')[0];
+  const todayOrders=all.filter(o=>o.deliveryDate===todayKey || o.date===todayKey).length;
+  const sales=all.reduce((sum,o)=>sum+(Number(o.total)||0),0);
+  const kpis=[
+    ['📦','إجمالي الأوردرات',all.length,'كل المصادر','#2563eb'],
+    ['⏳','قيد الانتظار',pending,'تحتاج متابعة','#f59e0b'],
+    ['🚚','قيد التوصيل',out,'Out for delivery','#2563eb'],
+    ['✅','تم التنفيذ',done,'Completed','#16a34a'],
+    ['💰','قيمة الأوردرات',sales.toLocaleString('en-US',{maximumFractionDigits:0})+' ج.م','إجمالي مسجل','#c9a227']
+  ];
+  const box=document.getElementById('homeKpis');
+  if(box) box.innerHTML=kpis.map(k=>`<div class="kpi-card" style="--accent:${k[4]}"><div class="kpi-top"><span>${k[1]}</span><span class="kpi-icon">${k[0]}</span></div><div class="kpi-value">${k[2]}</div><div class="kpi-note">${k[3]}</div></div>`).join('');
+  const st=document.getElementById('homeStatusList');
+  if(st) st.innerHTML=`<div class="status-row"><span class="status-label"><i class="status-dot" style="--dot:#f59e0b"></i>في الانتظار</span><b class="status-num">${pending}</b></div><div class="status-row"><span class="status-label"><i class="status-dot" style="--dot:#2563eb"></i>قيد التوصيل</span><b class="status-num">${out}</b></div><div class="status-row"><span class="status-label"><i class="status-dot" style="--dot:#16a34a"></i>تم التنفيذ</span><b class="status-num">${done}</b></div><div class="status-row"><span class="status-label"><i class="status-dot" style="--dot:#dc2626"></i>ملغي</span><b class="status-num">${cancelled}</b></div><div class="status-row"><span class="status-label"><i class="status-dot" style="--dot:#7c3aed"></i>أوردرات اليوم</span><b class="status-num">${todayOrders}</b></div>`;
+}
+
 function showTab(tab) {
-  ['newOrder','myOrders','allOrders','allAppOrders','doneOrders','cancelOrders','shortages','shortagesReport','callcenterShortages','ccShortagesReport','archive','users','branches','apps','products','customers'].forEach(t => {
+  ['dashboardHome','newOrder','myOrders','allOrders','allAppOrders','doneOrders','cancelOrders','shortages','shortagesReport','callcenterShortages','ccShortagesReport','archive','users','branches','apps','products','customers'].forEach(t => {
     const el = document.getElementById(t); 
     const btn = document.getElementById('tab-'+t);
     if(el) el.classList.add('hidden'); 
@@ -1746,6 +1844,7 @@ function showTab(tab) {
   toggleNavPanel(false);
 
   // تعديل: مسح النموذج عند الذهاب لأوردر جديد
+  if(tab==='dashboardHome') renderDashboardHome();
   if(tab==='newOrder') clearNewOrderForm();
   if(tab==='myOrders') renderMyOrders();
   if(tab==='allOrders') renderAllOrders();
@@ -2976,37 +3075,64 @@ function highlightShortageProductItem(items) {
 }
 function selectShortageProduct(id) {
   const p = productsData.find(x => x.id === id); if (!p) return;
-  selectedShortageProduct = p;
-  document.getElementById('shortageProductSearch').value = p.name + ' (' + p.code + ')';
+  if (selectedShortageProducts.some(x => x.id === p.id)) {
+    showToast('⚠️ الصنف مضاف بالفعل', true);
+    document.getElementById('shortageProductSuggestions').classList.add('hidden');
+    return;
+  }
+  selectedShortageProducts.push(p);
+  document.getElementById('shortageProductSearch').value = '';
   document.getElementById('shortageProductSuggestions').classList.add('hidden');
+  shortageProductSelIndex = -1;
+  renderSelectedShortageProducts();
+}
+function removeSelectedShortageProduct(id) {
+  selectedShortageProducts = selectedShortageProducts.filter(x => x.id !== id);
+  renderSelectedShortageProducts();
+}
+function renderSelectedShortageProducts() {
+  const box = document.getElementById('selectedShortageProducts');
+  if (!box) return;
+  if (!selectedShortageProducts.length) {
+    box.innerHTML = '<div class="selected-items-empty">أضف صنفًا واحدًا أو أكثر للنقص</div>';
+    return;
+  }
+  box.innerHTML = selectedShortageProducts.map((p,i) => `
+    <div class="selected-shortage-item">
+      <div><span class="selected-item-index">${i+1}</span><strong>${p.name}</strong><span class="selected-item-code">${p.code}</span></div>
+      <button type="button" class="selected-item-remove" onclick="removeSelectedShortageProduct('${p.id}')" aria-label="حذف الصنف">×</button>
+    </div>`).join('');
 }
 function submitShortage() {
-  const product = selectedShortageProduct;
+  const products = selectedShortageProducts;
   const appName = document.getElementById('shortageApp').value;
   const branch = document.getElementById('shortageBranch').value;
   const orderNumber = document.getElementById('shortageOrderNumber').value.trim();
   const currentQty = document.getElementById('shortageCurrentQty').value.trim();
   const notes = document.getElementById('shortageNotes').value.trim();
-  if (!product) { showToast('❌ اختر الصنف', true); return; }
+  if (!products.length) { showToast('❌ اختر صنفًا واحدًا على الأقل', true); return; }
   if (!appName) { showToast('❌ اختر الأبلكيشن', true); return; }
   if (!branch) { showToast('❌ اختر الفرع', true); return; }
-  db.ref('shortages').push({
+  const payloads = products.map(product => ({
     productCode: product.code, productName: product.name, appName, branch,
     orderNumber, currentQty, notes,
     employee: currentUser.name, employeeId: currentUser.id,
     date: new Date().toISOString().split('T')[0],
     timestamp: firebase.database.ServerValue.TIMESTAMP
-  }).then(() => {
-    showToast('✅ تم تسجيل النقص');
+  }));
+  Promise.all(payloads.map(data => db.ref('shortages').push(data))).then(() => {
+    showToast(`✅ تم تسجيل ${products.length} ${products.length === 1 ? 'نقص' : 'أصناف'}`);
     document.getElementById('shortageProductSearch').value = '';
     document.getElementById('shortageApp').value = '';
     document.getElementById('shortageBranch').value = '';
     document.getElementById('shortageOrderNumber').value = '';
     document.getElementById('shortageCurrentQty').value = '';
     document.getElementById('shortageNotes').value = '';
-    selectedShortageProduct = null;
+    selectedShortageProducts = [];
+    renderSelectedShortageProducts();
   }).catch(err => { showToast('❌ خطأ في الحفظ', true); console.error(err); });
 }
+
 function renderShortages() {
   const tbody = document.getElementById('shortagesTable');
   if (!tbody) return;
