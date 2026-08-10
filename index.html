@@ -2366,6 +2366,10 @@ function hasSectionPermission(section) {
   if (!currentUser) return false;
   if (currentUser.role === 'admin') return true;
   const sections = currentUser.sections || getDefaultSectionsForRole(currentUser.role);
+  // كل عناصر قسم "طلبات" تستخدم صلاحية requests الواحدة.
+  if (['requestReopen','requestItems','requestBranchData'].includes(section)) {
+    return sections.requests === true;
+  }
   return !!sections[section];
 }
 
