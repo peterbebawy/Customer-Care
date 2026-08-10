@@ -597,10 +597,11 @@ table tbody tr:hover{
       </div>
 
       <div style="font-weight:800;color:#334155;text-align:center;margin:12px 0 8px">اختر النظام</div>
-      <div class="portal-select">
-        <button type="button" class="portal-btn active" id="portalCallBtn" onclick="selectPortal('call')">📞 Call Center<small>النظام الأساسي</small></button>
-        <button type="button" class="portal-btn" id="portalInventoryBtn" onclick="selectPortal('inventory')">📦 إدارة المخزون<small>صلاحية يحددها الأدمن</small></button>
-      </div>
+      <select id="portalSelect" class="input" onchange="selectPortal(this.value)" style="font-weight:800;text-align:center;cursor:pointer;">
+        <option value="call" selected>📞 Call Center — النظام الأساسي</option>
+        <option value="inventory">📦 إدارة المخزون</option>
+      </select>
+      <div id="portalHint" style="font-size:11px;color:#64748b;text-align:center;margin-top:5px;">النظام الافتراضي</div>
       <div id="portalError" class="portal-error"></div>
       <button class="btn btn-primary login-btn" onclick="doLogin()">تسجيل الدخول</button>
       <div class="login-footer">🔒 Call Center | جميع البيانات محمية</div>
@@ -945,7 +946,8 @@ table tbody tr:hover{
           <label class="radio-item"><input type="checkbox" class="userSectionChk" value="allOrders"> 📊 كل أوردرات الكول سنتر</label>
           <label class="radio-item"><input type="checkbox" class="userSectionChk" value="allAppOrders"> 📊 كل أوردرات الأبلكيشن</label>
           <label class="radio-item"><input type="checkbox" class="userSectionChk" value="doneOrders"> ✅ تبويب Done</label>
-          <label class="radio-item"><input type="checkbox" class="userSectionChk" value="inventoryAccess"> 📦 نظام إدارة المخزون</label>
+          <div style="width:100%;margin-top:8px;padding-top:12px;border-top:1px solid #e5e7eb;font-weight:800;color:#475569;">🌐 صلاحية المواقع</div>
+          <label class="radio-item" style="background:#eff6ff;border:1px solid #bfdbfe;"><input type="checkbox" class="userSectionChk" value="inventoryAccess"> 📦 السماح بفتح موقع إدارة المخزون</label>
           <label class="radio-item"><input type="checkbox" class="userSectionChk" value="cancelOrders"> ❌ تبويب Cancel</label>
           <label class="radio-item"><input type="checkbox" class="userSectionChk" value="shortages"> 📱 نواقص الأبلكيشن</label>
           <label class="radio-item"><input type="checkbox" class="userSectionChk" value="shortagesReport"> 📊 ريبورت نواقص الأبلكيشن</label>
@@ -1503,11 +1505,13 @@ function enterDashboard(user, silent) {
 let selectedPortal = 'call';
 function selectPortal(portal){
   selectedPortal = portal === 'inventory' ? 'inventory' : 'call';
-  const a=document.getElementById('portalCallBtn'), b=document.getElementById('portalInventoryBtn');
-  if(a) a.classList.toggle('active', selectedPortal==='call');
-  if(b) b.classList.toggle('active', selectedPortal==='inventory');
+  const sel = document.getElementById('portalSelect');
+  if (sel) sel.value = selectedPortal;
+  const hint = document.getElementById('portalHint');
+  if (hint) hint.textContent = selectedPortal === 'inventory' ? 'يتطلب صلاحية إدارة المخزون من الأدمن' : 'النظام الافتراضي';
   const e=document.getElementById('portalError'); if(e) e.textContent='';
 }
+
 async function doLogin() {
   const name = document.getElementById('loginUser').value.trim();
   const pass = document.getElementById('loginPass').value.trim();
@@ -1543,7 +1547,7 @@ function openInventoryPortal(user){
 function closeInventoryPortal(){
   const portal=document.getElementById('inventoryPortal'); if(portal) portal.style.display='none';
   document.getElementById('loginUser').value=''; document.getElementById('loginPass').value='';
-  selectPortal('inventory');
+  selectPortal('call');
 }
 window.addEventListener('message', function(event){
   if(event && event.data && event.data.type==='inventoryLogout') closeInventoryPortal();
@@ -1617,6 +1621,7 @@ function renderUsers() {
         <div>
           <div style="font-weight:700;color:#1e293b;">${u.name || ''}</div>
           <span class="role-badge role-${u.role || 'employee'}">${ROLES[u.role] || u.role || '-'}</span>
+          ${u.role === 'admin' || (u.sections && u.sections.inventoryAccess) ? '<span class="badge badge-purple" style="margin-right:6px;">📦 المخزون: مفتوح</span>' : '<span class="badge badge-gray" style="margin-right:6px;">📦 المخزون: مغلق</span>'}
         </div>
       </div>
       <div>
