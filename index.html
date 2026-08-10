@@ -1104,8 +1104,30 @@ table tbody tr:hover{
       <button class="btn btn-primary" type="button" onclick="window.open('https://docs.google.com/forms/d/e/1FAIpQLSeU7J0zkKh3CW4OtKdWszQc4lynfPMAKQoNbRMjRcX33u3gbA/viewform','_blank','noopener')">🛠️ فتح نموذج مشاكل الأصناف</button>
     </div>
   </div>
+
+  <div id="requestBranchData" class="hidden">
+    <div class="card">
+      <h2 style="margin-top:0;color:#1e293b;">📄 بيانات الفروع</h2>
+      <div class="hint" style="margin-bottom:18px;">اضغط على الملف لعرض محتواه في نافذة عائمة.</div>
+      <button class="btn btn-primary" type="button" onclick="openBranchDataTxt()">📄 فتح ملف TXT - بيانات الفروع</button>
+    </div>
+  </div>
   </div>
   </div><!-- /appShell -->
+</div>
+
+<div id="branchDataTxtModal" class="hidden modal-overlay" onclick="if(event.target===this) closeBranchDataTxt()">
+  <div class="modal-content" style="max-width:720px; width:92%;">
+    <div class="modal-header">
+      <h3>📄 بيانات الفروع</h3>
+      <button class="close-btn" onclick="closeBranchDataTxt()">&times;</button>
+    </div>
+    <pre id="branchDataTxtContent" style="white-space:pre-wrap;direction:ltr;text-align:left;font-family:Consolas,monospace;font-size:15px;line-height:1.8;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:18px;margin:0;max-height:65vh;overflow:auto;"></pre>
+    <div style="display:flex;justify-content:flex-end;margin-top:14px;gap:8px;">
+      <button class="btn btn-primary" type="button" onclick="downloadBranchDataTxt()">⬇️ تحميل TXT</button>
+      <button class="btn btn-ghost" type="button" onclick="closeBranchDataTxt()">إغلاق</button>
+    </div>
+  </div>
 </div>
 
 <div id="reviewModal" class="hidden modal-overlay">
@@ -2097,6 +2119,58 @@ function toggleNavGroup(labelEl, forceOpen) {
   group.classList.toggle('open', shouldOpen);
 }
 
+const BRANCH_DATA_TXT = `Dr Wells Pharmacy
+695754
+
+
+Wael Hafez Pharmacies (1110721)
+
+
+
+Dr Wells Pharmacy, El Obour - El Hay 1
+761230 , 
+
+Dr Wells Pharmacy, El Obour - El Hay 2
+764155 , 
+
+Dr Wells Pharmacy, New Nozha
+761461 , 
+
+Dr Wells Pharmacy, Tagammoa 5 - AUC
+761462 ,
+
+
+Dr Wells Pharmacy, Abasiya 3
+796706 ,
+
+
+Wael Hafez Pharmacies, Ain Shams - Taksim Omar Ebn Al Khatab (1111859)`;
+
+function openBranchDataTxt(){
+  const modal = document.getElementById('branchDataTxtModal');
+  const content = document.getElementById('branchDataTxtContent');
+  if (!modal || !content) return;
+  content.textContent = BRANCH_DATA_TXT;
+  modal.classList.remove('hidden');
+}
+
+function closeBranchDataTxt(){
+  const modal = document.getElementById('branchDataTxtModal');
+  if (modal) modal.classList.add('hidden');
+}
+
+function downloadBranchDataTxt(){
+  const blob = new Blob([BRANCH_DATA_TXT], {type:'text/plain;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'branch-data.txt';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url), 1000);
+}
+
 function setupNavByRole() {
   const nav = document.getElementById('mainNav');
   nav.innerHTML = '';
@@ -2117,6 +2191,7 @@ function setupNavByRole() {
   if (sections.requests) {
     requestsHtml += `<button class="nav-btn" onclick="showTab('requestReopen')" id="tab-requestReopen">📋 طلب إعادة فتح فرع</button>`;
     requestsHtml += `<button class="nav-btn" onclick="showTab('requestItems')" id="tab-requestItems">🛠️ مشاكل الأصناف</button>`;
+    requestsHtml += `<button class="nav-btn" onclick="showTab('requestBranchData')" id="tab-requestBranchData">📄 بيانات الفروع</button>`;
   }
   if (requestsHtml) nav.innerHTML += buildNavGroup('requests', '📝 طلبات', requestsHtml);
 
