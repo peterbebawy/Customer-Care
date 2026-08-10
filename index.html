@@ -1480,10 +1480,9 @@ function initApp() {
         const savedUser = usersData.find(u => u.id === savedId);
         let lastActivity = 0;
         try { lastActivity = Number(localStorage.getItem('lastActivityAt') || 0); } catch (e) {}
-        if (savedUser && lastActivity && (Date.now() - lastActivity) < IDLE_LIMIT_MS) {
-          enterDashboard(savedUser, true);
-          reopenSavedInventoryPortal(savedUser);
-        } else if (savedUser && !lastActivity) {
+        // جلسة الدخول لا تنتهي بسبب Refresh أو مرور الوقت.
+        // لا يتم مسح الجلسة إلا عند Logout صريح من المستخدم.
+        if (savedUser) {
           enterDashboard(savedUser, true);
           reopenSavedInventoryPortal(savedUser);
         } else {
@@ -4082,4 +4081,3 @@ window.addEventListener('DOMContentLoaded', () => {
 </script>
 </body>
 </html>
- 
