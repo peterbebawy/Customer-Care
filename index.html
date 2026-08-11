@@ -579,6 +579,478 @@ table tbody tr:hover{
 .account-gear-item.danger{color:#dc2626}
 .account-gear-item.danger:hover{background:#fef2f2}
 </style>
+
+<style id="mac-ui-overrides">
+/* =========================================================
+   macOS-inspired visual layer — UI ONLY
+   No application/data/network logic is modified.
+   ========================================================= */
+:root{
+  --mac-bg:#f5f5f7;
+  --mac-surface:rgba(255,255,255,.82);
+  --mac-surface-solid:#fff;
+  --mac-border:rgba(60,60,67,.14);
+  --mac-text:#1d1d1f;
+  --mac-muted:#6e6e73;
+  --mac-blue:#007aff;
+  --mac-blue-soft:rgba(0,122,255,.10);
+  --mac-gold:#c9a227;
+  --mac-radius:14px;
+  --mac-shadow:0 10px 30px rgba(0,0,0,.08);
+}
+
+/* macOS system typography:
+   SF Pro / SF Arabic is used automatically on Apple platforms.
+   On Windows, the closest available system UI font is used. */
+html,body,
+button,input,select,textarea{
+  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text","SF Arabic",
+              "Helvetica Neue","Segoe UI",Arial,sans-serif !important;
+  -webkit-font-smoothing:antialiased;
+  text-rendering:optimizeLegibility;
+}
+body{
+  background:
+    radial-gradient(circle at 20% -10%,rgba(255,255,255,.95),transparent 34%),
+    linear-gradient(180deg,#f7f7f9 0%,#eeeeF2 100%) !important;
+  color:var(--mac-text);
+  padding:16px !important;
+}
+
+/* Main app width and spacing */
+#appShell{transition:transform .28s cubic-bezier(.2,.8,.2,1)!important}
+
+/* Brand strip becomes a compact Mac-style application identity bar */
+.brand-bar{
+  max-width:1440px !important;
+  min-height:54px;
+  padding:9px 16px !important;
+  margin:0 auto 10px !important;
+  border-radius:15px !important;
+  background:rgba(28,28,30,.94) !important;
+  border:1px solid rgba(255,255,255,.08) !important;
+  box-shadow:0 8px 24px rgba(0,0,0,.12) !important;
+  backdrop-filter:blur(22px) saturate(150%);
+  -webkit-backdrop-filter:blur(22px) saturate(150%);
+}
+.brand-bar::before{
+  height:1px !important;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.28),transparent) !important;
+}
+.brand-logo-img{height:34px !important;filter:drop-shadow(0 2px 5px rgba(0,0,0,.28)) !important}
+.brand-bar-title{font-size:14px !important;font-weight:700 !important;letter-spacing:0 !important}
+.brand-bar-sub{font-size:10px !important;color:#b8b8bd !important}
+
+/* Floating translucent toolbar */
+.topbar{
+  max-width:1440px !important;
+  min-height:52px !important;
+  margin:0 auto 12px !important;
+  padding:8px 12px !important;
+  border:1px solid var(--mac-border) !important;
+  border-radius:14px !important;
+  background:rgba(255,255,255,.72) !important;
+  box-shadow:0 5px 20px rgba(0,0,0,.06) !important;
+  backdrop-filter:blur(24px) saturate(160%);
+  -webkit-backdrop-filter:blur(24px) saturate(160%);
+  top:10px !important;
+}
+
+/* macOS traffic-light decoration */
+.topbar::before{
+  content:"";
+  position:absolute;
+  left:15px;
+  top:50%;
+  transform:translateY(-50%);
+  width:10px;
+  height:10px;
+  border-radius:50%;
+  background:#ff5f57;
+  box-shadow:16px 0 #febc2e,32px 0 #28c840;
+  opacity:.92;
+  pointer-events:none;
+}
+.topbar-title{
+  font-size:14px !important;
+  font-weight:650 !important;
+  color:var(--mac-text) !important;
+  letter-spacing:-.15px;
+}
+.topbar-title::before{
+  content:"";
+  display:none !important;
+}
+.topbar-menu-btn{
+  width:34px !important;
+  height:34px !important;
+  border-radius:9px !important;
+  background:rgba(118,118,128,.12) !important;
+  border:1px solid rgba(60,60,67,.08) !important;
+  color:#3a3a3c !important;
+  box-shadow:none !important;
+  font-size:16px !important;
+}
+.topbar-menu-btn:hover{
+  transform:none !important;
+  background:rgba(118,118,128,.18) !important;
+}
+.topbar-menu-icon{transition:transform .22s ease}
+
+/* User/status bar — flatter, cleaner, more native */
+.prof-user-bar{
+  max-width:1440px !important;
+  margin:0 auto 14px !important;
+  padding:10px 14px !important;
+  border:1px solid var(--mac-border) !important;
+  border-radius:14px !important;
+  background:rgba(255,255,255,.78) !important;
+  box-shadow:0 5px 18px rgba(0,0,0,.045) !important;
+  backdrop-filter:blur(20px);
+  -webkit-backdrop-filter:blur(20px);
+}
+.prof-welcome-icon{box-shadow:none !important}
+.prof-welcome h3{font-size:14px !important}
+.prof-welcome p{font-size:10.5px !important;color:var(--mac-muted) !important}
+.prof-chip{
+  border:0 !important;
+  background:rgba(118,118,128,.09) !important;
+  border-radius:9px !important;
+  padding:6px 9px !important;
+  color:#636366 !important;
+}
+
+/* Sidebar: translucent macOS-style navigation */
+.sidebar-backdrop{
+  background:rgba(0,0,0,.20) !important;
+  backdrop-filter:blur(2px);
+  -webkit-backdrop-filter:blur(2px);
+}
+.sidebar-nav{
+  width:286px !important;
+  background:rgba(246,246,248,.91) !important;
+  color:var(--mac-text) !important;
+  border-left:1px solid rgba(60,60,67,.13) !important;
+  box-shadow:-18px 0 45px rgba(0,0,0,.14) !important;
+  backdrop-filter:blur(28px) saturate(150%) !important;
+  -webkit-backdrop-filter:blur(28px) saturate(150%) !important;
+}
+.sidebar-header{
+  min-height:62px !important;
+  padding:13px 14px !important;
+  background:rgba(255,255,255,.48) !important;
+  border-bottom:1px solid rgba(60,60,67,.11) !important;
+}
+.sidebar-header::before{
+  height:1px !important;
+  background:linear-gradient(90deg,transparent,var(--mac-gold),transparent) !important;
+}
+.sidebar-logo-img{height:31px !important;filter:none !important}
+.sidebar-header-title{
+  color:var(--mac-text) !important;
+  font-size:13px !important;
+  font-weight:700 !important;
+}
+.sidebar-header-sub{
+  color:var(--mac-muted) !important;
+  font-size:10px !important;
+}
+.sidebar-close-btn{
+  width:28px !important;
+  height:28px !important;
+  border-radius:50% !important;
+  background:rgba(118,118,128,.10) !important;
+  color:#636366 !important;
+  font-size:17px !important;
+}
+.sidebar-close-btn:hover{background:rgba(118,118,128,.18) !important}
+
+/* Navigation groups */
+.nav{padding:11px 9px 20px !important;gap:2px !important}
+.nav-group{margin:4px 0 8px !important}
+.nav-group-label{
+  margin:7px 4px 4px !important;
+  padding:5px 6px !important;
+  color:#8e8e93 !important;
+  font-size:10px !important;
+  font-weight:700 !important;
+  letter-spacing:.25px !important;
+  text-transform:none !important;
+}
+.nav-group-label:hover{
+  background:rgba(118,118,128,.08) !important;
+  color:#636366 !important;
+}
+.nav-group-label::after{background:rgba(60,60,67,.10) !important}
+.nav-group-caret{color:#8e8e93 !important}
+
+.nav-btn{
+  min-height:38px !important;
+  margin:1px 2px !important;
+  padding:8px 10px !important;
+  border:0 !important;
+  border-radius:9px !important;
+  color:#3a3a3c !important;
+  font-size:13px !important;
+  font-weight:600 !important;
+  line-height:1.35 !important;
+  transition:background .16s ease,color .16s ease,transform .16s ease !important;
+}
+.nav-btn:hover{
+  transform:none !important;
+  background:rgba(118,118,128,.10) !important;
+  color:#1d1d1f !important;
+}
+.nav-btn.active{
+  background:var(--mac-blue) !important;
+  color:#fff !important;
+  border:0 !important;
+  box-shadow:0 3px 10px rgba(0,122,255,.22) !important;
+}
+.nav-btn.active:hover{background:#0071e3 !important}
+.nav-count{
+  min-width:19px !important;
+  height:19px !important;
+  border-radius:10px !important;
+  background:#ff3b30 !important;
+  font-size:10px !important;
+}
+.nav-btn.active .nav-count{background:rgba(255,255,255,.25) !important}
+.nav-account-group{border-top-color:rgba(60,60,67,.11) !important}
+
+/* Main content surfaces */
+.main-content{padding:18px !important}
+.home-wrap{max-width:1440px !important}
+.home-hero{
+  padding:22px !important;
+  border-radius:18px !important;
+  background:rgba(255,255,255,.82) !important;
+  border:1px solid var(--mac-border) !important;
+  box-shadow:var(--mac-shadow) !important;
+  backdrop-filter:blur(20px);
+  -webkit-backdrop-filter:blur(20px);
+}
+.home-kicker{color:var(--mac-blue) !important;font-size:10px !important}
+.home-title{
+  font-size:25px !important;
+  font-weight:750 !important;
+  letter-spacing:-.5px !important;
+  color:var(--mac-text) !important;
+}
+.home-subtitle{color:var(--mac-muted) !important}
+.home-date{
+  background:rgba(118,118,128,.08) !important;
+  border:0 !important;
+  box-shadow:none !important;
+  color:#636366 !important;
+  border-radius:10px !important;
+}
+
+/* Cards */
+.card,.home-panel,.stat-card,.table-card{
+  border:1px solid var(--mac-border) !important;
+  border-radius:var(--mac-radius) !important;
+  box-shadow:0 7px 24px rgba(0,0,0,.055) !important;
+  background:rgba(255,255,255,.90) !important;
+  backdrop-filter:blur(18px);
+  -webkit-backdrop-filter:blur(18px);
+}
+.card::before{height:1px !important;background:linear-gradient(90deg,transparent,var(--mac-gold),transparent) !important}
+.card:hover,.home-panel:hover{
+  box-shadow:0 10px 30px rgba(0,0,0,.075) !important;
+}
+.card h2,.card h3{color:var(--mac-text) !important}
+
+/* KPI / stats */
+.kpi-card{
+  border:1px solid var(--mac-border) !important;
+  border-radius:14px !important;
+  box-shadow:0 6px 20px rgba(0,0,0,.045) !important;
+  background:rgba(255,255,255,.88) !important;
+}
+.kpi-card:hover{transform:translateY(-1px);box-shadow:0 10px 25px rgba(0,0,0,.07) !important}
+.kpi-value{color:var(--mac-text) !important}
+.kpi-icon{border-radius:9px !important}
+
+/* Native-looking inputs */
+.input,select,textarea,.search-bar input{
+  min-height:40px !important;
+  border:1px solid rgba(60,60,67,.18) !important;
+  border-radius:9px !important;
+  background:rgba(255,255,255,.92) !important;
+  color:var(--mac-text) !important;
+  box-shadow:inset 0 1px 0 rgba(0,0,0,.015) !important;
+}
+.input:focus,select:focus,textarea:focus,.search-bar input:focus{
+  border-color:var(--mac-blue) !important;
+  box-shadow:0 0 0 3px rgba(0,122,255,.14) !important;
+}
+
+/* Buttons */
+.btn{
+  border-radius:9px !important;
+  font-weight:650 !important;
+  box-shadow:none !important;
+  transition:transform .14s ease,filter .14s ease,box-shadow .14s ease !important;
+}
+.btn:hover{transform:translateY(-1px) !important;filter:brightness(1.02)}
+.btn:active{transform:scale(.98) !important}
+.btn-primary{
+  background:var(--mac-blue) !important;
+  box-shadow:0 4px 12px rgba(0,122,255,.18) !important;
+}
+.btn-primary:hover{background:#0071e3 !important}
+.btn-success{background:#34c759 !important}
+.btn-danger{background:#ff3b30 !important}
+.btn-warning{background:#ff9f0a !important}
+.btn-info{background:#5ac8fa !important;color:#fff !important}
+.btn-secondary{background:rgba(118,118,128,.12) !important;color:#3a3a3c !important}
+
+/* Tables: cleaner, airy macOS look */
+.table-wrap{border-radius:11px;overflow:auto}
+table{border-collapse:separate !important;border-spacing:0 !important}
+table thead th{
+  background:rgba(118,118,128,.075) !important;
+  color:#636366 !important;
+  border-bottom:1px solid rgba(60,60,67,.12) !important;
+  font-weight:650 !important;
+}
+table tbody td{border-bottom:1px solid rgba(60,60,67,.08) !important}
+table tbody tr:hover{background:rgba(0,122,255,.035) !important}
+.order-items-table th{background:rgba(118,118,128,.07) !important}
+
+/* Search suggestions */
+.suggestions{
+  border:1px solid rgba(60,60,67,.14) !important;
+  border-radius:10px !important;
+  box-shadow:0 12px 30px rgba(0,0,0,.10) !important;
+  backdrop-filter:blur(20px);
+  -webkit-backdrop-filter:blur(20px);
+}
+.suggestion-item:hover,.suggestion-item.active{background:var(--mac-blue-soft) !important}
+
+/* Filters / segmented-control feel */
+.filter-btn{
+  border:1px solid rgba(60,60,67,.14) !important;
+  background:rgba(118,118,128,.08) !important;
+  border-radius:8px !important;
+  color:#3a3a3c !important;
+}
+.filter-btn:hover{background:rgba(118,118,128,.14) !important}
+.filter-btn.active{
+  background:var(--mac-blue) !important;
+  border-color:var(--mac-blue) !important;
+  color:#fff !important;
+}
+
+/* Modals become macOS sheets */
+.modal-overlay{background:rgba(0,0,0,.28) !important;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
+.modal-content{
+  border:1px solid rgba(60,60,67,.14) !important;
+  border-radius:16px !important;
+  box-shadow:0 24px 70px rgba(0,0,0,.20) !important;
+  background:rgba(255,255,255,.96) !important;
+  backdrop-filter:blur(24px);
+  -webkit-backdrop-filter:blur(24px);
+}
+
+/* Login window */
+.login-page{
+  background:
+    radial-gradient(circle at 20% 0%,rgba(255,255,255,.12),transparent 30%),
+    linear-gradient(145deg,#1c1c1e,#2c2c2e 55%,#1c1c1e) !important;
+}
+.login-box{
+  max-width:360px !important;
+  border-radius:18px !important;
+  background:rgba(255,255,255,.92) !important;
+  border:1px solid rgba(255,255,255,.50) !important;
+  box-shadow:0 28px 80px rgba(0,0,0,.34) !important;
+  backdrop-filter:blur(30px) saturate(150%);
+  -webkit-backdrop-filter:blur(30px) saturate(150%);
+}
+.login-box::before{height:2px !important;background:linear-gradient(90deg,transparent,var(--mac-gold),transparent) !important}
+.login-title h1{font-weight:700 !important;color:var(--mac-text) !important}
+.login-title p{color:#8e8e93 !important}
+.login-input-group .input{border-color:rgba(60,60,67,.16) !important}
+.login-input-group .input:focus{border-color:var(--mac-blue) !important;box-shadow:0 0 0 3px rgba(0,122,255,.13) !important}
+.login-icon{color:#8e8e93 !important}
+.login-input-group .input:focus ~ .login-icon{color:var(--mac-blue) !important}
+.login-btn{background:var(--mac-blue) !important;box-shadow:0 8px 18px rgba(0,122,255,.22) !important}
+.login-btn:hover{background:#0071e3 !important}
+.portal-select-control{
+  border-color:rgba(60,60,67,.16) !important;
+  border-radius:9px !important;
+}
+.portal-select-control:focus{border-color:var(--mac-blue) !important;box-shadow:0 0 0 3px rgba(0,122,255,.13) !important}
+
+/* Account menu / dropdowns */
+.user-dropdown,.account-gear-menu{
+  border:1px solid rgba(60,60,67,.14) !important;
+  border-radius:12px !important;
+  box-shadow:0 15px 40px rgba(0,0,0,.12) !important;
+  background:rgba(255,255,255,.94) !important;
+  backdrop-filter:blur(24px);
+  -webkit-backdrop-filter:blur(24px);
+}
+.user-dropdown-item:hover,.account-gear-item:hover{background:rgba(118,118,128,.09) !important}
+
+/* Toasts */
+.toast{
+  border-radius:12px !important;
+  box-shadow:0 12px 32px rgba(0,0,0,.14) !important;
+  backdrop-filter:blur(18px);
+  -webkit-backdrop-filter:blur(18px);
+}
+
+/* Shortage cards */
+.selected-shortage-item{
+  border:1px solid rgba(60,60,67,.12) !important;
+  border-radius:10px !important;
+  box-shadow:0 4px 12px rgba(0,0,0,.035) !important;
+}
+.selected-item-remove{border-radius:7px !important}
+
+/* Scrollbars — macOS subtle */
+*{
+  scrollbar-width:thin;
+  scrollbar-color:rgba(60,60,67,.28) transparent;
+}
+*::-webkit-scrollbar{width:7px;height:7px}
+*::-webkit-scrollbar-track{background:transparent}
+*::-webkit-scrollbar-thumb{background:rgba(60,60,67,.24);border-radius:999px}
+*::-webkit-scrollbar-thumb:hover{background:rgba(60,60,67,.38)}
+
+/* Smoother UI movement without touching navigation/data logic */
+.nav-btn,.quick-action,.kpi-card,.stat-card,.btn,.card,.home-panel{
+  will-change:transform;
+}
+.quick-action:hover{transform:translateY(-1px) !important}
+
+/* Keep the existing responsive behavior intact, only refine its appearance */
+@media(max-width:700px){
+  body{padding:9px !important}
+  .brand-bar{border-radius:12px !important}
+  .topbar{border-radius:12px !important}
+  .topbar::before{left:12px}
+  .sidebar-nav{width:min(88vw,320px) !important}
+  .main-content{padding:12px !important}
+  .card{border-radius:13px !important}
+  .home-hero{padding:17px !important;border-radius:14px !important}
+  .home-title{font-size:22px !important}
+}
+
+/* Respect reduced-motion accessibility preferences */
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{
+    scroll-behavior:auto !important;
+    animation-duration:.01ms !important;
+    animation-iteration-count:1 !important;
+    transition-duration:.01ms !important;
+  }
+}
+</style>
+
 </head>
 <body>
 
@@ -4081,4 +4553,3 @@ window.addEventListener('DOMContentLoaded', () => {
 </script>
 </body>
 </html>
- 
