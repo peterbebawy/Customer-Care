@@ -1858,19 +1858,8 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const rtdb = firebase.database();
 
-// Firebase منفصلة تمامًا لنظام إدارة المخزون
-const inventoryFirebaseConfig = {
-  apiKey: "AIzaSyCUT5f-IYbJxY7Hmxz4VAI4pDvoF-7WaKM",
-  authDomain: "update-app-b7418.firebaseapp.com",
-  databaseURL: "https://update-app-b7418-default-rtdb.firebaseio.com",
-  projectId: "update-app-b7418",
-  storageBucket: "update-app-b7418.firebasestorage.app",
-  messagingSenderId: "645859577514",
-  appId: "1:645859577514:web:fdf234ac8d6a745b86cad3",
-  measurementId: "G-ZXYPX4F1DY"
-};
-const inventoryApp = firebase.initializeApp(inventoryFirebaseConfig, 'inventoryApp');
-const inventoryDb = inventoryApp.database();
+// ملاحظة: ويبسايت 1 لا يتصل بقاعدة بيانات نظام إدارة المخزون (ويبسايت 2) إطلاقًا.
+// كل موقع له قاعدة بياناته الخاصة تمامًا، ولا يُتبادل بينهما إلا بيانات دخول المستخدم (اسم المستخدم/كلمة السر) عبر postMessage.
 window.rtdb = rtdb;
 const db = rtdb;
 window.db = db;
@@ -1977,20 +1966,8 @@ function startRealtimeDataListeners() {
       populateBranchSelect(); populateShortageBranch(); populateCCBranch(); populateAppOrderBranch();
       if (typeof renderBranches === 'function') renderBranches();
     }
-    // مزامنة أي فروع قديمة (تم إنشاؤها قبل تفعيل الربط) مع قاعدة بيانات نظام إدارة المخزون (ويبسايت 2)،
-    // حتى تظهر كل الفروع هناك حتى لو كانت أُضيفت من زمان قبل هذا التحديث.
-    inventoryDb.ref('app_data/branches').once('value').then(invSnap => {
-      const existingIds = new Set();
-      invSnap.forEach(child => existingIds.add(child.key));
-      const updates = {};
-      branchesData.forEach(b => {
-        if (!existingIds.has(b.id)) updates[b.id] = { id: b.id, name: b.name };
-      });
-      if (Object.keys(updates).length) {
-        inventoryDb.ref('app_data/branches').update(updates)
-          .catch(err => console.error('تعذر مزامنة الفروع القديمة مع نظام المخزون:', err));
-      }
-    }).catch(err => console.error('تعذر قراءة فروع نظام المخزون للمزامنة:', err));
+    // ملاحظة: لا يتم مزامنة أي بيانات مع قاعدة بيانات نظام إدارة المخزون (ويبسايت 2).
+    // كل موقع له قاعدة بياناته الخاصة بالكامل، ولا يُشارك بينهما إلا بيانات دخول المستخدم (اسم المستخدم/كلمة السر).
   }, error => console.error('Branches:', error));
 
   rtdb.ref('products').on('value', snapshot => {
@@ -2490,14 +2467,11 @@ function addBranch() {
   if (!name) { showToast('❌ أدخل اسم الفرع', true); return; }
   const duplicate = branchesData.some(b => (b.name || '').toLowerCase() === name.toLowerCase());
   if (duplicate) { showToast('❌ الفرع موجود بالفعل', true); return; }
-  // نفس المفتاح (key) يتحفظ فى قاعدتى البيانات معًا حتى يظهر الفرع تلقائيًا فى نظام إدارة المخزون (ويبسايت 2)
   const key = rtdb.ref('branches').push().key;
   const branchData = { name, isApp };
   rtdb.ref('branches/' + key).set(branchData)
     .then(() => { showToast('✅ تم إضافة الفرع'); input.value = ''; if (isAppChk) isAppChk.checked = false; })
     .catch(err => { showToast('❌ خطأ في الإضافة', true); console.error(err); });
-  inventoryDb.ref('app_data/branches/' + key).set({ id: key, name })
-    .catch(err => console.error('تعذر مزامنة الفرع مع نظام المخزون:', err));
 }
 // تعديل: تفعيل/إلغاء تفعيل الأبلكيشن لفرع موجود بالفعل
 function toggleBranchApp(id, newVal) {
@@ -2512,9 +2486,6 @@ function deleteBranch(id) {
   rtdb.ref('branches/' + id).remove()
     .then(() => showToast('🗑️ تم حذف الفرع'))
     .catch(err => { showToast('❌ خطأ في الحذف', true); console.error(err); });
-  // احذف نفس الفرع من قاعدة بيانات نظام إدارة المخزون (ويبسايت 2) حتى يبقى الاثنين متزامنين
-  inventoryDb.ref('app_data/branches/' + id).remove()
-    .catch(err => console.error('تعذر حذف الفرع من نظام المخزون:', err));
 }
 
 function renderApps() {
