@@ -8,46 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Cairo:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js">
-
-// ============================================
-// حفظ آخر صفحة مفتوحة بعد Refresh
-// ============================================
-const ACTIVE_TAB_STORAGE_KEY = 'instashop_active_tab';
-
-function saveActiveTab(tabId) {
-  if (!tabId) return;
-  try { localStorage.setItem(ACTIVE_TAB_STORAGE_KEY, tabId); } catch (e) {}
-}
-
-function getSavedActiveTab() {
-  try { return localStorage.getItem(ACTIVE_TAB_STORAGE_KEY); } catch (e) { return null; }
-}
-
-function restoreActiveTab() {
-  const savedTab = getSavedActiveTab();
-  if (!savedTab) return false;
-
-  const tabBtn = document.getElementById('tab-' + savedTab);
-  const tabContent = document.getElementById(savedTab);
-  if (!tabBtn && !tabContent) return false;
-
-  try {
-    if (typeof showTab === 'function') {
-      showTab(savedTab);
-      return true;
-    }
-    if (typeof switchTab === 'function') {
-      switchTab(savedTab);
-      return true;
-    }
-  } catch (e) {
-    console.warn('Restore active tab failed:', e);
-  }
-  return false;
-}
-
-</script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
@@ -2208,7 +2169,6 @@ function hasSectionPermission(section) {
 }
 
 function showTab(tab) {
-  saveActiveTab(tabId);
   // الرئيسية متاحة دائماً بعد تسجيل الدخول. أي قسم آخر يحتاج صلاحية صريحة.
   if (tab !== 'dashboardHome' && !hasSectionPermission(tab)) {
     showToast('⛔ ليس لديك صلاحية للوصول إلى هذا القسم', true);
@@ -3874,10 +3834,3 @@ window.addEventListener('DOMContentLoaded', () => {
 
 </body>
 </html>
-
-
-document.addEventListener('DOMContentLoaded', function () {
-  setTimeout(function () {
-    restoreActiveTab();
-  }, 300);
-});
