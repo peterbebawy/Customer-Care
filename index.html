@@ -556,47 +556,6 @@ table tbody tr:hover{
   .header h1{font-size:24px!important}
   .nav-btn{font-size:14px!important}
 }
-
-/* ===== User settings gear ===== */
-.prof-welcome{position:relative}
-.prof-user-details{min-width:0}
-.user-settings-wrap{position:relative;margin-right:10px}
-.user-settings-btn{
-  width:38px;height:38px;border:1px solid #e4e7ec;border-radius:11px;
-  background:#fff;color:#475467;cursor:pointer;display:grid;place-items:center;
-  font-size:17px;transition:.18s;box-shadow:0 3px 10px rgba(16,24,40,.05);
-}
-.user-settings-btn:hover,.user-settings-btn.open{
-  background:#172033;color:#fff;border-color:#172033;transform:rotate(12deg);
-}
-.user-settings-menu{
-  position:absolute;top:calc(100% + 9px);left:0;min-width:205px;background:#fff;
-  border:1px solid #e7ebf2;border-radius:13px;padding:7px;
-  box-shadow:0 16px 38px rgba(15,23,42,.16);z-index:600;
-  opacity:0;transform:translateY(-5px) scale(.98);pointer-events:none;
-  transition:.16s ease;
-}
-.user-settings-menu.open{opacity:1;transform:translateY(0) scale(1);pointer-events:auto}
-.user-settings-item{
-  width:100%;border:0;background:transparent;border-radius:9px;padding:10px 11px;
-  display:flex;align-items:center;gap:9px;cursor:pointer;font-family:inherit;
-  font-size:13px;font-weight:700;color:#344054;text-align:right;
-}
-.user-settings-item:hover{background:#f5f7fa}
-.user-settings-item.danger{color:#d92d20}
-.user-settings-item.danger:hover{background:#fef3f2}
-.user-settings-divider{height:1px;background:#eef1f5;margin:4px}
-.nav-sub-btn{margin:0 6px!important;width:calc(100% - 12px)!important;font-size:13px!important;min-height:40px!important}
-.nav-sub-btn::before{content:'↳';opacity:.45;margin-left:2px}
-
-/* Nested dropdown inside Administration */
-.nav-group .nav-group{margin:2px 0 4px!important}
-.nav-group .nav-group > .nav-group-label{
-  min-height:42px;padding:9px 12px!important;border-radius:11px;
-  color:#cbd5e1!important;background:rgba(255,255,255,.025);
-}
-.nav-group .nav-group > .nav-group-label:hover{background:rgba(255,255,255,.07)!important}
-
 </style>
 </head>
 <body>
@@ -662,24 +621,9 @@ table tbody tr:hover{
   <div class="prof-user-bar">
     <div class="prof-welcome">
       <div class="user-avatar" id="userAvatar">أ</div>
-      <div class="prof-user-details">
+      <div>
         <h3 id="userName">أحمد</h3>
         <p id="userRole">Call Center</p>
-      </div>
-      <div class="user-settings-wrap" id="userSettingsWrap">
-        <button type="button" class="user-settings-btn" id="userSettingsBtn"
-                onclick="toggleUserSettings(event)" aria-label="إعدادات الحساب" title="إعدادات الحساب">
-          ⚙️
-        </button>
-        <div class="user-settings-menu" id="userSettingsMenu">
-          <button type="button" class="user-settings-item" onclick="openChangePassFromSettings()">
-            <span>🔐</span><span>تغيير كلمة المرور</span>
-          </button>
-          <div class="user-settings-divider"></div>
-          <button type="button" class="user-settings-item danger" onclick="logoutFromSettings()">
-            <span>🚪</span><span>تسجيل الخروج</span>
-          </button>
-        </div>
       </div>
     </div>
     <div class="prof-actions"><span class="prof-chip">● النظام متصل</span><span class="prof-chip">Firebase</span></div>
@@ -1047,20 +991,6 @@ table tbody tr:hover{
         <button class="btn btn-secondary hidden" id="cancelEditBtn" onclick="cancelEditUser()">إلغاء التعديل</button>
       </div>
       <div id="usersList"></div>
-    </div>
-  </div>
-
-  <div id="roles" class="hidden">
-    <div class="card">
-      <h2 style="margin-top:0;color:#1e293b;">إدارة الأدوار</h2>
-      <p style="color:#64748b;margin-top:0;">اختر الدور لمراجعة الصلاحيات الافتراضية الخاصة به.</p>
-      <div class="grid-2">
-        <button type="button" class="btn btn-secondary" onclick="showRoleInfo('admin')">🛡️ أدمن</button>
-        <button type="button" class="btn btn-secondary" onclick="showRoleInfo('manager')">👔 مانجر</button>
-        <button type="button" class="btn btn-secondary" onclick="showRoleInfo('employee')">📞 Call Center</button>
-        <button type="button" class="btn btn-secondary" onclick="showRoleInfo('appuser')">📱 مستخدم أبلكيشن</button>
-      </div>
-      <div id="roleInfoBox" class="order-card" style="margin-top:16px;">اختر دوراً لعرض الصلاحيات الافتراضية.</div>
     </div>
   </div>
 
@@ -1612,7 +1542,6 @@ document.addEventListener('click', (e) => {
 });
 
 function doLogout() {
-  closeUserSettings();
   currentUser = null;
   try { localStorage.removeItem('currentUserId'); } catch (e) {}
   document.getElementById('dashboard').classList.add('hidden');
@@ -2081,25 +2010,18 @@ function setupNavByRole() {
   if (sections.archive) reportHtml += `<button class="nav-btn" onclick="showTab('archive')" id="tab-archive">📦 أرشيف الأوردرات</button>`;
   if (reportHtml) nav.innerHTML += buildNavGroup('reports', '📊 التقارير', reportHtml);
 
-  // الإدارة
+  // الإدارة كما هي
   let adminHtml = '';
-  if (sections.users) {
-    adminHtml += buildNavGroup('users-management', '👥 المستخدمين', `
-      <button class="nav-btn nav-sub-btn" onclick="showTab('users')" id="tab-users">
-        <span>👤 المستخدمين</span>
-      </button>
-      <button class="nav-btn nav-sub-btn" onclick="showTab('roles')" id="tab-roles">
-        <span>🛡️ الأدوار</span>
-      </button>
-    `);
-  }
+  if (sections.users) adminHtml += `<button class="nav-btn" onclick="showTab('users')" id="tab-users">👥 المستخدمين</button>`;
   if (sections.branches) adminHtml += `<button class="nav-btn" onclick="showTab('branches')" id="tab-branches">🏢 الفروع</button>`;
   if (sections.apps) adminHtml += `<button class="nav-btn" onclick="showTab('apps')" id="tab-apps">📱 الأبلكيشنز</button>`;
   if (sections.products) adminHtml += `<button class="nav-btn" onclick="showTab('products')" id="tab-products">📦 الأصناف</button>`;
   if (sections.customers) adminHtml += `<button class="nav-btn" onclick="showTab('customers')" id="tab-customers">👤 العملاء</button>`;
   if (adminHtml) nav.innerHTML += buildNavGroup('admin', '⚙️ الإدارة', adminHtml);
 
-  // تم نقل تغيير كلمة المرور وتسجيل الخروج خارج القائمة الجانبية.
+  const accountHtml = `<button type="button" class="nav-btn" onclick="openChangePassModal()"><span class="udi-icon">🔐</span><span>تغيير كلمة المرور</span></button>
+    <button type="button" class="nav-btn nav-btn-danger" onclick="doLogout()"><span class="udi-icon">🚪</span><span>تسجيل الخروج</span></button>`;
+  nav.innerHTML += `<div class="nav-account-group">` + buildNavGroup('account', '👤 الحساب', accountHtml) + `</div>`;
   updateNavBadges();
 }
 
@@ -2243,7 +2165,7 @@ function showTab(tab) {
     showToast('⛔ ليس لديك صلاحية للوصول إلى هذا القسم', true);
     tab = 'dashboardHome';
   }
-  ['dashboardHome','newOrder','myOrders','allOrders','allAppOrders','doneOrders','cancelOrders','shortages','shortagesReport','callcenterShortages','ccShortagesReport','archive','users','roles','branches','apps','products','customers'].forEach(t => {
+  ['dashboardHome','newOrder','myOrders','allOrders','allAppOrders','doneOrders','cancelOrders','shortages','shortagesReport','callcenterShortages','ccShortagesReport','archive','users','branches','apps','products','customers'].forEach(t => {
     const el = document.getElementById(t); 
     const btn = document.getElementById('tab-'+t);
     if(el) el.classList.add('hidden'); 
@@ -2277,7 +2199,6 @@ function showTab(tab) {
   if(tab==='ccShortagesReport') renderCCShortagesReport();
   if(tab==='archive') renderArchive();
   if(tab==='users') renderUsers();
-  if(tab==='roles') { showRoleInfo('admin'); }
   if(tab==='branches') renderBranches();
   if(tab==='apps') renderApps();
   if(tab==='products') renderProducts();
@@ -3439,54 +3360,6 @@ function saveQuickCustomer() {
     })
     .catch(err => { showToast('❌ خطأ في الإضافة', true); console.error(err); });
 }
-
-// ===== إدارة الأدوار + إعدادات الحساب =====
-function showRoleInfo(role) {
-  const box = document.getElementById('roleInfoBox');
-  if (!box) return;
-  const defaults = getDefaultSectionsForRole(role);
-  const labels = {
-    newOrder:'تسجيل أوردر جديد', myOrders:'أوردراتي', allOrders:'كل أوردرات الكول سنتر',
-    allAppOrders:'كل أوردرات الأبلكيشن', doneOrders:'Done', cancelOrders:'Cancel',
-    shortages:'نواقص الأبلكيشن', shortagesReport:'ريبورت نواقص الأبلكيشن',
-    callcenterShortages:'نواقص كول سنتر', ccShortagesReport:'ريبورت نواقص كول سنتر',
-    archive:'أرشيف الأوردرات', users:'المستخدمين', branches:'الفروع', apps:'الأبلكيشنز',
-    products:'الأصناف', customers:'العملاء', requests:'طلبات', editOrders:'تعديل الأوردرات',
-    editShortages:'تعديل النواقص', editStatus:'تعديل الحالة'
-  };
-  const allowed = Object.keys(defaults).filter(k => defaults[k] && labels[k]).map(k => labels[k]);
-  box.innerHTML = '<strong>' + (ROLES[role] || role) + '</strong><div style="margin-top:10px;display:flex;gap:7px;flex-wrap:wrap;">' +
-    (allowed.length ? allowed.map(x => '<span class="badge badge-blue">' + x + '</span>').join('') : '<span class="badge badge-gray">لا توجد صلاحيات افتراضية</span>') +
-    '</div>';
-}
-
-function toggleUserSettings(e) {
-  if (e) e.stopPropagation();
-  const menu = document.getElementById('userSettingsMenu');
-  if (!menu) return;
-  const open = !menu.classList.contains('open');
-  menu.classList.toggle('open', open);
-  const btn = document.getElementById('userSettingsBtn');
-  if (btn) btn.classList.toggle('open', open);
-}
-function closeUserSettings() {
-  const menu = document.getElementById('userSettingsMenu');
-  if (menu) menu.classList.remove('open');
-  const btn = document.getElementById('userSettingsBtn');
-  if (btn) btn.classList.remove('open');
-}
-function openChangePassFromSettings() {
-  closeUserSettings();
-  openChangePassModal();
-}
-function logoutFromSettings() {
-  closeUserSettings();
-  doLogout();
-}
-document.addEventListener('click', (e) => {
-  const wrap = document.getElementById('userSettingsWrap');
-  if (wrap && !wrap.contains(e.target)) closeUserSettings();
-});
 
 // ============================================
 // Change Password
