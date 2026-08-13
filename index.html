@@ -901,6 +901,50 @@ table tbody tr:hover{
     </div>
   </div>
 
+
+  <div id="branchesInfoModal" class="modal-overlay hidden" onclick="if(event.target===this) closeBranchesInfoModal()">
+    <div class="modal-content" style="max-width:720px;">
+      <div class="modal-header">
+        <h3>🏢 بيانات الفروع</h3>
+        <button class="close-btn" type="button" onclick="closeBranchesInfoModal()">×</button>
+      </div>
+      <div style="background:#f8fafc;border:1px solid #e5e7eb;border-radius:14px;padding:18px;line-height:1.9;color:#334155;">
+        <div style="font-weight:900;color:#172033;font-size:16px;">Dr Wells Pharmacy</div>
+        <div style="font-weight:800;color:#475569;margin-bottom:14px;">Wael Hafez Pharmacies (1110721)</div>
+
+        <div style="padding:12px 0;border-top:1px solid #e5e7eb;">
+          <b>Dr Wells Pharmacy, El Obour - El Hay 1</b><br>
+          <span style="color:#64748b;">761230</span>
+        </div>
+
+        <div style="padding:12px 0;border-top:1px solid #e5e7eb;">
+          <b>Dr Wells Pharmacy, El Obour - El Hay 2</b><br>
+          <span style="color:#64748b;">764155</span>
+        </div>
+
+        <div style="padding:12px 0;border-top:1px solid #e5e7eb;">
+          <b>Dr Wells Pharmacy, New Nozha</b><br>
+          <span style="color:#64748b;">761461</span>
+        </div>
+
+        <div style="padding:12px 0;border-top:1px solid #e5e7eb;">
+          <b>Dr Wells Pharmacy, Tagammoa 5 - AUC</b><br>
+          <span style="color:#64748b;">761462</span>
+        </div>
+
+        <div style="padding:12px 0;border-top:1px solid #e5e7eb;">
+          <b>Dr Wells Pharmacy, Abasiya 3</b><br>
+          <span style="color:#64748b;">796706</span>
+        </div>
+
+        <div style="padding:12px 0;border-top:1px solid #e5e7eb;">
+          <div style="font-weight:900;color:#172033;margin-bottom:4px;">أول جمال</div>
+          <b>Wael Hafez Pharmacies, Ain Shams - Taksim Omar Ebn Al Khatab (1111859)</b>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div id="users" class="hidden">
     <div class="card">
       <h2 style="margin-top:0;color:#1e293b;">إدارة المستخدمين</h2>
@@ -937,6 +981,7 @@ table tbody tr:hover{
           <label class="radio-item"><input type="checkbox" class="userSectionChk" value="apps"> 📱 الأبلكيشنز</label>
           <label class="radio-item"><input type="checkbox" class="userSectionChk" value="products"> 📦 الأصناف</label>
           <label class="radio-item"><input type="checkbox" class="userSectionChk" value="customers"> 👤 العملاء</label>
+           <label class="radio-item"><input type="checkbox" class="userSectionChk" value="requests"> 📋 طلبات</label>
           <div style="width:100%;margin-top:8px;padding-top:12px;border-top:1px solid #e5e7eb;font-weight:800;color:#475569;">🔐 صلاحيات العمليات</div>
           <label class="radio-item"><input type="checkbox" class="userSectionChk" value="editOrders"> ✏️ السماح بتعديل الأوردرات</label>
           <label class="radio-item"><input type="checkbox" class="userSectionChk" value="editShortages"> ✏️ السماح بتعديل النواقص المدخلة</label>
@@ -1222,7 +1267,7 @@ let quickProductContext = 'order', quickCustomerContext = 'order';
 const ROLES = { admin: 'أدمن', manager: 'مانجر', employee: 'Call Center', appuser: 'مستخدم أبلكيشن' };
 const STATUS_LABELS = { pending: 'في الانتظار', completed: 'تم', outdelivery: 'Out of Delivery', cancelled: 'ملغي' };
 const STATUS_CLASSES = { pending: 'status-pending', completed: 'status-completed', outdelivery: 'status-outdelivery', cancelled: 'status-cancelled' };
-const ALL_SECTION_KEYS = ['newOrder','myOrders','allOrders','allAppOrders','doneOrders','cancelOrders','shortages','shortagesReport','callcenterShortages','ccShortagesReport','archive','users','branches','apps','products','customers','editOrders','editShortages','editStatus'];
+const ALL_SECTION_KEYS = ['newOrder','myOrders','allOrders','allAppOrders','doneOrders','cancelOrders','shortages','shortagesReport','callcenterShortages','ccShortagesReport','archive','users','branches','apps','products','customers','requests','editOrders','editShortages','editStatus'];
 
 // تعديل: الأقسام الافتراضية حسب الدور (تُستخدم كـ fallback للمستخدمين القدامى بدون تحديد يدوي للأقسام)
 // تعديل: أوردر الأبلكيشن أصبح خانة داخل "أوردر جديد" وليس قسم منفصل
@@ -1245,7 +1290,7 @@ function getDefaultSectionsForRole(role) {
   if (role === 'admin' || role === 'manager' || role === 'appuser') s.shortagesReport = true;
   if (role === 'admin') {
     s.ccShortagesReport = true; s.archive = true;
-    s.users = true; s.branches = true; s.apps = true; s.products = true; s.customers = true;
+    s.users = true; s.branches = true; s.apps = true; s.products = true; s.customers = true; s.requests = true;
     s.editOrders = true;
     s.editShortages = true;
     s.editStatus = true;
@@ -1899,6 +1944,29 @@ function toggleNavGroup(labelEl, forceOpen) {
   group.classList.toggle('open', shouldOpen);
 }
 
+
+function openExternalRequestForm(url) {
+  if (!currentUser || !hasSectionPermission('requests')) {
+    showToast('⛔ ليس لديك صلاحية للوصول إلى قسم طلبات', true);
+    return;
+  }
+  window.open(url, '_blank', 'noopener,noreferrer');
+}
+
+function openBranchesInfoModal() {
+  if (!currentUser || !hasSectionPermission('requests')) {
+    showToast('⛔ ليس لديك صلاحية للوصول إلى قسم طلبات', true);
+    return;
+  }
+  const modal = document.getElementById('branchesInfoModal');
+  if (modal) modal.classList.remove('hidden');
+}
+
+function closeBranchesInfoModal() {
+  const modal = document.getElementById('branchesInfoModal');
+  if (modal) modal.classList.add('hidden');
+}
+
 function setupNavByRole() {
   const nav = document.getElementById('mainNav');
   nav.innerHTML = '';
@@ -1920,6 +1988,15 @@ function setupNavByRole() {
   if (sections.shortagesReport) appHtml += `<button class="nav-btn" onclick="showTab('shortagesReport')" id="tab-shortagesReport">📊 ريبورت نواقص الأبلكيشن</button>`;
   if (sections.allAppOrders) appHtml += `<button class="nav-btn" onclick="showTab('allAppOrders')" id="tab-allAppOrders">📊 ريبورت كل أوردرات الأبلكيشن <span class="nav-count hidden" id="navcount-allAppOrders"></span></button>`;
   if (appHtml) nav.innerHTML += buildNavGroup('app', '📱 الأبلكيشن', appHtml);
+
+  // طلبات: روابط النماذج + بيانات الفروع
+  let requestsHtml = '';
+  if (sections.requests) {
+    requestsHtml += `<button class="nav-btn" type="button" onclick="openExternalRequestForm('https://docs.google.com/forms/d/1NsShaEjjYOS4baGwJeQdlcXK8zYNXG14qEp8wNiIIHI/viewform?edit_requested=true')">🔓 طلب إعادة فتح فرع</button>`;
+    requestsHtml += `<button class="nav-btn" type="button" onclick="openExternalRequestForm('https://docs.google.com/forms/d/e/1FAIpQLSeU7J0zkKh3CW4OtKdWszQc4lynfPMAKQoNbRMjRcX33u3gbA/viewform')">⚠️ مشاكل أصناف</button>`;
+    requestsHtml += `<button class="nav-btn" type="button" onclick="openBranchesInfoModal()">🏢 بيانات الفروع</button>`;
+  }
+  if (requestsHtml) nav.innerHTML += buildNavGroup('requests', '📋 طلبات', requestsHtml);
 
   // تم: Done + Cancel
   let doneHtml = '';
