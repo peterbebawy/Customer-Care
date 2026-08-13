@@ -983,9 +983,9 @@ table tbody tr:hover{
           <label class="radio-item"><input type="checkbox" class="userSectionChk" value="customers"> 👤 العملاء</label>
            <label class="radio-item"><input type="checkbox" class="userSectionChk" value="requests"> 📋 طلبات</label>
           <div style="width:100%;margin-top:8px;padding-top:12px;border-top:1px solid #e5e7eb;font-weight:800;color:#475569;">🔐 صلاحيات العمليات</div>
-          <label class="radio-item"><input type="checkbox" class="userSectionChk" value="editOrders"> ✏️ السماح بتعديل الأوردرات</label>
-          <label class="radio-item"><input type="checkbox" class="userSectionChk" value="editShortages"> ✏️ السماح بتعديل النواقص المدخلة</label>
-          <label class="radio-item"><input type="checkbox" class="userSectionChk" value="editStatus"> 🔄 السماح بتعديل حالة الأوردر</label>
+          <label class="radio-item"><input type="checkbox" class="userSectionChk" value="editOrders"> ✏️ السماح بتعديل الأوردرات <span style="font-size:11px;color:#98a2b3;">(مدخلاته فقط)</span></label>
+          <label class="radio-item"><input type="checkbox" class="userSectionChk" value="editShortages"> ✏️ السماح بتعديل النواقص المدخلة <span style="font-size:11px;color:#98a2b3;">(مدخلاته فقط)</span></label>
+          <label class="radio-item"><input type="checkbox" class="userSectionChk" value="editStatus"> 🔄 السماح بتعديل حالة الأوردر <span style="font-size:11px;color:#98a2b3;">(مدخلاته فقط)</span></label>
         </div>
         <button class="btn btn-primary" onclick="addUser()">💾 حفظ المستخدم</button>
         <button class="btn btn-secondary hidden" id="cancelEditBtn" onclick="cancelEditUser()">إلغاء التعديل</button>
@@ -1306,6 +1306,15 @@ function hasPermission(permissionKey) {
   if (Object.prototype.hasOwnProperty.call(sections, permissionKey)) return sections[permissionKey] === true;
   if (permissionKey === 'editStatus') return ['admin','manager','appuser'].includes(currentUser.role);
   return false;
+}
+
+// صلاحية التعديل على سجل محدد: المستخدم المسموح له بالتعديل يستطيع تعديل مدخلاته فقط.
+// الأدمن يظل قادراً على تعديل جميع السجلات.
+function canEditOwnRecord(permissionKey, record) {
+  if (!currentUser || !record) return false;
+  if (!hasPermission(permissionKey)) return false;
+  if (currentUser.role === 'admin') return true;
+  return String(record.employeeId || '') === String(currentUser.id || '');
 }
 
 function initApp() {
@@ -1978,7 +1987,6 @@ function setupNavByRole() {
   let opsHtml = '';
   if (sections.newOrder) opsHtml += `<button class="nav-btn" onclick="showTab('newOrder')" id="tab-newOrder">➕ تسجيل أوردر جديد</button>`;
   if (sections.myOrders) opsHtml += `<button class="nav-btn" onclick="showTab('myOrders')" id="tab-myOrders">📋 أوردراتي <span class="nav-count hidden" id="navcount-myOrders"></span></button>`;
-  if (sections.allOrders) opsHtml += `<button class="nav-btn" onclick="showTab('allOrders')" id="tab-allOrders">📊 كل أوردرات الكول سنتر <span class="nav-count hidden" id="navcount-allOrders"></span></button>`;
   if (sections.callcenterShortages) opsHtml += `<button class="nav-btn" onclick="showTab('callcenterShortages')" id="tab-callcenterShortages">📞 نواقص كول سنتر</button>`;
   if (opsHtml) nav.innerHTML += buildNavGroup('ops', '📋 العمليات', opsHtml);
 
@@ -2006,6 +2014,7 @@ function setupNavByRole() {
 
   // التقارير: تبقى وظائف التقارير كما هي
   let reportHtml = '';
+  if (sections.allOrders) reportHtml += `<button class="nav-btn" onclick="showTab('allOrders')" id="tab-allOrders">📊 كل أوردرات الكول سنتر <span class="nav-count hidden" id="navcount-allOrders"></span></button>`;
   if (sections.ccShortagesReport) reportHtml += `<button class="nav-btn" onclick="showTab('ccShortagesReport')" id="tab-ccShortagesReport">📊 ريبورت نواقص كول سنتر</button>`;
   if (sections.archive) reportHtml += `<button class="nav-btn" onclick="showTab('archive')" id="tab-archive">📦 أرشيف الأوردرات</button>`;
   if (reportHtml) nav.innerHTML += buildNavGroup('reports', '📊 التقارير', reportHtml);
@@ -2600,9 +2609,9 @@ function renderAllOrders() {
     const statusClass = STATUS_CLASSES[o.status] || 'status-pending';
     const statusLabel = STATUS_LABELS[o.status] || o.status;
     const isUrgent = o.deliveryDate === today && o.status !== 'completed' && o.status !== 'cancelled';
-    const canEdit = hasPermission('editOrders');
-    // تعديل: السماح لموظف الأبلكيشن بتعديل الحالة أيضاً
-    const canChangeStatus = hasPermission('editStatus');
+    const canEdit = canEditOwnRecord('editOrders', o);
+    // المستخدم يستطيع تغيير حالة الأوردر الخاص به فقط إذا كانت الصلاحية مفعلة.
+    const canChangeStatus = canEditOwnRecord('editStatus', o);
 
     let statusCell = `<span class="badge ${statusClass}">${statusLabel}</span>`;
     if (canChangeStatus) {
@@ -2635,7 +2644,11 @@ function renderAllOrders() {
 }
 
 function updateOrderStatus(id, newStatus) {
-  if (!hasPermission('editStatus')) { showToast('❌ ليس لديك صلاحية تعديل حالة الأوردر', true); return; }
+  const order = ordersData.find(o => o.id === id);
+  if (!canEditOwnRecord('editStatus', order)) {
+    showToast('❌ يمكنك تعديل حالة الأوردرات التي قمت بإدخالها فقط', true);
+    return;
+  }
   // تعديل: عند اختيار "ملغي" يفتح مربع نصي لكتابة سبب الإلغاء قبل الحفظ
   if (newStatus === 'cancelled') {
     openQuickCancelReasonModal(id, 'orders');
@@ -2711,8 +2724,8 @@ function renderAllAppOrders() {
     const statusClass = STATUS_CLASSES[o.status] || 'status-pending';
     const statusLabel = STATUS_LABELS[o.status] || o.status;
     const isUrgent = o.deliveryDate === today && o.status !== 'completed' && o.status !== 'cancelled';
-    const canEdit = hasPermission('editOrders');
-    const canChangeStatus = hasPermission('editStatus');
+    const canEdit = canEditOwnRecord('editOrders', o);
+    const canChangeStatus = canEditOwnRecord('editStatus', o);
 
     let statusCell = `<span class="badge ${statusClass}">${statusLabel}</span>`;
     if (canChangeStatus) {
@@ -2747,7 +2760,11 @@ function renderAllAppOrders() {
 }
 
 function updateAppOrderStatus(id, newStatus) {
-  if (!hasPermission('editStatus')) { showToast('❌ ليس لديك صلاحية تعديل حالة الأوردر', true); return; }
+  const order = appOrdersData.find(o => o.id === id);
+  if (!canEditOwnRecord('editStatus', order)) {
+    showToast('❌ يمكنك تعديل حالة الأوردرات التي قمت بإدخالها فقط', true);
+    return;
+  }
   // تعديل: عند اختيار "ملغي" يفتح مربع نصي لكتابة سبب الإلغاء قبل الحفظ
   if (newStatus === 'cancelled') {
     openQuickCancelReasonModal(id, 'app_orders');
@@ -2816,10 +2833,9 @@ function renderDoneOrders() {
 
   if (list.length === 0) { table.innerHTML = `<tr><td colspan="13" class="empty-state">لا يوجد أوردرات تم تنفيذها</td></tr>`; return; }
 
-  const canEdit = hasPermission('editOrders');
-  const canChangeStatus = hasPermission('editStatus');
-
   table.innerHTML = list.map((o, i) => {
+    const canEdit = canEditOwnRecord('editOrders', o);
+    const canChangeStatus = canEditOwnRecord('editStatus', o);
     const fn = o._type === 'app' ? 'updateAppOrderStatus' : 'updateOrderStatus';
     let statusCell = `<span class="badge status-completed">تم</span>`;
     if (canChangeStatus) {
@@ -2903,10 +2919,9 @@ function renderCancelOrders() {
 
   if (list.length === 0) { table.innerHTML = `<tr><td colspan="14" class="empty-state">لا يوجد أوردرات ملغية</td></tr>`; return; }
 
-  const canEdit = hasPermission('editOrders');
-  const canChangeStatus = hasPermission('editStatus');
-
   table.innerHTML = list.map((o, i) => {
+    const canEdit = canEditOwnRecord('editOrders', o);
+    const canChangeStatus = canEditOwnRecord('editStatus', o);
     const fn = o._type === 'app' ? 'updateAppOrderStatus' : 'updateOrderStatus';
     let statusCell = `<span class="badge status-cancelled">ملغي</span>`;
     if (canChangeStatus) {
@@ -3145,8 +3160,11 @@ function closeReviewModal() { document.getElementById('reviewModal').classList.a
 // Edit Order Modal
 // ============================================
 function openEditOrder(id) {
-  if (!hasPermission('editOrders')) { showToast('❌ لا تملك صلاحية تعديل الأوردرات', true); return; }
   const order = ordersData.find(o => o.id === id); if (!order) return;
+  if (!canEditOwnRecord('editOrders', order)) {
+    showToast('❌ يمكنك تعديل الأوردرات التي قمت بإدخالها فقط', true);
+    return;
+  }
   document.getElementById('editOrderId').value = id;
   document.getElementById('editCustomerName').value = order.customer || '';
   populateBranchSelect();
@@ -3176,8 +3194,12 @@ function toggleCancelReason() {
 }
 
 function saveEditOrder() {
-  if (!hasPermission('editOrders')) { showToast('❌ لا تملك صلاحية تعديل الأوردرات', true); return; }
   const id = document.getElementById('editOrderId').value;
+  const order = ordersData.find(o => o.id === id);
+  if (!canEditOwnRecord('editOrders', order)) {
+    showToast('❌ يمكنك تعديل الأوردرات التي قمت بإدخالها فقط', true);
+    return;
+  }
   const customer = document.getElementById('editCustomerName').value.trim();
   const branch = document.getElementById('editBranch').value;
   const items = document.getElementById('editItems').value.trim();
@@ -3239,8 +3261,11 @@ function openReviewAppOrder(id) {
 // Edit App Order Modal
 // ============================================
 function openEditAppOrder(id) {
-  if (!hasPermission('editOrders')) { showToast('❌ لا تملك صلاحية تعديل الأوردرات', true); return; }
   const order = appOrdersData.find(o => o.id === id); if (!order) return;
+  if (!canEditOwnRecord('editOrders', order)) {
+    showToast('❌ يمكنك تعديل الأوردرات التي قمت بإدخالها فقط', true);
+    return;
+  }
   document.getElementById('editAppOrderId').value = id;
   document.getElementById('editAppOrderCustomerName').value = order.customer || '';
   populateAppOrderBranch(); populateAppOrderAppSelect();
@@ -3271,8 +3296,12 @@ function toggleAppCancelReason() {
 }
 
 function saveEditAppOrder() {
-  if (!hasPermission('editOrders')) { showToast('❌ لا تملك صلاحية تعديل الأوردرات', true); return; }
   const id = document.getElementById('editAppOrderId').value;
+  const order = appOrdersData.find(o => o.id === id);
+  if (!canEditOwnRecord('editOrders', order)) {
+    showToast('❌ يمكنك تعديل الأوردرات التي قمت بإدخالها فقط', true);
+    return;
+  }
   const customer = document.getElementById('editAppOrderCustomerName').value.trim();
   const branch = document.getElementById('editAppOrderBranch').value;
   const appName = document.getElementById('editAppOrderApp').value;
@@ -3495,7 +3524,7 @@ function renderShortages() {
     <td><span class="badge badge-gray">${s.employee}</span></td>
     <td>${s.date||''}</td>
     <td>${s.notes||'-'}</td>
-    <td>${hasPermission('editShortages')?`<span class="edit-link" onclick="openEditShortage('${s.id}','app')">✏️ تعديل</span>`:''}${currentUser.role==='admin'?`<span class="delete-link" onclick="deleteShortage('${s.id}')">🗑️ حذف</span>`:''}</td>
+    <td>${canEditOwnRecord('editShortages', s)?`<span class="edit-link" onclick="openEditShortage('${s.id}','app')">✏️ تعديل</span>`:''}${currentUser.role==='admin'?`<span class="delete-link" onclick="deleteShortage('${s.id}')">🗑️ حذف</span>`:''}</td>
   </tr>`).join('');
 }
 function deleteShortage(id) {
@@ -3518,13 +3547,16 @@ function renderShortagesReport() {
     <td>${(s.currentQty!==undefined && s.currentQty!=='')?`<span class="badge badge-orange">${s.currentQty}</span>`:'-'}</td>
     <td><span class="badge badge-gray">${s.employee}</span></td>
     <td>${s.date||''}</td><td>${s.notes||'-'}</td>
-    <td>${hasPermission('editShortages')?`<span class="edit-link" onclick="openEditShortage('${s.id}','app')">✏️ تعديل</span>`:''}${currentUser.role==='admin'?`<span class="archive-link" onclick="archiveShortage('${s.id}')">📦 أرشفة</span><span class="delete-link" onclick="deleteShortage('${s.id}')">🗑️ حذف</span>`:''}</td>
+    <td>${canEditOwnRecord('editShortages', s)?`<span class="edit-link" onclick="openEditShortage('${s.id}','app')">✏️ تعديل</span>`:''}${currentUser.role==='admin'?`<span class="archive-link" onclick="archiveShortage('${s.id}')">📦 أرشفة</span><span class="delete-link" onclick="deleteShortage('${s.id}')">🗑️ حذف</span>`:''}</td>
   </tr>`).join('');
 }
 function openEditShortage(id, type) {
-  if (!hasPermission('editShortages')) { showToast('❌ لا تملك صلاحية تعديل النواقص', true); return; }
   const data = type === 'cc' ? ccShortagesData : shortagesData;
   const item = data.find(x => x.id === id); if (!item) return;
+  if (!canEditOwnRecord('editShortages', item)) {
+    showToast('❌ يمكنك تعديل النواقص التي قمت بإدخالها فقط', true);
+    return;
+  }
   document.getElementById('editShortageId').value = id;
   document.getElementById('editShortageType').value = type;
   document.getElementById('editShortageTitle').textContent = type === 'cc' ? '✏️ تعديل نقص كول سنتر' : '✏️ تعديل نقص الأبلكيشن';
@@ -3561,9 +3593,14 @@ function closeEditShortageModal() {
 }
 
 function saveEditShortage() {
-  if (!hasPermission('editShortages')) { showToast('❌ لا تملك صلاحية تعديل النواقص', true); return; }
   const id = document.getElementById('editShortageId').value;
   const type = document.getElementById('editShortageType').value;
+  const sourceData = type === 'cc' ? ccShortagesData : shortagesData;
+  const item = sourceData.find(x => x.id === id);
+  if (!canEditOwnRecord('editShortages', item)) {
+    showToast('❌ يمكنك تعديل النواقص التي قمت بإدخالها فقط', true);
+    return;
+  }
   const productId = document.getElementById('editShortageProduct').value;
   const product = productsData.find(p => p.id === productId);
   const branch = document.getElementById('editShortageBranch').value;
@@ -3714,7 +3751,7 @@ function renderCCShortages() {
     <td><span class="badge badge-gray">${s.employee}</span></td>
     <td>${s.date||''}</td>
     <td>${s.notes||'-'}</td>
-    <td>${hasPermission('editShortages')?`<span class="edit-link" onclick="openEditShortage('${s.id}','cc')">✏️ تعديل</span>`:''}</td>
+    <td>${canEditOwnRecord('editShortages', s)?`<span class="edit-link" onclick="openEditShortage('${s.id}','cc')">✏️ تعديل</span>`:''}</td>
   </tr>`).join('');
 }
 function renderCCShortagesReport() {
@@ -3730,7 +3767,7 @@ function renderCCShortagesReport() {
     <td><span class="badge badge-blue">${s.branch}</span></td>
     <td><span class="badge badge-gray">${s.employee}</span></td>
     <td>${s.date||''}</td><td>${s.notes||'-'}</td>
-    <td>${hasPermission('editShortages')?`<span class="edit-link" onclick="openEditShortage('${s.id}','cc')">✏️ تعديل</span>`:''}${currentUser.role==='admin'?`<span class="archive-link" onclick="archiveCCShortage('${s.id}')">📦 أرشفة</span><span class="delete-link" onclick="deleteCCShortage('${s.id}')">🗑️ حذف</span>`:''}</td>
+    <td>${canEditOwnRecord('editShortages', s)?`<span class="edit-link" onclick="openEditShortage('${s.id}','cc')">✏️ تعديل</span>`:''}${currentUser.role==='admin'?`<span class="archive-link" onclick="archiveCCShortage('${s.id}')">📦 أرشفة</span><span class="delete-link" onclick="deleteCCShortage('${s.id}')">🗑️ حذف</span>`:''}</td>
   </tr>`).join('');
 }
 function exportCCShortagesToExcel() {
