@@ -596,67 +596,6 @@ table tbody tr:hover{
   .nav-btn{font-size:14px!important}
 }
 </style>
-
-<style id="topbar-settings-style">
-.topbar-settings-wrap{
-  margin-left:auto !important;
-  display:flex !important;
-  align-items:center !important;
-  gap:8px !important;
-  direction:ltr !important;
-}
-.topbar-settings-btn{
-  width:40px;
-  height:40px;
-  border:1px solid rgba(148,163,184,.28);
-  background:rgba(255,255,255,.72);
-  color:#475569;
-  border-radius:12px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  cursor:pointer;
-  font-size:20px;
-  transition:all .18s ease;
-  box-shadow:0 2px 8px rgba(15,23,42,.06);
-}
-.topbar-settings-btn:hover{
-  background:#fff;
-  color:#0f172a;
-  transform:translateY(-1px);
-  box-shadow:0 5px 14px rgba(15,23,42,.10);
-}
-.topbar-settings-menu{
-  position:absolute;
-  top:52px;
-  left:0;
-  min-width:190px;
-  padding:7px;
-  background:#fff;
-  border:1px solid #e2e8f0;
-  border-radius:14px;
-  box-shadow:0 14px 35px rgba(15,23,42,.15);
-  z-index:9999;
-  display:none;
-  direction:rtl;
-}
-.topbar-settings-menu.open{display:block;}
-.topbar-settings-menu button{
-  width:100%;
-  border:0;
-  background:transparent;
-  padding:10px 12px;
-  border-radius:10px;
-  text-align:right;
-  cursor:pointer;
-  color:#334155;
-  font-family:inherit;
-  font-size:13px;
-}
-.topbar-settings-menu button:hover{background:#f1f5f9;}
-.topbar-settings-menu .logout-item{color:#dc2626;}
-</style>
-
 </head>
 <body>
 
@@ -712,16 +651,6 @@ table tbody tr:hover{
     </div>
   </div>
     <div class="topbar">
-
-<div class="topbar-settings-wrap" id="topbarSettingsWrap">
-  <button class="topbar-settings-btn" id="topbarSettingsBtn" type="button"
-          title="الإعدادات" aria-label="الإعدادات">⚙️</button>
-  <div class="topbar-settings-menu" id="topbarSettingsMenu">
-    <button type="button" onclick="openChangePassModal(); closeTopbarSettingsMenu();">🔑 تغيير الباسورد</button>
-    <button type="button" class="logout-item" onclick="logout();">🚪 تسجيل الخروج</button>
-  </div>
-</div>
-
       <button type="button" class="topbar-menu-btn" onclick="toggleNavPanel()" aria-label="القائمة">
         <span class="topbar-menu-icon" id="topbarMenuIcon">☰</span>
       </button>
@@ -1659,6 +1588,8 @@ document.addEventListener('click', (e) => {
   const wrap = document.getElementById('userMenuWrap');
   if (wrap && !wrap.contains(e.target)) closeUserMenu();
 });
+
+function doLogout() {
   currentUser = null;
   try { localStorage.removeItem('currentUserId'); } catch (e) {}
   document.getElementById('dashboard').classList.add('hidden');
@@ -1681,6 +1612,7 @@ function resetIdleTimer() {
   idleTimer = setTimeout(() => {
     if (currentUser) {
       showToast('⏱️ تم تسجيل الخروج تلقائياً بسبب عدم الاستخدام لمدة 10 دقائق', true);
+      doLogout();
     }
   }, IDLE_LIMIT_MS);
 }
@@ -2135,7 +2067,8 @@ function setupNavByRole() {
   if (sections.customers) adminHtml += `<button class="nav-btn" onclick="showTab('customers')" id="tab-customers">👤 العملاء</button>`;
   if (adminHtml) nav.innerHTML += buildNavGroup('admin', '⚙️ الإدارة', adminHtml);
 
-  const accountHtml = `
+  const accountHtml = `<button type="button" class="nav-btn" onclick="openChangePassModal()"><span class="udi-icon">🔐</span><span>تغيير كلمة المرور</span></button>
+    <button type="button" class="nav-btn nav-btn-danger" onclick="doLogout()"><span class="udi-icon">🚪</span><span>تسجيل الخروج</span></button>`;
   nav.innerHTML += `<div class="nav-account-group">` + buildNavGroup('account', '👤 الحساب', accountHtml) + `</div>`;
   updateNavBadges();
 }
@@ -3500,6 +3433,7 @@ function saveQuickCustomer() {
 // ============================================
 // Change Password
 // ============================================
+function openChangePassModal() {
   document.getElementById('changePassModal').classList.remove('hidden');
   document.getElementById('oldPass').value = '';
   document.getElementById('newPass').value = '';
@@ -3936,38 +3870,6 @@ window.addEventListener('DOMContentLoaded', () => {
   setupDropZone('customerDropZone', handleCustomerFile);
   setupIdleWatcher();
 });
-</script>
-
-
-<script id="topbar-settings-script">
-(function(){
-  function initTopbarSettings(){
-    const btn = document.getElementById('topbarSettingsBtn');
-    const menu = document.getElementById('topbarSettingsMenu');
-    if(!btn || !menu) return;
-    if(btn.dataset.bound === '1') return;
-    btn.dataset.bound = '1';
-
-    btn.addEventListener('click', function(e){
-      e.stopPropagation();
-      menu.classList.toggle('open');
-    });
-
-    document.addEventListener('click', function(e){
-      if(!e.target.closest('#topbarSettingsWrap')) menu.classList.remove('open');
-    });
-  }
-
-  if(document.readyState === 'loading'){
-    document.addEventListener('DOMContentLoaded', initTopbarSettings);
-  }else{
-    initTopbarSettings();
-  }
-  window.closeTopbarSettingsMenu = function(){
-    const menu = document.getElementById('topbarSettingsMenu');
-    if(menu) menu.classList.remove('open');
-  };
-})();
 </script>
 
 </body>
