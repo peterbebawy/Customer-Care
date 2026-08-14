@@ -344,6 +344,11 @@ table th{background:#f8fafc!important;color:#475467!important;font-weight:700!im
 
 .selected-items-list{display:grid;gap:8px;margin:10px 0 16px}.selected-items-empty{padding:12px 14px;border:1px dashed #d0d5dd;border-radius:11px;background:#fafbfc;color:#98a2b3;font-size:13px}.selected-shortage-item{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 12px;border:1px solid #e4e7ec;background:#fff;border-radius:12px;box-shadow:0 3px 10px rgba(16,24,40,.04)}.selected-shortage-item>div{display:flex;align-items:center;gap:8px;min-width:0}.selected-item-index{width:24px;height:24px;border-radius:7px;background:#f5efd8;color:#8b6f13;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex:none}.selected-item-code{font-size:12px;color:#667085;background:#f2f4f7;padding:3px 7px;border-radius:6px}.selected-item-remove{width:28px;height:28px;border:0;border-radius:8px;background:#fef3f2;color:#d92d20;font-size:20px;line-height:1;cursor:pointer}.selected-item-remove:hover{background:#fee4e2}
 
+
+/* Section search enhancement */
+.section-search{margin:0 0 16px!important;}
+.section-search .input{width:100%;}
+.section-search .input:focus{box-shadow:0 0 0 3px rgba(37,99,235,.10);}
 </style>
 <base target="_blank">
 <style>
@@ -689,7 +694,7 @@ table tbody tr:hover{
   </div>
 
   <div id="myOrders" class="hidden">
-    <div class="card"><h2 style="margin-top:0;color:#1e293b;">أوردراتي (كول سنتر)</h2><div id="myOrdersList"></div></div>
+    <div class="card"><h2 style="margin-top:0;color:#1e293b;">أوردراتي (كول سنتر)</h2><div class="search-bar section-search"><input type="text" id="myOrdersSearch" class="input" style="margin-bottom:0;" placeholder="🔍 بحث برقم الأوردر أو اسم العميل أو كود العميل أو الفرع أو التاريخ أو الموظف..." oninput="renderMyOrders()"></div><div id="myOrdersList"></div></div>
   </div>
 
   <div id="allOrders" class="hidden">
@@ -815,7 +820,7 @@ table tbody tr:hover{
         <textarea id="shortageNotes" class="input" rows="2" placeholder="أي ملاحظات..."></textarea>
         <button class="btn btn-success" onclick="submitShortage()">✅ حفظ النقص</button>
       </div>
-      <div class="table-wrap">
+      <div class="search-bar section-search"><input type="text" id="shortagesListSearch" class="input" style="margin-bottom:0;" placeholder="🔍 بحث بكود الصنف أو اسم الصنف أو الأبلكيشن أو رقم الأوردر أو الفرع أو التاريخ أو الموظف..." oninput="renderShortages()"></div><div class="table-wrap">
         <table>
           <thead><tr><th>#</th><th>الصنف</th><th>الأبلكيشن</th><th>رقم الأوردر</th><th>الفرع</th><th>الكمية الحالية بالفرع</th><th>الموظف</th><th>التاريخ</th><th>ملاحظات</th><th>إجراءات</th></tr></thead>
           <tbody id="shortagesTable"></tbody>
@@ -826,7 +831,7 @@ table tbody tr:hover{
 
   <div id="shortagesReport" class="hidden">
     <div class="card">
-      <h2 style="margin-top:0;color:#1e293b;">📊 ريبورت نواقص الأبلكيشن</h2>
+      <h2 style="margin-top:0;color:#1e293b;">📊 ريبورت نواقص الأبلكيشن</h2><div class="search-bar section-search"><input type="text" id="shortagesReportSearch" class="input" style="margin-bottom:0;" placeholder="🔍 بحث بكود الصنف أو اسم الصنف أو العميل أو الفرع أو رقم الأوردر أو التاريخ أو الموظف..." oninput="renderShortagesReport()"></div>
       <div class="export-bar">
         <button class="btn btn-success" onclick="exportShortagesToExcel()">📥 تصدير Excel</button>
         <button class="btn btn-info hidden" id="shortagesArchiveAllBtn" onclick="archiveAllShortages()">📦 أرشفة الكل</button>
@@ -859,7 +864,7 @@ table tbody tr:hover{
         <textarea id="ccNotes" class="input" rows="2" placeholder="أي ملاحظات..."></textarea>
         <button class="btn btn-success" onclick="submitCCShortage()">✅ حفظ النقص</button>
       </div>
-      <div class="table-wrap">
+      <div class="search-bar section-search"><input type="text" id="ccShortagesListSearch" class="input" style="margin-bottom:0;" placeholder="🔍 بحث بكود الصنف أو اسم الصنف أو اسم العميل أو الفرع أو التاريخ أو الموظف..." oninput="renderCCShortages()"></div><div class="table-wrap">
         <table>
           <thead><tr><th>#</th><th>الصنف</th><th>العميل</th><th>الفرع</th><th>الموظف</th><th>التاريخ</th><th>ملاحظات</th><th>إجراءات</th></tr></thead>
           <tbody id="ccShortagesTable"></tbody>
@@ -870,7 +875,7 @@ table tbody tr:hover{
 
   <div id="ccShortagesReport" class="hidden">
     <div class="card">
-      <h2 style="margin-top:0;color:#1e293b;">📊 ريبورت نواقص كول سنتر</h2>
+      <h2 style="margin-top:0;color:#1e293b;">📊 ريبورت نواقص كول سنتر</h2><div class="search-bar section-search"><input type="text" id="ccShortagesReportSearch" class="input" style="margin-bottom:0;" placeholder="🔍 بحث بكود الصنف أو اسم الصنف أو العميل أو الفرع أو التاريخ أو الموظف..." oninput="renderCCShortagesReport()"></div>
       <div class="export-bar">
         <button class="btn btn-success" onclick="exportCCShortagesToExcel()">📥 تصدير Excel</button>
         <button class="btn btn-info hidden" id="ccShortagesArchiveAllBtn" onclick="archiveAllCCShortages()">📦 أرشفة الكل</button>
@@ -966,7 +971,7 @@ table tbody tr:hover{
 
   <div id="users" class="hidden">
     <div class="card">
-      <h2 style="margin-top:0;color:#1e293b;">إدارة المستخدمين</h2>
+      <h2 style="margin-top:0;color:#1e293b;">إدارة المستخدمين</h2><div class="search-bar section-search"><input type="text" id="usersSearch" class="input" style="margin-bottom:0;" placeholder="🔍 بحث باسم المستخدم أو الدور..." oninput="renderUsers()"></div>
       <div style="margin-bottom:24px;padding:20px;background:#f8fafc;border-radius:12px;">
         <h3 style="margin-top:0;color:#374151;font-size:16px;">➕ إضافة / تعديل مستخدم</h3>
         <input type="hidden" id="editUserId">
@@ -1015,7 +1020,7 @@ table tbody tr:hover{
 
   <div id="branches" class="hidden">
     <div class="card">
-      <h2 style="margin-top:0;color:#1e293b;">🏢 إدارة الفروع</h2>
+      <h2 style="margin-top:0;color:#1e293b;">🏢 إدارة الفروع</h2><div class="search-bar section-search"><input type="text" id="branchesSearch" class="input" style="margin-bottom:0;" placeholder="🔍 بحث باسم الفرع..." oninput="renderBranches()"></div>
       <div style="margin-bottom:24px;padding:20px;background:#f8fafc;border-radius:12px;">
         <h3 style="margin-top:0;color:#374151;font-size:16px;">➕ إضافة فرع جديد</h3>
         <input type="text" id="newBranchName" class="input" placeholder="اسم الفرع">
@@ -1031,7 +1036,7 @@ table tbody tr:hover{
 
   <div id="apps" class="hidden">
     <div class="card">
-      <h2 style="margin-top:0;color:#1e293b;">📱 إدارة الأبلكيشنز</h2>
+      <h2 style="margin-top:0;color:#1e293b;">📱 إدارة الأبلكيشنز</h2><div class="search-bar section-search"><input type="text" id="appsSearch" class="input" style="margin-bottom:0;" placeholder="🔍 بحث باسم الأبلكيشن..." oninput="renderApps()"></div>
       <div style="margin-bottom:24px;padding:20px;background:#f8fafc;border-radius:12px;">
         <h3 style="margin-top:0;color:#374151;font-size:16px;">➕ إضافة أبلكيشن جديد</h3>
         <input type="text" id="newAppName" class="input" placeholder="اسم الأبلكيشن">
@@ -1043,7 +1048,7 @@ table tbody tr:hover{
 
   <div id="products" class="hidden">
     <div class="card">
-      <h2 style="margin-top:0;color:#1e293b;">📦 إدارة الأصناف</h2>
+      <h2 style="margin-top:0;color:#1e293b;">📦 إدارة الأصناف</h2><div class="search-bar section-search"><input type="text" id="productsSearch" class="input" style="margin-bottom:0;" placeholder="🔍 بحث بكود الصنف أو اسم الصنف..." oninput="renderProducts()"></div>
       <div style="margin-bottom:24px;padding:20px;background:#f8fafc;border-radius:12px;">
         <h3 style="margin-top:0;color:#374151;font-size:16px;">➕ إضافة صنف يدوياً</h3>
         <div class="grid-3">
@@ -1072,7 +1077,7 @@ table tbody tr:hover{
 
   <div id="customers" class="hidden">
     <div class="card">
-      <h2 style="margin-top:0;color:#1e293b;">👤 إدارة العملاء</h2>
+      <h2 style="margin-top:0;color:#1e293b;">👤 إدارة العملاء</h2><div class="search-bar section-search"><input type="text" id="customersSearch" class="input" style="margin-bottom:0;" placeholder="🔍 بحث بكود العميل أو اسم العميل أو رقم الهاتف أو العنوان..." oninput="renderCustomers()"></div>
       <div style="margin-bottom:24px;padding:20px;background:#f8fafc;border-radius:12px;">
         <h3 style="margin-top:0;color:#374151;font-size:16px;">➕ إضافة عميل يدوياً</h3>
         <div class="grid-2">
@@ -1674,8 +1679,9 @@ function setupIdleWatcher() {
 function renderUsers() {
   const list = document.getElementById('usersList');
   if (!list) return;
-  if (usersData.length === 0) { list.innerHTML = '<div class="empty-state">لا يوجد مستخدمين بعد</div>'; return; }
-  list.innerHTML = usersData.map(u => `
+  const filtered = filterRecordsBySearch(usersData, 'usersSearch');
+  if (filtered.length === 0) { list.innerHTML = '<div class="empty-state">لا توجد نتائج مطابقة للبحث</div>'; return; }
+  list.innerHTML = filtered.map(u => `
     <div class="user-row">
       <div style="display:flex;align-items:center;">
         <div class="user-avatar">${(u.name || '?').charAt(0).toUpperCase()}</div>
@@ -1759,7 +1765,9 @@ function renderBranches() {
   const list = document.getElementById('branchesList');
   if (!list) return;
   if (branchesData.length === 0) { list.innerHTML = '<div class="empty-state">لا يوجد فروع بعد</div>'; return; }
-  list.innerHTML = branchesData.map(b => `
+  const filtered = filterRecordsBySearch(branchesData, 'branchesSearch');
+  if (filtered.length === 0) { list.innerHTML = '<div class="empty-state">لا توجد نتائج مطابقة للبحث</div>'; return; }
+  list.innerHTML = filtered.map(b => `
     <div class="user-row">
       <div style="font-weight:700;color:#1e293b;">🏢 ${b.name || ''} ${b.isApp ? '<span class="badge badge-purple" style="margin-right:6px;">📱 أبلكيشن</span>' : '<span class="badge badge-gray" style="margin-right:6px;">عام</span>'}</div>
       <div>${currentUser.role==='admin'?`<span class="edit-link" onclick="toggleBranchApp('${b.id}', ${!b.isApp})">${b.isApp ? '❎ إلغاء الأبلكيشن' : '📱 تفعيل الأبلكيشن'}</span><span class="delete-link" onclick="deleteBranch('${b.id}')">🗑️ حذف</span>`:''}</div>
@@ -1797,7 +1805,9 @@ function renderApps() {
   const list = document.getElementById('appsList');
   if (!list) return;
   if (appsData.length === 0) { list.innerHTML = '<div class="empty-state">لا يوجد أبلكيشنز بعد</div>'; return; }
-  list.innerHTML = appsData.map(a => `
+  const filtered = filterRecordsBySearch(appsData, 'appsSearch');
+  if (filtered.length === 0) { list.innerHTML = '<div class="empty-state">لا توجد نتائج مطابقة للبحث</div>'; return; }
+  list.innerHTML = filtered.map(a => `
     <div class="user-row">
       <div style="font-weight:700;color:#1e293b;">📱 ${a.name || ''}</div>
       <div>${currentUser.role==='admin'?`<span class="delete-link" onclick="deleteApp('${a.id}')">🗑️ حذف</span>`:''}</div>
@@ -1826,7 +1836,9 @@ function renderProducts() {
   const tbody = document.getElementById('productsTable');
   if (!tbody) return;
   if (productsData.length === 0) { tbody.innerHTML = '<tr><td colspan="4" class="empty-state">لا يوجد أصناف بعد</td></tr>'; return; }
-  tbody.innerHTML = productsData.map(p => `<tr>
+  const filtered = filterRecordsBySearch(productsData, 'productsSearch');
+  if (filtered.length === 0) { tbody.innerHTML = '<tr><td colspan="4" class="empty-state">لا توجد نتائج مطابقة للبحث</td></tr>'; return; }
+  tbody.innerHTML = filtered.map(p => `<tr>
     <td><strong>${p.code || ''}</strong></td>
     <td>${p.name || ''}</td>
     <td>${(parseFloat(p.price) || 0).toFixed(2)}</td>
@@ -1916,7 +1928,9 @@ function renderCustomers() {
   const tbody = document.getElementById('customersTable');
   if (!tbody) return;
   if (customersData.length === 0) { tbody.innerHTML = '<tr><td colspan="5" class="empty-state">لا يوجد عملاء بعد</td></tr>'; return; }
-  tbody.innerHTML = customersData.map(c => `<tr>
+  const filtered = filterRecordsBySearch(customersData, 'customersSearch');
+  if (filtered.length === 0) { tbody.innerHTML = '<tr><td colspan="5" class="empty-state">لا توجد نتائج مطابقة للبحث</td></tr>'; return; }
+  tbody.innerHTML = filtered.map(c => `<tr>
     <td><strong>${c.code || ''}</strong></td>
     <td>${c.name || ''}</td>
     <td>${c.phone || '-'}</td>
@@ -2618,10 +2632,30 @@ function submitOrder() {
 // ============================================
 // My Orders
 // ============================================
+
+// ============================================
+// Universal section search
+// يبحث داخل جميع بيانات السجل (الاسم، الكود، الفرع، التاريخ، رقم الأوردر وغيرها)
+// ============================================
+function recordMatchesSearch(record, query) {
+  const q = String(query || '').trim().toLowerCase();
+  if (!q) return true;
+  try {
+    return JSON.stringify(record ?? '').toLowerCase().includes(q);
+  } catch (e) {
+    return Object.values(record || {}).some(v => String(v ?? '').toLowerCase().includes(q));
+  }
+}
+function filterRecordsBySearch(records, inputId) {
+  const q = (document.getElementById(inputId)?.value || '').trim();
+  return q ? records.filter(r => recordMatchesSearch(r, q)) : records;
+}
+
 function renderMyOrders() {
   const list = document.getElementById('myOrdersList');
   if (!list || !currentUser) return;
-  const mine = ordersData.filter(o => o.employeeId === currentUser.id);
+  let mine = ordersData.filter(o => o.employeeId === currentUser.id);
+  mine = filterRecordsBySearch(mine, 'myOrdersSearch');
   if (mine.length === 0) { list.innerHTML = '<div class="empty-state">لا يوجد أوردرات مسجلة بعد</div>'; return; }
   list.innerHTML = mine.map(o => {
     const statusLabel = STATUS_LABELS[o.status] || o.status;
@@ -2668,10 +2702,7 @@ function renderAllOrders() {
 
   if (searchQ) {
     filtered = filtered.filter(o =>
-      (o.employee && o.employee.toLowerCase().includes(searchQ)) ||
-      (o.branch && o.branch.toLowerCase().includes(searchQ)) ||
-      (o.customer && o.customer.toLowerCase().includes(searchQ)) ||
-      (o.customerCode && o.customerCode.toLowerCase().includes(searchQ))
+      recordMatchesSearch(o, searchQ)
     );
   }
 
@@ -2781,12 +2812,7 @@ function renderAllAppOrders() {
 
   if (searchQ) {
     filtered = filtered.filter(o =>
-      (o.employee && o.employee.toLowerCase().includes(searchQ)) ||
-      (o.branch && o.branch.toLowerCase().includes(searchQ)) ||
-      (o.customer && o.customer.toLowerCase().includes(searchQ)) ||
-      (o.customerCode && o.customerCode.toLowerCase().includes(searchQ)) ||
-      (o.appName && o.appName.toLowerCase().includes(searchQ)) ||
-      (o.appOrderNumber && o.appOrderNumber.toLowerCase().includes(searchQ))
+      recordMatchesSearch(o, searchQ)
     );
   }
 
@@ -2899,12 +2925,7 @@ function renderDoneOrders() {
 
   if (searchQ) {
     list = list.filter(o =>
-      (o.employee && o.employee.toLowerCase().includes(searchQ)) ||
-      (o.branch && o.branch.toLowerCase().includes(searchQ)) ||
-      (o.customer && o.customer.toLowerCase().includes(searchQ)) ||
-      (o.customerCode && o.customerCode.toLowerCase().includes(searchQ)) ||
-      (o.appName && o.appName.toLowerCase().includes(searchQ)) ||
-      (o.appOrderNumber && o.appOrderNumber.toLowerCase().includes(searchQ))
+      recordMatchesSearch(o, searchQ)
     );
   }
 
@@ -2985,12 +3006,7 @@ function renderCancelOrders() {
 
   if (searchQ) {
     list = list.filter(o =>
-      (o.employee && o.employee.toLowerCase().includes(searchQ)) ||
-      (o.branch && o.branch.toLowerCase().includes(searchQ)) ||
-      (o.customer && o.customer.toLowerCase().includes(searchQ)) ||
-      (o.customerCode && o.customerCode.toLowerCase().includes(searchQ)) ||
-      (o.appName && o.appName.toLowerCase().includes(searchQ)) ||
-      (o.appOrderNumber && o.appOrderNumber.toLowerCase().includes(searchQ))
+      recordMatchesSearch(o, searchQ)
     );
   }
 
@@ -3137,11 +3153,7 @@ function renderArchive() {
   let filtered = [...archiveData];
   if (searchQ) {
     filtered = filtered.filter(o =>
-      (o.employee && o.employee.toLowerCase().includes(searchQ)) ||
-      (o.branch && o.branch.toLowerCase().includes(searchQ)) ||
-      (o.customer && o.customer.toLowerCase().includes(searchQ)) ||
-      (o.customerCode && o.customerCode.toLowerCase().includes(searchQ)) ||
-      (o.appOrderNumber && o.appOrderNumber.toLowerCase().includes(searchQ))
+      recordMatchesSearch(o, searchQ)
     );
   }
   statsBox.innerHTML = `<div class="stat-card"><div class="stat-number" style="color:#7c3aed;">${archiveData.length}</div><div class="stat-label">الأوردرات المؤرشفة</div></div>`;
@@ -3602,7 +3614,9 @@ function renderShortages() {
   const tbody = document.getElementById('shortagesTable');
   if (!tbody) return;
   if (shortagesData.length === 0) { tbody.innerHTML = '<tr><td colspan="10" class="empty-state">لا يوجد نواقص مسجلة</td></tr>'; return; }
-  tbody.innerHTML = shortagesData.map((s, i) => `<tr>
+  const filtered = filterRecordsBySearch(shortagesData, 'shortagesListSearch');
+  if (filtered.length === 0) { tbody.innerHTML = '<tr><td colspan="10" class="empty-state">لا توجد نتائج مطابقة للبحث</td></tr>'; return; }
+  tbody.innerHTML = filtered.map((s, i) => `<tr>
     <td>${i+1}</td>
     <td><strong>${s.productCode}</strong><br><span style="font-size:12px;color:#64748b;">${s.productName}</span></td>
     <td><span class="badge badge-purple">${s.appName}</span></td>
@@ -3626,8 +3640,9 @@ function renderShortagesReport() {
   const isAdminS = currentUser.role === 'admin';
   document.getElementById('shortagesArchiveAllBtn')?.classList.toggle('hidden', !isAdminS);
   document.getElementById('shortagesDeleteAllBtn')?.classList.toggle('hidden', !isAdminS);
-  if (shortagesData.length === 0) { tbody.innerHTML = '<tr><td colspan="11" class="empty-state">لا يوجد نواقص</td></tr>'; return; }
-  tbody.innerHTML = shortagesData.map((s, i) => `<tr>
+  const filtered = filterRecordsBySearch(shortagesData, 'shortagesReportSearch');
+  if (filtered.length === 0) { tbody.innerHTML = '<tr><td colspan="11" class="empty-state">لا توجد نتائج مطابقة للبحث</td></tr>'; return; }
+  tbody.innerHTML = filtered.map((s, i) => `<tr>
     <td>${i+1}</td><td><strong>${s.productCode}</strong></td><td>${s.productName}</td>
     <td><span class="badge badge-purple">${s.appName}</span></td>
     <td>${s.orderNumber?`<span class="badge badge-pink">#${s.orderNumber}</span>`:'-'}</td>
@@ -3831,7 +3846,9 @@ function renderCCShortages() {
   const tbody = document.getElementById('ccShortagesTable');
   if (!tbody) return;
   if (ccShortagesData.length === 0) { tbody.innerHTML = '<tr><td colspan="8" class="empty-state">لا يوجد نواقص مسجلة</td></tr>'; return; }
-  tbody.innerHTML = ccShortagesData.map((s, i) => `<tr>
+  const filtered = filterRecordsBySearch(ccShortagesData, 'ccShortagesListSearch');
+  if (filtered.length === 0) { tbody.innerHTML = '<tr><td colspan="8" class="empty-state">لا توجد نتائج مطابقة للبحث</td></tr>'; return; }
+  tbody.innerHTML = filtered.map((s, i) => `<tr>
     <td>${i+1}</td>
     <td><strong>${s.productCode}</strong><br><span style="font-size:12px;color:#64748b;">${s.productName}</span></td>
     <td>${s.customerName||'-'}</td>
@@ -3848,8 +3865,9 @@ function renderCCShortagesReport() {
   const isAdminCC = currentUser.role === 'admin';
   document.getElementById('ccShortagesArchiveAllBtn')?.classList.toggle('hidden', !isAdminCC);
   document.getElementById('ccShortagesDeleteAllBtn')?.classList.toggle('hidden', !isAdminCC);
-  if (ccShortagesData.length === 0) { tbody.innerHTML = '<tr><td colspan="9" class="empty-state">لا يوجد نواقص</td></tr>'; return; }
-  tbody.innerHTML = ccShortagesData.map((s, i) => `<tr>
+  const filtered = filterRecordsBySearch(ccShortagesData, 'ccShortagesReportSearch');
+  if (filtered.length === 0) { tbody.innerHTML = '<tr><td colspan="9" class="empty-state">لا توجد نتائج مطابقة للبحث</td></tr>'; return; }
+  tbody.innerHTML = filtered.map((s, i) => `<tr>
     <td>${i+1}</td><td><strong>${s.productCode}</strong></td><td>${s.productName}</td>
     <td>${s.customerName||'-'}</td>
     <td><span class="badge badge-blue">${s.branch}</span></td>
