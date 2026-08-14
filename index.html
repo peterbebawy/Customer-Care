@@ -1297,8 +1297,39 @@ function stopHistoryListener(){
 function historySafeText(value,max=700){if(value===undefined||value===null)return '';let t='';try{t=typeof value==='string'?value:JSON.stringify(value,(k,v)=>(k==='pass'||k==='password'?'[hidden]':v));}catch(e){t=String(value)}return String(t).length>max?String(t).slice(0,max)+'…':String(t)}
 function historyPathLabel(path){const map={orders:'الأوردرات',app_orders:'أوردرات الأبلكيشن',shortages:'نواقص الأبلكيشن',callcenter_shortages:'نواقص كول سنتر',users:'المستخدمين',branches:'الفروع',apps:'الأبلكيشنز',products:'الأصناف',customers:'العملاء',archived_orders:'أرشيف الأوردرات',archived_shortages:'أرشيف النواقص',archived_cc_shortages:'أرشيف نواقص كول سنتر',history:'HISTORY'};const root=String(path||'').split('/')[0];return map[root]||root||'الموقع'}
 function historyOperationLabel(op){return({push:'إضافة',set:'حفظ / تعديل',update:'تحديث',remove:'حذف',login:'تسجيل دخول',logout:'تسجيل خروج',navigation:'فتح قسم'})[op]||op}
-function writeHistory(operation,details,extra={}){if(!historyLoggingReady||!currentUser)return Promise.resolve();return db.ref('history').push({userId:String(currentUser.id||''),userName:String(currentUser.name||'غير معروف'),role:String(currentUser.role||''),operation:String(operation||'action'),path:String(extra.path||'site'),details:historySafeText(details,700),timestamp:firebase.database.ServerValue.TIMESTAMP}).catch(e=>console.warn('History log failed:',e))}
-function installHistoryDatabaseLogger(){if(window.__historyDbLoggerInstalled)return;const proto=Object.getPrototypeOf(db.ref('__history_probe__'));['push','set','update','remove'].forEach(method=>{if(typeof proto[method]!=='function')return;const original=proto[method];proto[method]=function(...args){const path=String(this.path&&this.path.toString?this.path.toString():this.toString());const cleanPath=path.replace(/^.*?firebaseio\.com\//,'').replace(/^\//,'');const isHistory=cleanPath==='history'||cleanPath.startsWith('history/');const result=original.apply(this,args);if(!isHistory&&historyLoggingReady&&currentUser){const detail=method==='remove'?'تم حذف السجل/العنصر':historySafeText(args[0],700);Promise.resolve(result).then(()=>writeHistory(method,detail,{path:cleanPath||'database'})).catch(()=>{})}return result}});window.__historyDbLoggerInstalled=true}
+function writeHistory(operation,details,extra={}){
+  if(!historyLoggingReady || !currentUser) return Promise.resolve();
+  const u=currentUser;
+  const payload={userId:String(u.id||''),userName:String(u.name||'غير معروف'),role:String(u.role||''),operation:String(operation||'action'),path:String(extra.path||'site'),details:historySafeText(details,700),timestamp:firebase.database.ServerValue.TIMESTAMP};
+  return rtdb.ref('history').push(payload).catch(e=>console.warn('History log failed:',e));
+}
+function installHistoryDatabaseLogger(){
+  if(window.__historyDbLoggerInstalled) return;
+  const originalRef=rtdb.ref.bind(rtdb);
+  const wrappedRef=function(path){
+    const ref=originalRef(path);
+    const cleanPath=String(path||'').replace(/^\//,'');
+    const isHistory=cleanPath==='history' || cleanPath.startsWith('history/');
+    if(isHistory || ref.__historyWrapped) return ref;
+    ['push','set','update','remove'].forEach(method=>{
+      if(typeof ref[method]!=='function') return;
+      const original=ref[method].bind(ref);
+      ref[method]=function(...args){
+        const result=original(...args);
+        if(historyLoggingReady && currentUser){
+          const op=method;
+          const detail=method==='remove' ? 'تم حذف العنصر' : historySafeText(args[0],700);
+          Promise.resolve(result).then(()=>writeHistory(op,detail,{path:cleanPath||'database'})).catch(()=>{});
+        }
+        return result;
+      };
+    });
+    try{ref.__historyWrapped=true}catch(e){}
+    return ref;
+  };
+  rtdb.ref=wrappedRef;
+  window.__historyDbLoggerInstalled=true;
+}
 function purgeOldHistory(showMessage=false){if(!currentUser||currentUser.role!=='admin'||historyCleanupRunning)return Promise.resolve();historyCleanupRunning=true;const cutoff=Date.now()-HISTORY_RETENTION_MS;return db.ref('history').once('value').then(snap=>{const updates={};snap.forEach(c=>{const x=c.val()||{};if(Number(x.timestamp||0)>0&&Number(x.timestamp)<cutoff)updates['history/'+c.key]=null});const count=Object.keys(updates).length;if(!count)return 0;return db.ref().update(updates).then(()=>count)}).then(count=>{if(showMessage)showToast(count?`🗑️ تم حذف ${count} سجل أقدم من 10 أيام`:'✅ لا توجد سجلات أقدم من 10 أيام');return count||0}).catch(e=>{console.error('History cleanup:',e);if(showMessage)showToast('❌ تعذر تنظيف HISTORY',true);return 0}).finally(()=>{historyCleanupRunning=false})}
 function renderHistory(){if(!currentUser||currentUser.role!=='admin')return;const list=document.getElementById('historyList'),stats=document.getElementById('historyStats');if(!list)return;const q=String(document.getElementById('historySearch')?.value||'').trim().toLowerCase();const filtered=historyData.filter(h=>{const hay=[h.userName,h.role,h.operation,h.path,historyPathLabel(h.path),h.details].join(' ').toLowerCase();return !q||hay.includes(q)}).sort((a,b)=>Number(b.timestamp||0)-Number(a.timestamp||0));if(stats)stats.innerHTML=`<span class="badge badge-blue">كل السجلات: ${historyData.length}</span><span class="badge badge-purple">المعروض: ${filtered.length}</span><span class="badge badge-green">الاحتفاظ: 10 أيام</span>`;if(!filtered.length){list.innerHTML='<tr><td colspan="6" style="padding:28px;text-align:center;color:#94a3b8;">لا توجد سجلات مطابقة</td></tr>';return}list.innerHTML=filtered.slice(0,1000).map(h=>{const date=h.timestamp?new Date(Number(h.timestamp)).toLocaleString('ar-EG'):'—';return `<tr style="border-top:1px solid #eef2f7;vertical-align:top;"><td style="padding:11px;font-size:12px;white-space:nowrap;color:#475569;">${date}</td><td style="padding:11px;font-weight:800;color:#172033;">${historySafeText(h.userName,80)}</td><td style="padding:11px;"><span class="badge ${h.role==='admin'?'badge-purple':'badge-gray'}">${historySafeText(h.role||'—',40)}</span></td><td style="padding:11px;font-weight:800;color:#2563eb;">${historySafeText(historyOperationLabel(h.operation),50)}</td><td style="padding:11px;"><span class="badge badge-cyan">${historySafeText(historyPathLabel(h.path),80)}</span><div style="font-size:10px;color:#94a3b8;margin-top:3px;direction:ltr;text-align:right;">${historySafeText(h.path,120)}</div></td><td style="padding:11px;max-width:520px;white-space:pre-wrap;word-break:break-word;color:#64748b;font-size:12px;">${historySafeText(h.details,700)}</td></tr>`}).join('')}
 function clearHistoryFilters(){const e=document.getElementById('historySearch');if(e)e.value='';renderHistory()}
@@ -1576,7 +1607,7 @@ function doLogin() {
   const pass = document.getElementById('loginPass').value.trim();
   if (!name || !pass) { showToast('❌ أدخل اسم المستخدم وكلمة المرور', true); return; }
   const found = usersData.find(u => u.name.toLowerCase() === name.toLowerCase() && u.pass === pass);
-  if (found) { enterDashboard(found, false); setTimeout(() => writeHistory('login', 'تم تسجيل الدخول إلى الموقع', {path:'site/login'}), 0); }
+  if (found) { enterDashboard(found, false); setTimeout(() => writeHistory('login', 'تم تسجيل الدخول إلى الموقع', {path:'site/login'}), 100); }
   else { showToast('❌ اسم المستخدم أو كلمة المرور غير صحيحة', true); }
 }
 
@@ -2229,7 +2260,7 @@ function showTab(tab) {
     showToast('⛔ ليس لديك صلاحية للوصول إلى هذا القسم', true);
     tab = 'dashboardHome';
   }
-  ['dashboardHome','newOrder','myOrders','allOrders','allAppOrders','doneOrders','cancelOrders','shortages','shortagesReport','callcenterShortages','ccShortagesReport','archive','users','branches','apps','products','customers'].forEach(t => {
+  ['dashboardHome','newOrder','myOrders','allOrders','allAppOrders','doneOrders','cancelOrders','shortages','shortagesReport','callcenterShortages','ccShortagesReport','archive','users','branches','apps','products','customers','history'].forEach(t => {
     const el = document.getElementById(t); 
     const btn = document.getElementById('tab-'+t);
     if(el) el.classList.add('hidden'); 
@@ -2262,7 +2293,7 @@ function showTab(tab) {
   if(tab==='shortagesReport') renderShortagesReport();
   if(tab==='callcenterShortages') renderCCShortages();
   if(tab==='ccShortagesReport') renderCCShortagesReport();
-  if(tab==='history') renderHistory();
+  if(tab==='history'){ if(!currentUser || currentUser.role!=='admin'){ showTab('dashboardHome'); return; } renderHistory(); }
   if(tab==='archive') renderArchive();
   if(tab==='users') renderUsers();
   if(tab==='branches') renderBranches();
