@@ -841,58 +841,6 @@ table tbody tr:hover{
     </div>
   </div>
 
-  <div id="vizitaCancellations" class="hidden">
-    <div class="card">
-      <h2 style="margin-top:0;color:#1e293b;">🚫 إلغاءات فيزيتا</h2>
-      <p style="margin:-8px 0 20px;color:#667085;font-size:13px;">تسجيل إلغاء أوردر على تطبيق فيزيتا فقط.</p>
-
-      <div style="margin-bottom:24px;padding:20px;background:#f8fafc;border-radius:12px;border:1px solid #e7ebf2;">
-        <h3 style="margin-top:0;color:#374151;font-size:16px;">➕ تسجيل إلغاء جديد</h3>
-
-        <div class="grid-2">
-          <div>
-            <label class="label">اسم الأبلكيشن</label>
-            <input type="text" id="vizitaAppName" class="input" value="فيزيتا" readonly>
-          </div>
-          <div>
-            <label class="label">رقم الأوردر <span style="color:#dc2626;">*</span></label>
-            <input type="text" id="vizitaOrderNumber" class="input" placeholder="أدخل رقم الأوردر" autocomplete="off" required>
-          </div>
-        </div>
-
-        <label class="label">اسم الفرع <span style="color:#dc2626;">*</span></label>
-        <select id="vizitaBranch" class="input">
-          <option value="">اختر الفرع</option>
-        </select>
-
-        <label class="label">لماذا تم الإلغاء؟ <span style="color:#dc2626;">*</span></label>
-        <select id="vizitaCancelReason" class="input">
-          <option value="">اختر سبب الإلغاء</option>
-          <option value="الصنف غير متوفر">الصنف غير متوفر</option>
-          <option value="العميل ألغى الأوردر">العميل ألغى الأوردر</option>
-          <option value="الفرع لا يستطيع توفير الأوردر">الفرع لا يستطيع توفير الأوردر</option>
-          <option value="مشكلة في الأوردر">مشكلة في الأوردر</option>
-          <option value="مشكلة في العنوان أو التوصيل">مشكلة في العنوان أو التوصيل</option>
-          <option value="أخرى">أخرى</option>
-        </select>
-
-        <label class="label">كومنت</label>
-        <textarea id="vizitaComment" class="input" rows="3" placeholder="اكتب أي تفاصيل أو ملاحظات إضافية..."></textarea>
-
-        <button class="btn btn-success" onclick="submitVizitaCancellation()">✅ حفظ إلغاء فيزيتا</button>
-      </div>
-
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr><th>#</th><th>الأبلكيشن</th><th>رقم الأوردر</th><th>الفرع</th><th>سبب الإلغاء</th><th>الكومنت</th><th>الموظف</th><th>التاريخ</th></tr>
-          </thead>
-          <tbody id="vizitaCancellationsTable"></tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-
   <div id="callcenterShortages" class="hidden">
     <div class="card">
       <h2 style="margin-top:0;color:#1e293b;">📞 نواقص كول سنتر</h2>
@@ -997,6 +945,25 @@ table tbody tr:hover{
     </div>
   </div>
 
+  <div id="history" class="hidden">
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;margin-bottom:18px;">
+        <div><h2 style="margin:0;color:#172033;">🕘 HISTORY</h2><p style="margin:6px 0 0;color:#718096;font-size:13px;">سجل نشاط الموقع بالكامل — يظهر للأدمن فقط. يتم الاحتفاظ بالسجل لمدة 10 أيام.</p></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+          <input id="historySearch" class="input" style="width:260px;margin:0;" placeholder="🔎 بحث باسم المستخدم / العملية / القسم" oninput="renderHistory()">
+          <button class="btn btn-secondary" onclick="clearHistoryFilters()">مسح البحث</button>
+          <button class="btn btn-danger" onclick="purgeOldHistory(true)">🗑️ حذف الأقدم من 10 أيام</button>
+        </div>
+      </div>
+      <div id="historyStats" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;"></div>
+      <div style="overflow:auto;border:1px solid #e8edf4;border-radius:14px;">
+        <table style="width:100%;border-collapse:collapse;min-width:980px;"><thead><tr style="background:#f8fafc;color:#475569;font-size:12px;">
+          <th style="padding:12px;text-align:right;">التاريخ والوقت</th><th style="padding:12px;text-align:right;">المستخدم</th><th style="padding:12px;text-align:right;">الدور</th><th style="padding:12px;text-align:right;">العملية</th><th style="padding:12px;text-align:right;">القسم / المسار</th><th style="padding:12px;text-align:right;">التفاصيل</th>
+        </tr></thead><tbody id="historyList"></tbody></table>
+      </div>
+    </div>
+  </div>
+
   <div id="users" class="hidden">
     <div class="card">
       <h2 style="margin-top:0;color:#1e293b;">إدارة المستخدمين</h2>
@@ -1026,7 +993,6 @@ table tbody tr:hover{
           <label class="radio-item"><input type="checkbox" class="userSectionChk" value="shortages"> 📱 نواقص الأبلكيشن</label>
           <label class="radio-item"><input type="checkbox" class="userSectionChk" value="shortagesReport"> 📊 ريبورت نواقص الأبلكيشن</label>
           <label class="radio-item"><input type="checkbox" class="userSectionChk" value="callcenterShortages"> 📞 نواقص كول سنتر</label>
-          <label class="radio-item"><input type="checkbox" class="userSectionChk" value="vizitaCancellations"> 🚫 إلغاءات فيزيتا</label>
           <label class="radio-item"><input type="checkbox" class="userSectionChk" value="ccShortagesReport"> 📊 ريبورت نواقص كول سنتر</label>
           <label class="radio-item"><input type="checkbox" class="userSectionChk" value="archive"> 📦 أرشيف الأوردرات</label>
           <label class="radio-item"><input type="checkbox" class="userSectionChk" value="users"> 👥 المستخدمين</label>
@@ -1308,7 +1274,36 @@ const db = rtdb;
 window.db = db;
 
 let currentUser = null;
-let usersData = [], ordersData = [], appOrdersData = [], branchesData = [], productsData = [], customersData = [], appsData = [], shortagesData = [], ccShortagesData = [], archiveData = [], vizitaCancellationsData = [];
+// ===== HISTORY / ADMIN AUDIT LOG =====
+let historyLoggingReady = false;
+let historyCleanupRunning = false;
+const HISTORY_RETENTION_MS = 10 * 24 * 60 * 60 * 1000;
+let historyListenerRef = null;
+function startHistoryListener(){
+  if(!currentUser || currentUser.role !== 'admin' || historyListenerRef) return;
+  historyListenerRef = rtdb.ref('history');
+  historyListenerRef.on('value', snapshot => {
+    historyData = [];
+    snapshot.forEach(child => historyData.push({ id: child.key, ...child.val() }));
+    historyData.sort((a,b) => Number(b.timestamp||0) - Number(a.timestamp||0));
+    renderHistory();
+  }, error => console.error('History:', error));
+}
+function stopHistoryListener(){
+  if(historyListenerRef){ historyListenerRef.off(); historyListenerRef = null; }
+  historyData = [];
+}
+
+function historySafeText(value,max=700){if(value===undefined||value===null)return '';let t='';try{t=typeof value==='string'?value:JSON.stringify(value,(k,v)=>(k==='pass'||k==='password'?'[hidden]':v));}catch(e){t=String(value)}return String(t).length>max?String(t).slice(0,max)+'…':String(t)}
+function historyPathLabel(path){const map={orders:'الأوردرات',app_orders:'أوردرات الأبلكيشن',shortages:'نواقص الأبلكيشن',callcenter_shortages:'نواقص كول سنتر',users:'المستخدمين',branches:'الفروع',apps:'الأبلكيشنز',products:'الأصناف',customers:'العملاء',archived_orders:'أرشيف الأوردرات',archived_shortages:'أرشيف النواقص',archived_cc_shortages:'أرشيف نواقص كول سنتر',history:'HISTORY'};const root=String(path||'').split('/')[0];return map[root]||root||'الموقع'}
+function historyOperationLabel(op){return({push:'إضافة',set:'حفظ / تعديل',update:'تحديث',remove:'حذف',login:'تسجيل دخول',logout:'تسجيل خروج',navigation:'فتح قسم'})[op]||op}
+function writeHistory(operation,details,extra={}){if(!historyLoggingReady||!currentUser)return Promise.resolve();return db.ref('history').push({userId:String(currentUser.id||''),userName:String(currentUser.name||'غير معروف'),role:String(currentUser.role||''),operation:String(operation||'action'),path:String(extra.path||'site'),details:historySafeText(details,700),timestamp:firebase.database.ServerValue.TIMESTAMP}).catch(e=>console.warn('History log failed:',e))}
+function installHistoryDatabaseLogger(){if(window.__historyDbLoggerInstalled)return;const proto=Object.getPrototypeOf(db.ref('__history_probe__'));['push','set','update','remove'].forEach(method=>{if(typeof proto[method]!=='function')return;const original=proto[method];proto[method]=function(...args){const path=String(this.path&&this.path.toString?this.path.toString():this.toString());const cleanPath=path.replace(/^.*?firebaseio\.com\//,'').replace(/^\//,'');const isHistory=cleanPath==='history'||cleanPath.startsWith('history/');const result=original.apply(this,args);if(!isHistory&&historyLoggingReady&&currentUser){const detail=method==='remove'?'تم حذف السجل/العنصر':historySafeText(args[0],700);Promise.resolve(result).then(()=>writeHistory(method,detail,{path:cleanPath||'database'})).catch(()=>{})}return result}});window.__historyDbLoggerInstalled=true}
+function purgeOldHistory(showMessage=false){if(!currentUser||currentUser.role!=='admin'||historyCleanupRunning)return Promise.resolve();historyCleanupRunning=true;const cutoff=Date.now()-HISTORY_RETENTION_MS;return db.ref('history').once('value').then(snap=>{const updates={};snap.forEach(c=>{const x=c.val()||{};if(Number(x.timestamp||0)>0&&Number(x.timestamp)<cutoff)updates['history/'+c.key]=null});const count=Object.keys(updates).length;if(!count)return 0;return db.ref().update(updates).then(()=>count)}).then(count=>{if(showMessage)showToast(count?`🗑️ تم حذف ${count} سجل أقدم من 10 أيام`:'✅ لا توجد سجلات أقدم من 10 أيام');return count||0}).catch(e=>{console.error('History cleanup:',e);if(showMessage)showToast('❌ تعذر تنظيف HISTORY',true);return 0}).finally(()=>{historyCleanupRunning=false})}
+function renderHistory(){if(!currentUser||currentUser.role!=='admin')return;const list=document.getElementById('historyList'),stats=document.getElementById('historyStats');if(!list)return;const q=String(document.getElementById('historySearch')?.value||'').trim().toLowerCase();const filtered=historyData.filter(h=>{const hay=[h.userName,h.role,h.operation,h.path,historyPathLabel(h.path),h.details].join(' ').toLowerCase();return !q||hay.includes(q)}).sort((a,b)=>Number(b.timestamp||0)-Number(a.timestamp||0));if(stats)stats.innerHTML=`<span class="badge badge-blue">كل السجلات: ${historyData.length}</span><span class="badge badge-purple">المعروض: ${filtered.length}</span><span class="badge badge-green">الاحتفاظ: 10 أيام</span>`;if(!filtered.length){list.innerHTML='<tr><td colspan="6" style="padding:28px;text-align:center;color:#94a3b8;">لا توجد سجلات مطابقة</td></tr>';return}list.innerHTML=filtered.slice(0,1000).map(h=>{const date=h.timestamp?new Date(Number(h.timestamp)).toLocaleString('ar-EG'):'—';return `<tr style="border-top:1px solid #eef2f7;vertical-align:top;"><td style="padding:11px;font-size:12px;white-space:nowrap;color:#475569;">${date}</td><td style="padding:11px;font-weight:800;color:#172033;">${historySafeText(h.userName,80)}</td><td style="padding:11px;"><span class="badge ${h.role==='admin'?'badge-purple':'badge-gray'}">${historySafeText(h.role||'—',40)}</span></td><td style="padding:11px;font-weight:800;color:#2563eb;">${historySafeText(historyOperationLabel(h.operation),50)}</td><td style="padding:11px;"><span class="badge badge-cyan">${historySafeText(historyPathLabel(h.path),80)}</span><div style="font-size:10px;color:#94a3b8;margin-top:3px;direction:ltr;text-align:right;">${historySafeText(h.path,120)}</div></td><td style="padding:11px;max-width:520px;white-space:pre-wrap;word-break:break-word;color:#64748b;font-size:12px;">${historySafeText(h.details,700)}</td></tr>`}).join('')}
+function clearHistoryFilters(){const e=document.getElementById('historySearch');if(e)e.value='';renderHistory()}
+
+let usersData = [], ordersData = [], appOrdersData = [], branchesData = [], productsData = [], customersData = [], appsData = [], shortagesData = [], ccShortagesData = [], archiveData = [], historyData = [];
 let orderItems = [], selectedCustomer = null, selectedShortageProducts = [], selectedCCProduct = null;
 let appOrderItems = [], selectedAppOrderCustomer = null;
 let currentFilter = 'all';
@@ -1320,14 +1315,12 @@ let quickProductContext = 'order', quickCustomerContext = 'order';
 const ROLES = { admin: 'أدمن', manager: 'مانجر', employee: 'Call Center', appuser: 'مستخدم أبلكيشن' };
 const STATUS_LABELS = { pending: 'في الانتظار', completed: 'تم', outdelivery: 'Out of Delivery', cancelled: 'ملغي' };
 const STATUS_CLASSES = { pending: 'status-pending', completed: 'status-completed', outdelivery: 'status-outdelivery', cancelled: 'status-cancelled' };
-const ALL_SECTION_KEYS = ['newOrder','myOrders','allOrders','allAppOrders','doneOrders','cancelOrders','shortages','shortagesReport','callcenterShortages','ccShortagesReport','archive','vizitaCancellations','users','branches','apps','products','customers','requests','editOrders','editShortages','editStatus'];
+const ALL_SECTION_KEYS = ['newOrder','myOrders','allOrders','allAppOrders','doneOrders','cancelOrders','shortages','shortagesReport','callcenterShortages','ccShortagesReport','archive','users','branches','apps','products','customers','history','requests','editOrders','editShortages','editStatus'];
 
 // تعديل: الأقسام الافتراضية حسب الدور (تُستخدم كـ fallback للمستخدمين القدامى بدون تحديد يدوي للأقسام)
 // تعديل: أوردر الأبلكيشن أصبح خانة داخل "أوردر جديد" وليس قسم منفصل
 function getDefaultSectionsForRole(role) {
   const s = {};
-  // قسم فيزيتا متاح لجميع الأدوار التشغيلية لتسجيل إلغاءات فيزيتا.
-  if (['admin','manager','employee','appuser'].includes(role)) s.vizitaCancellations = true;
   if (role === 'admin' || role === 'manager' || role === 'employee' || role === 'appuser') {
     s.newOrder = true;
   }
@@ -1345,7 +1338,7 @@ function getDefaultSectionsForRole(role) {
   if (role === 'admin' || role === 'manager' || role === 'appuser') s.shortagesReport = true;
   if (role === 'admin') {
     s.ccShortagesReport = true; s.archive = true;
-    s.users = true; s.branches = true; s.apps = true; s.products = true; s.customers = true; s.requests = true;
+    s.users = true; s.branches = true; s.apps = true; s.products = true; s.customers = true; s.history = true; s.requests = true;
     s.editOrders = true;
     s.editShortages = true;
     s.editStatus = true;
@@ -1373,6 +1366,8 @@ function canEditOwnRecord(permissionKey, record) {
 }
 
 function initApp() {
+  installHistoryDatabaseLogger();
+  historyLoggingReady = true;
   rtdb.ref('users').on('value', snapshot => {
     usersData = [];
     snapshot.forEach(child => { usersData.push({ id: child.key, ...child.val() }); });
@@ -1431,7 +1426,7 @@ function initApp() {
     snapshot.forEach(child => { branchesData.push({ id: child.key, ...child.val() }); });
     branchesData.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
     if (currentUser) {
-      populateBranchSelect(); populateShortageBranch(); populateCCBranch(); populateAppOrderBranch(); populateVizitaBranch();
+      populateBranchSelect(); populateShortageBranch(); populateCCBranch(); populateAppOrderBranch();
       if (typeof renderBranches === 'function') renderBranches();
     }
   }, error => console.error('Branches:', error));
@@ -1470,14 +1465,6 @@ function initApp() {
     ccShortagesData.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
     if (currentUser) { renderCCShortages(); renderCCShortagesReport(); }
   }, error => console.error('CC Shortages:', error));
-
-  // فيزيتا: متابعة إلغاءات فيزيتا لحظياً من Firebase.
-  rtdb.ref('vizita_cancellations').on('value', snapshot => {
-    vizitaCancellationsData = [];
-    snapshot.forEach(child => { vizitaCancellationsData.push({ id: child.key, ...child.val() }); });
-    vizitaCancellationsData.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
-    if (currentUser && typeof renderVizitaCancellations === 'function') renderVizitaCancellations();
-  }, error => console.error('Vizita Cancellations:', error));
 
   rtdb.ref('archived_orders').on('value', snapshot => {
     archiveData = [];
@@ -1530,17 +1517,6 @@ function populateAppOrderBranch() {
     if(v) sel.value=v;
   });
 }
-
-function populateVizitaBranch() {
-  const sel = document.getElementById('vizitaBranch');
-  if (!sel) return;
-  const v = sel.value;
-  sel.innerHTML = '<option value="">اختر الفرع</option>';
-  branchesData.filter(b => b.isApp).forEach(b => {
-    sel.innerHTML += `<option value="${b.name}">${b.name}</option>`;
-  });
-  if (v && branchesData.some(b => b.isApp && b.name === v)) sel.value = v;
-}
 function populateAppOrderAppSelect() {
   [document.getElementById('newOrderApp'), document.getElementById('editAppOrderApp')].forEach(sel => {
     if(!sel) return; const v=sel.value; sel.innerHTML='<option value="">اختر الأبلكيشن</option>';
@@ -1584,7 +1560,8 @@ function enterDashboard(user, silent) {
   userRoleEl.classList.remove('hidden');
   document.getElementById('userAvatar').textContent = user.name.charAt(0);
   setupNavByRole();
-  populateBranchSelect(); populateShortageBranch(); populateCCBranch(); populateShortageApp(); populateAppOrderBranch(); populateAppOrderAppSelect(); populateVizitaBranch();
+  if (user.role === 'admin') { startHistoryListener(); purgeOldHistory(false); }
+  populateBranchSelect(); populateShortageBranch(); populateCCBranch(); populateShortageApp(); populateAppOrderBranch(); populateAppOrderAppSelect();
   document.getElementById('deliveryDate').value = new Date().toISOString().split('T')[0];
   document.getElementById('appOrderDeliveryDate').value = new Date().toISOString().split('T')[0];
   // تعديل: بعد تسجيل الدخول يبدأ كل مستخدم دائماً من الرئيسية
@@ -1599,7 +1576,7 @@ function doLogin() {
   const pass = document.getElementById('loginPass').value.trim();
   if (!name || !pass) { showToast('❌ أدخل اسم المستخدم وكلمة المرور', true); return; }
   const found = usersData.find(u => u.name.toLowerCase() === name.toLowerCase() && u.pass === pass);
-  if (found) { enterDashboard(found, false); }
+  if (found) { enterDashboard(found, false); setTimeout(() => writeHistory('login', 'تم تسجيل الدخول إلى الموقع', {path:'site/login'}), 0); }
   else { showToast('❌ اسم المستخدم أو كلمة المرور غير صحيحة', true); }
 }
 
@@ -1625,6 +1602,9 @@ document.addEventListener('click', (e) => {
 });
 
 function doLogout() {
+  const logoutUser = currentUser;
+  if (logoutUser) writeHistory('logout', 'تم تسجيل الخروج', {path:'site/logout'});
+  stopHistoryListener();
   currentUser = null;
   try { localStorage.removeItem('currentUserId'); } catch (e) {}
   document.getElementById('dashboard').classList.add('hidden');
@@ -2071,11 +2051,6 @@ function setupNavByRole() {
   if (sections.allAppOrders) appHtml += `<button class="nav-btn" onclick="showTab('allAppOrders')" id="tab-allAppOrders">📊 ريبورت كل أوردرات الأبلكيشن <span class="nav-count hidden" id="navcount-allAppOrders"></span></button>`;
   if (appHtml) nav.innerHTML += buildNavGroup('app', '📱 الأبلكيشن', appHtml);
 
-  // فيزيتا
-  let vizitaHtml = '';
-  if (sections.vizitaCancellations) vizitaHtml += `<button class="nav-btn" onclick="showTab('vizitaCancellations')" id="tab-vizitaCancellations">🚫 إلغاءات فيزيتا</button>`;
-  if (vizitaHtml) nav.innerHTML += buildNavGroup('vizita', '🟣 فيزيتا', vizitaHtml);
-
   // طلبات: روابط النماذج + بيانات الفروع
   let requestsHtml = '';
   if (sections.requests) {
@@ -2105,6 +2080,7 @@ function setupNavByRole() {
   if (sections.apps) adminHtml += `<button class="nav-btn" onclick="showTab('apps')" id="tab-apps">📱 الأبلكيشنز</button>`;
   if (sections.products) adminHtml += `<button class="nav-btn" onclick="showTab('products')" id="tab-products">📦 الأصناف</button>`;
   if (sections.customers) adminHtml += `<button class="nav-btn" onclick="showTab('customers')" id="tab-customers">👤 العملاء</button>`;
+  if (role === 'admin') adminHtml += `<button class="nav-btn" onclick="showTab('history')" id="tab-history">🕘 HISTORY <span class="nav-count hidden" id="navcount-history"></span></button>`;
   if (adminHtml) nav.innerHTML += buildNavGroup('admin', '⚙️ الإدارة', adminHtml);
 
   const accountHtml = `<button type="button" class="nav-btn" onclick="openChangePassModal()"><span class="udi-icon">🔐</span><span>تغيير كلمة المرور</span></button>
@@ -2253,7 +2229,7 @@ function showTab(tab) {
     showToast('⛔ ليس لديك صلاحية للوصول إلى هذا القسم', true);
     tab = 'dashboardHome';
   }
-  ['dashboardHome','newOrder','myOrders','allOrders','allAppOrders','doneOrders','cancelOrders','shortages','shortagesReport','callcenterShortages','ccShortagesReport','archive','vizitaCancellations','users','branches','apps','products','customers'].forEach(t => {
+  ['dashboardHome','newOrder','myOrders','allOrders','allAppOrders','doneOrders','cancelOrders','shortages','shortagesReport','callcenterShortages','ccShortagesReport','archive','users','branches','apps','products','customers'].forEach(t => {
     const el = document.getElementById(t); 
     const btn = document.getElementById('tab-'+t);
     if(el) el.classList.add('hidden'); 
@@ -2261,7 +2237,8 @@ function showTab(tab) {
   });
   const target = document.getElementById(tab); 
   const targetBtn = document.getElementById('tab-'+tab);
-  if(target) target.classList.remove('hidden'); 
+  if(target) target.classList.remove('hidden');
+  if (currentUser && tab !== 'dashboardHome') writeHistory('navigation', 'فتح القسم: ' + tab, {path:'site/' + tab}); 
   if(targetBtn) {
     targetBtn.classList.add('active');
     const lbl = document.getElementById('curTabLabel'); if (lbl) lbl.textContent = targetBtn.textContent.trim();
@@ -2284,8 +2261,8 @@ function showTab(tab) {
   if(tab==='shortages') renderShortages();
   if(tab==='shortagesReport') renderShortagesReport();
   if(tab==='callcenterShortages') renderCCShortages();
-  if(tab==='vizitaCancellations') { populateVizitaBranch(); renderVizitaCancellations(); }
   if(tab==='ccShortagesReport') renderCCShortagesReport();
+  if(tab==='history') renderHistory();
   if(tab==='archive') renderArchive();
   if(tab==='users') renderUsers();
   if(tab==='branches') renderBranches();
@@ -3753,89 +3730,6 @@ function deleteAllShortages() {
   db.ref('shortages').remove()
     .then(() => showToast('🗑️ تم حذف كل النواقص'))
     .catch(err => { showToast('❌ خطأ في الحذف', true); console.error(err); });
-}
-
-// ============================================
-// Vizita Cancellations
-// ============================================
-function submitVizitaCancellation() {
-  if (!hasSectionPermission('vizitaCancellations')) {
-    showToast('⛔ ليس لديك صلاحية للوصول إلى إلغاءات فيزيتا', true);
-    return;
-  }
-
-  const appName = 'فيزيتا';
-  const orderNumber = document.getElementById('vizitaOrderNumber').value.trim();
-  const branch = document.getElementById('vizitaBranch').value;
-  const cancelReason = document.getElementById('vizitaCancelReason').value;
-  const comment = document.getElementById('vizitaComment').value.trim();
-
-  if (!orderNumber) {
-    showToast('❌ رقم الأوردر إجباري', true);
-    document.getElementById('vizitaOrderNumber').focus();
-    return;
-  }
-  if (!branch) {
-    showToast('❌ اختر الفرع', true);
-    return;
-  }
-  if (!cancelReason) {
-    showToast('❌ اختر سبب الإلغاء', true);
-    return;
-  }
-
-  rtdb.ref('vizita_cancellations').push({
-    appName,
-    orderNumber,
-    branch,
-    cancelReason,
-    comment,
-    employee: currentUser.name,
-    employeeId: currentUser.id,
-    date: new Date().toISOString().split('T')[0],
-    timestamp: firebase.database.ServerValue.TIMESTAMP
-  }).then(() => {
-    showToast('✅ تم حفظ إلغاء فيزيتا');
-    clearVizitaCancellationForm();
-  }).catch(err => {
-    showToast('❌ حدث خطأ أثناء حفظ إلغاء فيزيتا', true);
-    console.error(err);
-  });
-}
-
-function clearVizitaCancellationForm() {
-  const order = document.getElementById('vizitaOrderNumber');
-  const branch = document.getElementById('vizitaBranch');
-  const reason = document.getElementById('vizitaCancelReason');
-  const comment = document.getElementById('vizitaComment');
-  if (order) order.value = '';
-  if (branch) branch.value = '';
-  if (reason) reason.value = '';
-  if (comment) comment.value = '';
-  populateVizitaBranch();
-}
-
-function renderVizitaCancellations() {
-  const table = document.getElementById('vizitaCancellationsTable');
-  if (!table) return;
-
-  if (!vizitaCancellationsData.length) {
-    table.innerHTML = '<tr><td colspan="8" class="empty-state">لا توجد إلغاءات فيزيتا مسجلة بعد</td></tr>';
-    return;
-  }
-
-  table.innerHTML = vizitaCancellationsData.map((item, i) => `
-    <tr>
-      <td>${i + 1}</td>
-      <td><span class="badge badge-purple">فيزيتا</span></td>
-      <td><strong>#${item.orderNumber || '-'}</strong></td>
-      <td><span class="badge badge-blue">${item.branch || '-'}</span></td>
-      <td>${item.cancelReason || '-'}</td>
-      <td style="max-width:260px;white-space:pre-line;">${item.comment || '-'}</td>
-      <td><span class="badge badge-gray">${item.employee || '-'}</span></td>
-      <td>${item.date || ''}</td>
-    </tr>
-  `).join('');
 }
 
 // ============================================
