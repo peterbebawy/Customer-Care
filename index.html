@@ -1334,13 +1334,16 @@ function initApp() {
     branchesData = [];
     snapshot.forEach(child => { branchesData.push({ id: child.key, ...child.val() }); });
     branchesData.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+    // مهم: نربط Listener ملفات Excel بعد تحميل الفروع فعلياً، وليس قبلها.
+    setupBranchExcelListeners();
     if (currentUser) {
       populateBranchSelect(); populateShortageBranch(); populateCCBranch(); populateAppOrderBranch();
       if (typeof renderBranches === 'function') renderBranches();
+      if (typeof setupNavByRole === 'function') setupNavByRole();
+      if (typeof renderUsers === 'function' && document.getElementById('users') && !document.getElementById('users').classList.contains('hidden')) renderUsers();
+      renderBranchExcelSections();
     }
   }, error => console.error('Branches:', error));
-
-  setupBranchExcelListeners();
 
   rtdb.ref('products').on('value', snapshot => {
     productsData = [];
@@ -1911,11 +1914,17 @@ function setupDropZone(zoneId, onFile) {
 // Branch Excel Sheets
 // ============================================
 function setupBranchExcelListeners(){
+  // يتم استدعاؤها كل مرة تتغير فيها قائمة الفروع، لذلك الفرع الجديد الذي يتم تفعيل الأبلكيشن له يظهر فوراً.
   getAppBranches().forEach(b=>{
     if(branchExcelListeners[b.id]) return;
     branchExcelListeners[b.id]=true;
-    rtdb.ref('branch_excel/'+b.id).on('value',snap=>{ branchExcelData[b.id]=snap.val()||null; renderBranchExcelSections(); });
+    rtdb.ref('branch_excel/'+b.id).on('value',snap=>{
+      branchExcelData[b.id]=snap.val()||null;
+      renderBranchExcelSections();
+      if(currentTab==='branchExcel_'+b.id) renderBranchExcelSection(b.id);
+    }, err=>console.error('Branch Excel '+b.id+':',err));
   });
+  renderBranchExcelSections();
 }
 function renderBranchExcelSections(){
   const wrap=document.getElementById('branchExcelSections'); if(!wrap) return;
@@ -1938,9 +1947,34 @@ function renderBranchExcelSection(branchId){
 function branchExcelRowHtml(branchId,ri,row,maxCols){ const isAdmin=currentUser.role==='admin'; return `<tr data-row-index="${ri}">${Array.from({length:maxCols},(_,ci)=>{const v=row[ci]??''; if(ci===11 || isAdmin){ return `<td class="${ci===11?'col-l':''}"><input class="branch-excel-cell-input" data-row="${ri}" data-col="${ci}" value="${escapeHtml(v)}" ${(!isAdmin&&ci!==11)?'readonly':''} onchange="saveBranchExcelCell('${branchId}',${ri},${ci},this.value)"></td>`;} return `<td class="${ci===11?'col-l':''}">${escapeHtml(v)}</td>`;}).join('')}</tr>`; }
 function changeBranchExcelSheet(branchId,sheetName){ const d=branchExcelData[branchId]; if(!d) return; if(!Object.values(d.sheets||{}).some(s=>s.name===sheetName)) return; if(currentUser.role!=='admin' && !hasBranchExcelPermission(branchId)) return; rtdb.ref('branch_excel/'+branchId+'/activeSheet').set(sheetName); }
 function filterBranchExcelRows(branchId,q){ const body=document.getElementById('branchExcelBody_'+branchId); if(!body) return; const term=(q||'').toLowerCase(); body.querySelectorAll('tr').forEach(tr=>{ tr.style.display=term && !tr.textContent.toLowerCase().includes(term)?'none':''; }); }
-function safeBranchSheetKey(name){ return encodeURIComponent(name).replace(/\./g,'%2E'); }
+function safeBranchSheetKey(name){
+  // Firebase Realtime Database لا يسمح بـ . # $ [ ] داخل المفاتيح.
+  return 'sheet_' + encodeURIComponent(String(name||''))
+    .replace(/\./g,'%2E').replace(/#/g,'%23').replace(/\$/g,'%24').replace(/\[/g,'%5B').replace(/\]/g,'%5D');
+}
 function saveBranchExcelCell(branchId,rowIndex,colIndex,value){ if(currentUser.role!=='admin' && colIndex!==11){ showToast('⛔ مسموح لك تعديل Column L فقط',true); renderBranchExcelSection(branchId); return; } if(currentUser.role!=='admin' && !hasBranchExcelPermission(branchId)){ showToast('⛔ ليس لديك صلاحية لهذا الفرع',true); return; } const d=branchExcelData[branchId]; if(!d) return; const sheetName=d.activeSheet && Object.values(d.sheets||{}).some(s=>s.name===d.activeSheet) ? d.activeSheet : ((d.sheets&&Object.values(d.sheets)[0])||{}).name; if(!sheetName) return; rtdb.ref(`branch_excel/${branchId}/sheets/${safeBranchSheetKey(sheetName)}/rows/${rowIndex}/${colIndex}`).set(value).then(()=>showToast('✅ تم حفظ التعديل')).catch(err=>{console.error(err);showToast('❌ تعذر حفظ التعديل',true);}); }
-function handleBranchExcelUpload(branchId,file){ if(currentUser.role!=='admin'){showToast('⛔ رفع ملفات Excel للأدمن فقط',true);return;} if(!file)return; const reader=new FileReader(); reader.onload=function(e){ try{ const wb=XLSX.read(e.target.result,{type:'array'}); const sheets={}; wb.SheetNames.forEach(name=>{ const ws=wb.Sheets[name]; sheets[safeBranchSheetKey(name)]={name,rows:XLSX.utils.sheet_to_json(ws,{header:1,defval:''})}; }); const payload={fileName:file.name,uploadedBy:currentUser.name,uploadedAt:Date.now(),activeSheet:wb.SheetNames[0]||'',sheets}; rtdb.ref('branch_excel/'+branchId).set(payload).then(()=>showToast('✅ تم رفع ملف Excel للفرع')).catch(err=>{console.error(err);showToast('❌ تعذر حفظ ملف Excel',true);}); }catch(err){console.error(err);showToast('❌ ملف Excel غير صالح',true);} }; reader.readAsArrayBuffer(file); }
+function handleBranchExcelUpload(branchId,file){
+  if(!currentUser || currentUser.role!=='admin'){showToast('⛔ رفع ملفات Excel للأدمن فقط',true);return;}
+  if(!getAppBranches().some(b=>b.id===branchId)){showToast('⛔ هذا الفرع غير مفعّل للأبلكيشن',true);return;}
+  if(typeof XLSX==='undefined'){showToast('❌ مكتبة Excel لم يتم تحميلها',true);return;}
+  if(!file){return;}
+  const reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      const wb=XLSX.read(e.target.result,{type:'array'});
+      const sheets={};
+      wb.SheetNames.forEach(name=>{
+        const ws=wb.Sheets[name];
+        sheets[safeBranchSheetKey(name)]={name,rows:XLSX.utils.sheet_to_json(ws,{header:1,defval:''})};
+      });
+      const payload={fileName:file.name,uploadedBy:currentUser.name,uploadedAt:Date.now(),activeSheet:wb.SheetNames[0]||'',sheets};
+      rtdb.ref('branch_excel/'+branchId).set(payload)
+        .then(()=>{showToast('✅ تم رفع ملف Excel للفرع');renderBranchExcelSection(branchId);})
+        .catch(err=>{console.error(err);showToast('❌ تعذر حفظ ملف Excel',true);});
+    }catch(err){console.error(err);showToast('❌ ملف Excel غير صالح',true);}
+  };
+  reader.readAsArrayBuffer(file);
+}
 
 // ============================================
 // Navigation & Tabs - MODIFIED
