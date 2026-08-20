@@ -941,7 +941,7 @@ table tbody tr:hover{
           <label class="radio-item"><input type="checkbox" class="userSectionChk" value="apps"> 📱 الأبلكيشنز</label>
           <label class="radio-item"><input type="checkbox" class="userSectionChk" value="products"> 📦 الأصناف</label>
           <label class="radio-item"><input type="checkbox" class="userSectionChk" value="customers"> 👤 العملاء</label>
-          <div id="branchExcelPermissionsBox" style="width:100%;margin-top:8px;padding-top:12px;border-top:1px solid #e5e7eb;font-weight:800;color:#475569;">📱 صلاحيات ملفات Excel لفروع الأبلكيشن</div>
+          <div id="branchExcelPermissionsBox" style="width:100%;margin-top:8px;padding-top:12px;border-top:1px solid #e5e7eb;font-weight:800;color:#475569;">📊 صلاحيات ملفات Excel للفروع</div>
           <div id="branchExcelPermissionChecks" style="width:100%;display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:8px;margin:8px 0 12px;"></div>
           <div style="width:100%;margin-top:8px;padding-top:12px;border-top:1px solid #e5e7eb;font-weight:800;color:#475569;">🔐 صلاحيات العمليات</div>
           <label class="radio-item"><input type="checkbox" class="userSectionChk" value="editOrders"> ✏️ السماح بتعديل الأوردرات</label>
@@ -1235,6 +1235,8 @@ const ALL_SECTION_KEYS = ['newOrder','myOrders','allOrders','allAppOrders','done
 function branchExcelSectionKey(branchId){ return 'branchExcel_' + branchId; }
 function hasBranchExcelPermission(branchId){ if(!currentUser) return false; if(currentUser.role==='admin') return true; const sections=currentUser.sections||getDefaultSectionsForRole(currentUser.role); return sections[branchExcelSectionKey(branchId)]===true; }
 function getAppBranches(){ return (branchesData||[]).filter(b=>b.isApp); }
+// فروع Excel: كل الفروع لها ملف Excel مستقل، سواء كان الفرع مفعّل للأبلكيشن أم لا.
+function getExcelBranches(){ return (branchesData||[]); }
 
 
 // تعديل: الأقسام الافتراضية حسب الدور (تُستخدم كـ fallback للمستخدمين القدامى بدون تحديد يدوي للأقسام)
@@ -1655,7 +1657,7 @@ function renderBranches() {
   list.innerHTML = branchesData.map(b => `
     <div class="user-row">
       <div style="font-weight:700;color:#1e293b;">🏢 ${b.name || ''} ${b.isApp ? '<span class="badge badge-purple" style="margin-right:6px;">📱 أبلكيشن</span>' : '<span class="badge badge-gray" style="margin-right:6px;">عام</span>'}</div>
-      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:flex-end;">${currentUser.role==='admin'?`<span class="edit-link" onclick="toggleBranchApp('${b.id}', ${!b.isApp})">${b.isApp ? '❎ إلغاء الأبلكيشن' : '📱 تفعيل الأبلكيشن'}</span>${b.isApp ? `<span class="edit-link" style="color:#2563eb;font-weight:800;" onclick="showTab('branchExcel_${b.id}')">📊 فتح Excel</span><button type="button" class="btn btn-primary" style="padding:7px 12px;font-size:12px;" onclick="openBranchExcelUpload('${b.id}')">📤 رفع Excel</button>` : ''}<span class="delete-link" onclick="deleteBranch('${b.id}')">🗑️ حذف</span>`:''}</div>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:flex-end;">${currentUser.role==='admin'?`<span class="edit-link" onclick="toggleBranchApp('${b.id}', ${!b.isApp})">${b.isApp ? '❎ إلغاء الأبلكيشن' : '📱 تفعيل الأبلكيشن'}</span><span class="edit-link" style="color:#2563eb;font-weight:800;" onclick="showTab('branchExcel_${b.id}')">📊 فتح Excel / Review</span><button type="button" class="btn btn-primary" style="padding:7px 12px;font-size:12px;" onclick="openBranchExcelUpload('${b.id}')">📤 رفع Excel</button><span class="delete-link" onclick="deleteBranch('${b.id}')">🗑️ حذف</span>`:''}</div>
     </div>
   `).join('');
 }
@@ -1915,7 +1917,7 @@ function setupDropZone(zoneId, onFile) {
 // ============================================
 function setupBranchExcelListeners(){
   // يتم استدعاؤها كل مرة تتغير فيها قائمة الفروع، لذلك الفرع الجديد الذي يتم تفعيل الأبلكيشن له يظهر فوراً.
-  getAppBranches().forEach(b=>{
+  getExcelBranches().forEach(b=>{
     if(branchExcelListeners[b.id]) return;
     branchExcelListeners[b.id]=true;
     rtdb.ref('branch_excel/'+b.id).on('value',snap=>{
@@ -1928,7 +1930,7 @@ function setupBranchExcelListeners(){
 }
 function renderBranchExcelSections(){
   const wrap=document.getElementById('branchExcelSections'); if(!wrap) return;
-  const allowed=getAppBranches().filter(b=>hasBranchExcelPermission(b.id));
+  const allowed=getExcelBranches().filter(b=>hasBranchExcelPermission(b.id));
   const active=currentTab && currentTab.indexOf('branchExcel_')===0 ? currentTab : null;
   wrap.innerHTML=allowed.map(b=>`<div id="branchExcel_${b.id}" class="branch-excel-section hidden"></div>`).join('');
   renderBranchExcelPermissionChecks(currentUser ? (currentUser.sections||getDefaultSectionsForRole(currentUser.role)) : {});
@@ -1936,13 +1938,13 @@ function renderBranchExcelSections(){
 }
 function escapeHtml(v){ return String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m])); }
 function renderBranchExcelSection(branchId){
-  const branch=getAppBranches().find(b=>b.id===branchId); const el=document.getElementById('branchExcel_'+branchId); if(!branch||!el) return;
+  const branch=getExcelBranches().find(b=>b.id===branchId); const el=document.getElementById('branchExcel_'+branchId); if(!branch||!el) return;
   const data=branchExcelData[branchId];
   if(!data){ el.innerHTML=`<div class="card"><h2 style="margin-top:0">📊 ${escapeHtml(branch.name)}</h2><div class="branch-excel-empty">لا يوجد ملف Excel مرفوع لهذا الفرع حتى الآن.</div>${currentUser.role==='admin'?`<div class="branch-excel-toolbar"><button class="btn btn-primary" onclick="document.getElementById('branchExcelFile_${branchId}').click()">📤 رفع Excel</button><input id="branchExcelFile_${branchId}" class="branch-excel-upload" type="file" accept=".xlsx,.xls" onchange="handleBranchExcelUpload('${branchId}',this.files[0])"></div>`:''}</div>`; return; }
   const sheetKeys=Object.keys(data.sheets||{}); const activeName=data.activeSheet&&sheetKeys.some(k=>(data.sheets[k]||{}).name===data.activeSheet)?data.activeSheet:(data.sheets[sheetKeys[0]]||{}).name||''; const activeKey=sheetKeys.find(k=>(data.sheets[k]||{}).name===activeName)||sheetKeys[0]; const sheet=(data.sheets||{})[activeKey]||{rows:[]};
   const rows=sheet.rows||[]; const maxCols=Math.max(12,...rows.map(r=>r.length||0));
   const searchId='branchExcelSearch_'+branchId;
-  el.innerHTML=`<div class="card"><div style="display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap"><h2 style="margin:0">📊 ${escapeHtml(branch.name)} <span class="branch-excel-branch-badge">Excel</span></h2><div class="branch-excel-toolbar" style="margin:0">${currentUser.role==='admin'?`<button class="btn btn-primary" onclick="document.getElementById('branchExcelFile_${branchId}').click()">📤 رفع ملف جديد</button><input id="branchExcelFile_${branchId}" class="branch-excel-upload" type="file" accept=".xlsx,.xls" onchange="handleBranchExcelUpload('${branchId}',this.files[0])">`:''}</div></div><div class="branch-excel-meta">📄 ${escapeHtml(data.fileName||'Excel')} &nbsp; | &nbsp; 👤 ${escapeHtml(data.uploadedBy||'-')} &nbsp; | &nbsp; 🕒 ${data.uploadedAt?new Date(data.uploadedAt).toLocaleString('ar-EG'):'-'}</div><div class="branch-excel-toolbar"><label class="label" style="margin:0">Sheet</label><select class="input" style="max-width:280px;margin:0" onchange="changeBranchExcelSheet('${branchId}',this.value)">${sheetKeys.map(k=>{const n=(data.sheets[k]||{}).name||k; return `<option value="${escapeHtml(n)}" ${n===activeName?'selected':''}>${escapeHtml(n)}</option>`;}).join('')}</select><input id="${searchId}" class="input" style="max-width:300px;margin:0" placeholder="🔍 بحث داخل الشيت" oninput="filterBranchExcelRows('${branchId}',this.value)"></div><div class="branch-excel-table-wrap"><table class="branch-excel-table"><thead><tr>${Array.from({length:maxCols},(_,i)=>`<th class="${i===11?'col-l':''}">${String.fromCharCode(65+i)}</th>`).join('')}</tr></thead><tbody id="branchExcelBody_${branchId}">${rows.map((r,ri)=>branchExcelRowHtml(branchId,ri,r,maxCols)).join('')}</tbody></table></div></div>`;
+  el.innerHTML=`<div class="card"><div style="display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap"><h2 style="margin:0">📊 ${escapeHtml(branch.name)} <span class="branch-excel-branch-badge">Excel</span></h2><div class="branch-excel-toolbar" style="margin:0">${currentUser.role==='admin'?`<button class="btn btn-primary" onclick="document.getElementById('branchExcelFile_${branchId}').click()">📤 رفع ملف جديد</button><input id="branchExcelFile_${branchId}" class="branch-excel-upload" type="file" accept=".xlsx,.xls" onchange="handleBranchExcelUpload('${branchId}',this.files[0])">`:''}</div></div><div class="branch-excel-meta">📄 ${escapeHtml(data.fileName||'Excel')} &nbsp; | &nbsp; 👤 ${escapeHtml(data.uploadedBy||'-')} &nbsp; | &nbsp; 🕒 ${data.uploadedAt?new Date(data.uploadedAt).toLocaleString('ar-EG'):'-'} &nbsp; | &nbsp; ✅ جاهز للمراجعة</div><div class="branch-excel-toolbar"><label class="label" style="margin:0">Sheet</label><select class="input" style="max-width:280px;margin:0" onchange="changeBranchExcelSheet('${branchId}',this.value)">${sheetKeys.map(k=>{const n=(data.sheets[k]||{}).name||k; return `<option value="${escapeHtml(n)}" ${n===activeName?'selected':''}>${escapeHtml(n)}</option>`;}).join('')}</select><input id="${searchId}" class="input" style="max-width:300px;margin:0" placeholder="🔍 بحث داخل الشيت" oninput="filterBranchExcelRows('${branchId}',this.value)"></div><div class="branch-excel-table-wrap"><table class="branch-excel-table"><thead><tr>${Array.from({length:maxCols},(_,i)=>`<th class="${i===11?'col-l':''}">${String.fromCharCode(65+i)}</th>`).join('')}</tr></thead><tbody id="branchExcelBody_${branchId}">${rows.map((r,ri)=>branchExcelRowHtml(branchId,ri,r,maxCols)).join('')}</tbody></table></div></div>`;
 }
 function branchExcelRowHtml(branchId,ri,row,maxCols){ const isAdmin=currentUser.role==='admin'; return `<tr data-row-index="${ri}">${Array.from({length:maxCols},(_,ci)=>{const v=row[ci]??''; if(ci===11 || isAdmin){ return `<td class="${ci===11?'col-l':''}"><input class="branch-excel-cell-input" data-row="${ri}" data-col="${ci}" value="${escapeHtml(v)}" ${(!isAdmin&&ci!==11)?'readonly':''} onchange="saveBranchExcelCell('${branchId}',${ri},${ci},this.value)"></td>`;} return `<td class="${ci===11?'col-l':''}">${escapeHtml(v)}</td>`;}).join('')}</tr>`; }
 function changeBranchExcelSheet(branchId,sheetName){ const d=branchExcelData[branchId]; if(!d) return; if(!Object.values(d.sheets||{}).some(s=>s.name===sheetName)) return; if(currentUser.role!=='admin' && !hasBranchExcelPermission(branchId)) return; rtdb.ref('branch_excel/'+branchId+'/activeSheet').set(sheetName); }
@@ -1955,7 +1957,7 @@ function safeBranchSheetKey(name){
 function saveBranchExcelCell(branchId,rowIndex,colIndex,value){ if(currentUser.role!=='admin' && colIndex!==11){ showToast('⛔ مسموح لك تعديل Column L فقط',true); renderBranchExcelSection(branchId); return; } if(currentUser.role!=='admin' && !hasBranchExcelPermission(branchId)){ showToast('⛔ ليس لديك صلاحية لهذا الفرع',true); return; } const d=branchExcelData[branchId]; if(!d) return; const sheetName=d.activeSheet && Object.values(d.sheets||{}).some(s=>s.name===d.activeSheet) ? d.activeSheet : ((d.sheets&&Object.values(d.sheets)[0])||{}).name; if(!sheetName) return; rtdb.ref(`branch_excel/${branchId}/sheets/${safeBranchSheetKey(sheetName)}/rows/${rowIndex}/${colIndex}`).set(value).then(()=>showToast('✅ تم حفظ التعديل')).catch(err=>{console.error(err);showToast('❌ تعذر حفظ التعديل',true);}); }
 function openBranchExcelUpload(branchId){
   if(!currentUser || currentUser.role!=='admin'){ showToast('⛔ رفع ملفات Excel للأدمن فقط',true); return; }
-  if(!getAppBranches().some(b=>b.id===branchId)){ showToast('⛔ هذا الفرع غير مفعّل للأبلكيشن',true); return; }
+  if(!getExcelBranches().some(b=>b.id===branchId)){ showToast('⛔ الفرع غير موجود',true); return; }
   const input=document.getElementById('branchExcelFile_'+branchId);
   if(input){ input.value=''; input.click(); return; }
   // لو قسم الفرع لم يتم فتحه بعد، افتحه ثم أنشئ input الرفع داخله.
@@ -1968,7 +1970,7 @@ function openBranchExcelUpload(branchId){
 }
 function handleBranchExcelUpload(branchId,file){
   if(!currentUser || currentUser.role!=='admin'){showToast('⛔ رفع ملفات Excel للأدمن فقط',true);return;}
-  if(!getAppBranches().some(b=>b.id===branchId)){showToast('⛔ هذا الفرع غير مفعّل للأبلكيشن',true);return;}
+  if(!getExcelBranches().some(b=>b.id===branchId)){showToast('⛔ الفرع غير موجود',true);return;}
   if(typeof XLSX==='undefined'){showToast('❌ مكتبة Excel لم يتم تحميلها',true);return;}
   if(!file){return;}
   const reader=new FileReader();
@@ -1982,7 +1984,13 @@ function handleBranchExcelUpload(branchId,file){
       });
       const payload={fileName:file.name,uploadedBy:currentUser.name,uploadedAt:Date.now(),activeSheet:wb.SheetNames[0]||'',sheets};
       rtdb.ref('branch_excel/'+branchId).set(payload)
-        .then(()=>{showToast('✅ تم رفع ملف Excel للفرع');renderBranchExcelSection(branchId);})
+        .then(()=>{
+          branchExcelData[branchId]=payload;
+          renderBranchExcelSections();
+          if(currentTab!=='branchExcel_'+branchId) showTab('branchExcel_'+branchId);
+          renderBranchExcelSection(branchId);
+          showToast('✅ تم رفع ملف Excel للفرع وظهر في قسم المراجعة');
+        })
         .catch(err=>{console.error(err);showToast('❌ تعذر حفظ ملف Excel',true);});
     }catch(err){console.error(err);showToast('❌ ملف Excel غير صالح',true);}
   };
@@ -2034,9 +2042,9 @@ function setupNavByRole() {
 
   // ملفات Excel الخاصة بكل فرع مفعّل له الأبلكيشن — كل فرع يظهر كقسم مستقل وبصلاحية منفصلة
   let branchHtml = '';
-  getAppBranches().forEach(b=>{ if(hasBranchExcelPermission(b.id)) branchHtml += `<button class="nav-btn" onclick="showTab('branchExcel_${b.id}')" id="tab-branchExcel_${b.id}">📊 ${b.name}</button>`; });
+  getExcelBranches().forEach(b=>{ if(hasBranchExcelPermission(b.id)) branchHtml += `<button class="nav-btn" onclick="showTab('branchExcel_${b.id}')" id="tab-branchExcel_${b.id}">📊 ${b.name}</button>`; });
   if(branchHtml) nav.innerHTML += buildNavGroup('branchExcel', '📁 ملفات Excel الفروع', branchHtml);
-  if(role==='admin' && !branchHtml && getAppBranches().length===0) {
+  if(role==='admin' && !branchHtml && getExcelBranches().length===0) {
     // لا نظهر قسماً فارغاً؛ زر الرفع متاح من صفحة الفروع بمجرد تفعيل أي فرع كأبلكيشن.
   }
 
