@@ -2378,15 +2378,13 @@ function toggleNavPanel(force){
   sidebar.setAttribute('aria-hidden', shouldOpen?'false':'true');
 }
 
-function toggleNavGroup(group, forceOpen){
+function toggleNavGroup(groupOrLabel, forceOpen){
+  const group = groupOrLabel && groupOrLabel.closest ? groupOrLabel.closest('.nav-group') : groupOrLabel;
   if(!group) return;
-  const submenu=group.querySelector('.nav-submenu');
-  if(!submenu) return;
-  const shouldOpen=typeof forceOpen==='boolean'
-    ? forceOpen
-    : !group.classList.contains('open');
+  const submenu = group.querySelector('.nav-group-body') || group.querySelector('.nav-submenu');
+  const shouldOpen = typeof forceOpen === 'boolean' ? forceOpen : !group.classList.contains('open');
   group.classList.toggle('open', shouldOpen);
-  submenu.classList.toggle('open', shouldOpen);
+  if(submenu) submenu.classList.toggle('open', shouldOpen);
 }
 
 function buildNavGroup(key, label, bodyHtml) {
