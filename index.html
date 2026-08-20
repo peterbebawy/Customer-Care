@@ -2389,6 +2389,87 @@ function toggleNavGroup(group, forceOpen){
   submenu.classList.toggle('open', shouldOpen);
 }
 
+function buildNavGroup(key, label, bodyHtml) {
+  if (!bodyHtml) return '';
+  return `<div class="nav-group" data-group="${key}">
+    <button type="button" class="nav-group-label" onclick="toggleNavGroup(this)">
+      <span>${label}</span><span class="nav-group-caret">▾</span>
+    </button>
+    <div class="nav-group-body">${bodyHtml}</div>
+  </div>`;
+}
+
+function setupNavByRole() {
+  const nav = document.getElementById('mainNav');
+  nav.innerHTML = '';
+  nav.innerHTML += `<button class="nav-btn active" onclick="showTab('dashboardHome')" id="tab-dashboardHome">🏠 الرئيسية</button>`;
+  const role = currentUser.role;
+  const sections = currentUser.sections || getDefaultSectionsForRole(role);
+
+  // العمليات: كل قسم يظهر فقط إذا كانت صلاحيته مفعلة للمستخدم
+  let opsHtml = '';
+  if (sections.newOrder) opsHtml += `<button class="nav-btn" onclick="showTab('newOrder')" id="tab-newOrder">➕ تسجيل أوردر جديد</button>`;
+  if (sections.myOrders) opsHtml += `<button class="nav-btn" onclick="showTab('myOrders')" id="tab-myOrders">📋 أوردراتي <span class="nav-count hidden" id="navcount-myOrders"></span></button>`;
+  if (sections.allOrders) opsHtml += `<button class="nav-btn" onclick="showTab('allOrders')" id="tab-allOrders">📊 كل أوردرات الكول سنتر <span class="nav-count hidden" id="navcount-allOrders"></span></button>`;
+  if (sections.callcenterShortages) opsHtml += `<button class="nav-btn" onclick="showTab('callcenterShortages')" id="tab-callcenterShortages">📞 نواقص كول سنتر</button>`;
+  if (opsHtml) nav.innerHTML += buildNavGroup('ops', '📋 العمليات', opsHtml);
+
+  // الأبلكيشن: نواقص + تقارير الأبلكيشن
+  let appHtml = '';
+  if (sections.shortages) appHtml += `<button class="nav-btn" onclick="showTab('shortages')" id="tab-shortages">📱 نواقص الأبلكيشن</button>`;
+  if (sections.shortagesReport) appHtml += `<button class="nav-btn" onclick="showTab('shortagesReport')" id="tab-shortagesReport">📊 ريبورت نواقص الأبلكيشن</button>`;
+  if (sections.allAppOrders) appHtml += `<button class="nav-btn" onclick="showTab('allAppOrders')" id="tab-allAppOrders">📊 ريبورت كل أوردرات الأبلكيشن <span class="nav-count hidden" id="navcount-allAppOrders"></span></button>`;
+  if (appHtml) nav.innerHTML += buildNavGroup('app', '📱 الأبلكيشن', appHtml);
+
+  // ملفات Excel الخاصة بكل فرع مفعّل له الأبلكيشن — كل فرع يظهر كقسم مستقل وبصلاحية منفصلة
+  let branchHtml = '';
+  getExcelBranches().forEach(b=>{ if(hasBranchExcelPermission(b.id)) branchHtml += `<button class="nav-btn" onclick="showTab('branchExcel_${b.id}')" id="tab-branchExcel_${b.id}">📊 ${b.name}</button>`; });
+  if(branchHtml) nav.innerHTML += buildNavGroup('branchExcel', '📁 ملفات Excel الفروع', branchHtml);
+  if(role==='admin' && !branchHtml && getExcelBranches().length===0) {
+    // لا نظهر قسماً فارغاً؛ زر الرفع متاح من صفحة الفروع بمجرد تفعيل أي فرع كأبلكيشن.
+  }
+
+  // تم: Done + Cancel
+  let doneHtml = '';
+  if (sections.doneOrders) doneHtml += `<button class="nav-btn" onclick="showTab('doneOrders')" id="tab-doneOrders">✅ Done</button>`;
+  if (sections.cancelOrders) doneHtml += `<button class="nav-btn" onclick="showTab('cancelOrders')" id="tab-cancelOrders">❌ Cancel</button>`;
+  if (doneHtml) nav.innerHTML += buildNavGroup('done', '✅ تم', doneHtml);
+
+  // التقارير: تبقى وظائف التقارير كما هي
+  let reportHtml = '';
+  if (sections.ccShortagesReport) reportHtml += `<button class="nav-btn" onclick="showTab('ccShortagesReport')" id="tab-ccShortagesReport">📊 ريبورت نواقص كول سنتر</button>`;
+  if (sections.archive) reportHtml += `<button class="nav-btn" onclick="showTab('archive')" id="tab-archive">📦 أرشيف الأوردرات</button>`;
+  if (reportHtml) nav.innerHTML += buildNavGroup('reports', '📊 التقارير', reportHtml);
+
+  // الإدارة كما هي
+  let adminHtml = '';
+  if (sections.users) adminHtml += `<button class="nav-btn" onclick="showTab('users')" id="tab-users">👥 المستخدمين</button>`;
+  if (sections.branches) adminHtml += `<button class="nav-btn" onclick="showTab('branches')" id="tab-branches">🏢 الفروع</button>`;
+  if (sections.apps) adminHtml += `<button class="nav-btn" onclick="showTab('apps')" id="tab-apps">📱 الأبلكيشنز</button>`;
+  if (sections.products) adminHtml += `<button class="nav-btn" onclick="showTab('products')" id="tab-products">📦 الأصناف</button>`;
+  if (sections.customers) adminHtml += `<button class="nav-btn" onclick="showTab('customers')" id="tab-customers">👤 العملاء</button>`;
+  if (adminHtml) nav.innerHTML += buildNavGroup('admin', '⚙️ الإدارة', adminHtml);
+
+  const accountHtml = `<button type="button" class="nav-btn" onclick="openChangePassModal()"><span class="udi-icon">🔐</span><span>تغيير كلمة المرور</span></button>
+    <button type="button" class="nav-btn nav-btn-danger" onclick="doLogout()"><span class="udi-icon">🚪</span><span>تسجيل الخروج</span></button>`;
+  nav.innerHTML += `<div class="nav-account-group">` + buildNavGroup('account', '👤 الحساب', accountHtml) + `</div>`;
+  updateNavBadges();
+}
+
+function updateNavBadges() {
+  if (!currentUser) return;
+  const setBadge = (elId, count) => {
+    const el = document.getElementById(elId);
+    if (!el) return;
+    if (count > 0) { el.textContent = count > 99 ? '99+' : count; el.classList.remove('hidden'); }
+    else { el.classList.add('hidden'); }
+  };
+  setBadge('navcount-allOrders', ordersData.filter(o => o.status === 'pending').length);
+  setBadge('navcount-allAppOrders', appOrdersData.filter(o => o.status === 'pending').length);
+  if (currentUser) setBadge('navcount-myOrders', ordersData.filter(o => o.employeeId === currentUser.id && o.status === 'pending').length);
+}
+
+
 function showTab(tab) {
   // الرئيسية متاحة دائماً بعد تسجيل الدخول. الأقسام الديناميكية لفروع الأبلكيشن تحتاج صلاحية الفرع.
   const branchTabMatch = /^branchExcel_(.+)$/.exec(tab);
