@@ -357,6 +357,15 @@ table th{background:#f8fafc!important;color:#475467!important;font-weight:700!im
 .branch-excel-table th,.branch-excel-table td{vertical-align:top}
 @media(max-width:700px){.branch-excel-notes-cell{min-width:220px!important;max-width:340px!important}}
 
+
+/* ===== Customer phone review / red match ===== */
+.branch-phone-review{margin:14px 0;padding:14px;border:1px solid #fecaca;background:#fffafa;border-radius:14px}
+.branch-phone-review-title{font-weight:900;color:#991b1b;margin-bottom:8px}
+.branch-phone-review-info{font-size:12px;color:#7f1d1d;margin-top:7px}
+.branch-phone-match{background:#fee2e2!important;color:#991b1b!important;font-weight:800!important}
+.branch-phone-match td,.branch-phone-match input{background:#fee2e2!important;color:#991b1b!important}
+.branch-phone-match td{border-bottom-color:#fca5a5!important}
+.branch-phone-match-badge{display:inline-block;margin-right:6px;padding:2px 7px;border-radius:999px;background:#dc2626;color:#fff;font-size:10px;font-weight:800}
 </style>
 <base target="_blank">
 <style>
@@ -1230,6 +1239,7 @@ let currentUser = null;
 let usersData = [], ordersData = [], appOrdersData = [], branchesData = [], productsData = [], customersData = [], appsData = [], shortagesData = [], ccShortagesData = [], archiveData = [];
 let branchExcelData = {}; // {branchId: {fileName,uploadedAt,uploadedBy,sheets:{sheetKey:{name,rows:[]}}}}
 let branchExcelListeners = {};
+let branchPhoneReviewData = {}; // {branchId:{fileName,uploadedAt,uploadedBy,customers:[{name,phone,normalizedPhone}]}}
 let currentTab = 'dashboardHome';
 let orderItems = [], selectedCustomer = null, selectedShortageProducts = [], selectedCCProduct = null;
 let appOrderItems = [], selectedAppOrderCustomer = null;
@@ -2021,7 +2031,82 @@ function getTodayContinuationSheetName(data){
   while(names.includes(`${base} ${n}`)) n++;
   return `${base} ${n}`;
 }
+
+function normalizeEgyptPhone(v){
+  let x=String(v??'').trim().replace(/[^\d+]/g,'');
+  x=x.replace(/^00/,'+');
+  if(x.startsWith('+20')) x=x.slice(3);
+  else if(x.startsWith('20') && x.length>=11) x=x.slice(2);
+  x=x.replace(/\D/g,'');
+  if(/^1[0125]\d{8}$/.test(x)) x='0'+x;
+  return /^01[0125]\d{8}$/.test(x)?x:'';
+}
+function extractPhonesFromNotes(v){
+  const text=String(v??'');
+  const candidates=text.match(/(?:\+?20[\s\-()]*)?(?:0?1[0125])[\d\s\-()]{7,14}/g)||[];
+  return [...new Set(candidates.map(normalizeEgyptPhone).filter(Boolean))];
+}
+function getBranchReviewCustomers(branchId){ return branchPhoneReviewData[branchId]?.customers||[]; }
+function getBranchReviewPhoneSet(branchId){ return new Set(getBranchReviewCustomers(branchId).map(x=>x.normalizedPhone).filter(Boolean)); }
+function rowHasBranchPhoneMatch(branchId,row,headerCells){
+  const phoneSet=getBranchReviewPhoneSet(branchId); if(!phoneSet.size) return false;
+  let noteIndexes=[];
+  (headerCells||[]).forEach((h,i)=>{ if(normalizeExcelText(h).includes('ملاحظ')) noteIndexes.push(i); });
+  if(!noteIndexes.length) noteIndexes=Array.from({length:(row||[]).length},(_,i)=>i);
+  return noteIndexes.some(i=>extractPhonesFromNotes(row?.[i]).some(p=>phoneSet.has(p)));
+}
+function renderBranchPhoneReviewBox(branchId){
+  const d=branchPhoneReviewData[branchId];
+  const count=d?.customers?.length||0;
+  return `<div class="branch-phone-review">
+    <div class="branch-phone-review-title">📞 مراجعة أرقام العملاء</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+      <button class="btn btn-danger btn-sm" onclick="document.getElementById('branchPhoneReviewFile_${branchId}').click()">📤 رفع ملف العملاء</button>
+      <input id="branchPhoneReviewFile_${branchId}" class="branch-excel-upload" type="file" accept=".xlsx,.xls,.csv" onchange="handleBranchPhoneReviewUpload('${branchId}',this.files[0])">
+      ${count?`<button class="btn btn-secondary btn-sm" onclick="clearBranchPhoneReview('${branchId}')">🗑️ مسح القائمة</button>`:''}
+    </div>
+    <div class="branch-phone-review-info">${count?`تم رفع ${count} عميل. أي رقم مطابق داخل عمود الملاحظات في الشيتات اليومية سيظهر باللون الأحمر.`:'ارفع ملف بالترتيب من اليسار: اسم العميل ثم رقم التليفون.'}</div>
+  </div>`;
+}
+function handleBranchPhoneReviewUpload(branchId,file){
+  if(!file) return;
+  if(typeof XLSX==='undefined'){showToast('❌ مكتبة Excel غير جاهزة',true);return;}
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try{
+      const wb=XLSX.read(e.target.result,{type:'array'});
+      const ws=wb.Sheets[wb.SheetNames[0]];
+      const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+      const customers=[];
+      rows.forEach((r,i)=>{
+        const name=String(r[0]??'').trim();
+        const normalizedPhone=normalizeEgyptPhone(r[1]);
+        if(i===0 && (normalizeExcelText(name).includes('اسم')||normalizeExcelText(String(r[1]??'')).includes('تليفون'))) return;
+        if(name&&normalizedPhone) customers.push({name,phone:String(r[1]??'').trim(),normalizedPhone});
+      });
+      if(!customers.length){showToast('❌ لم يتم العثور على اسم ورقم تليفون صالحين في أول عمودين',true);return;}
+      const data={fileName:file.name,uploadedAt:firebase.database.ServerValue.TIMESTAMP,uploadedBy:currentUser?.name||'',customers};
+      rtdb.ref('branch_phone_review/'+branchId).set(data).then(()=>{
+        showToast(`✅ تم رفع ${customers.length} عميل ومراجعة الشيتات`);
+      }).catch(err=>{console.error(err);showToast('❌ تعذر حفظ قائمة العملاء',true);});
+    }catch(err){console.error(err);showToast('❌ الملف غير صالح',true);}
+  };
+  reader.readAsArrayBuffer(file);
+}
+function clearBranchPhoneReview(branchId){
+  if(!confirm('مسح قائمة العملاء لهذا الفرع؟')) return;
+  rtdb.ref('branch_phone_review/'+branchId).remove().then(()=>showToast('✅ تم مسح القائمة'));
+}
+function listenBranchPhoneReview(branchId){
+  if(branchPhoneReviewData.hasOwnProperty(branchId+'_listening')) return;
+  branchPhoneReviewData[branchId+'_listening']=true;
+  rtdb.ref('branch_phone_review/'+branchId).on('value',snap=>{
+    branchPhoneReviewData[branchId]=snap.val()||null;
+    if(currentTab==='branchExcel_'+branchId) renderBranchExcelSection(branchId);
+  });
+}
 function renderBranchExcelSection(branchId){
+  listenBranchPhoneReview(branchId);
   const branch=getExcelBranches().find(b=>b.id===branchId);
   const el=document.getElementById('branchExcel_'+branchId);
   if(!branch||!el) return;
@@ -2079,6 +2164,7 @@ function renderBranchExcelSection(branchId){
       🕒 ${data.uploadedAt?new Date(data.uploadedAt).toLocaleString('ar-EG'):'-'} &nbsp; | &nbsp;
       ✅ جاهز للمراجعة
     </div>
+    ${renderBranchPhoneReviewBox(branchId)}
     <div class="branch-excel-toolbar">
       <label class="label" style="margin:0">Sheet</label>
       <select class="input" style="max-width:280px;margin:0" onchange="changeBranchExcelSheet('${branchId}',this.value)">${sheetOptions}</select>
@@ -2107,7 +2193,8 @@ function branchExcelRowHtml(branchId,ri,row,maxCols,priorityCols){
   const currentSheetKey=Object.keys(headerRow).find(k=>(headerRow[k]||{}).name===currentSheetName);
   const sheetRows=currentSheetKey ? (headerRow[currentSheetKey]||{}).rows||[] : [];
   const headerCells=sheetRows[0]||[];
-  return `<tr data-row-index="${ri}" data-search-text="${escapeHtml((row||[]).map(v=>String(v??'')).join(' ').toLowerCase())}">
+  const hasPhoneMatch=ri>0 && rowHasBranchPhoneMatch(branchId,row,headerCells);
+  return `<tr class="${hasPhoneMatch?'branch-phone-match':''}" data-row-index="${ri}" data-search-text="${escapeHtml((row||[]).map(v=>String(v??'')).join(' ').toLowerCase())}">
     ${Array.from({length:maxCols},(_,ci)=>{
       const v=row[ci]??'';
       const isPriority=priorityCols.includes(ci);
