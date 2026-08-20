@@ -2046,6 +2046,7 @@ function extractPhonesFromNotes(v){
   const candidates=text.match(/(?:\+?20[\s\-()]*)?(?:0?1[0125])[\d\s\-()]{7,14}/g)||[];
   return [...new Set(candidates.map(normalizeEgyptPhone).filter(Boolean))];
 }
+function isBranchPhoneReviewAdmin(){ return !!currentUser && currentUser.role==='admin'; }
 function getBranchReviewCustomers(branchId){ return branchPhoneReviewData[branchId]?.customers||[]; }
 function getBranchReviewPhoneSet(branchId){ return new Set(getBranchReviewCustomers(branchId).map(x=>x.normalizedPhone).filter(Boolean)); }
 function rowHasBranchPhoneMatch(branchId,row,headerCells){
@@ -2056,19 +2057,35 @@ function rowHasBranchPhoneMatch(branchId,row,headerCells){
   return noteIndexes.some(i=>extractPhonesFromNotes(row?.[i]).some(p=>phoneSet.has(p)));
 }
 function renderBranchPhoneReviewBox(branchId){
-  const d=branchPhoneReviewData[branchId];
-  const count=d?.customers?.length||0;
-  return `<div class="branch-phone-review">
-    <div class="branch-phone-review-title">📞 مراجعة أرقام العملاء</div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-      <button class="btn btn-danger btn-sm" onclick="document.getElementById('branchPhoneReviewFile_${branchId}').click()">📤 رفع ملف العملاء</button>
-      <input id="branchPhoneReviewFile_${branchId}" class="branch-excel-upload" type="file" accept=".xlsx,.xls,.csv" onchange="handleBranchPhoneReviewUpload('${branchId}',this.files[0])">
-      ${count?`<button class="btn btn-secondary btn-sm" onclick="clearBranchPhoneReview('${branchId}')">🗑️ مسح القائمة</button>`:''}
-    </div>
-    <div class="branch-phone-review-info">${count?`تم رفع ${count} عميل. أي رقم مطابق داخل عمود الملاحظات في الشيتات اليومية سيظهر باللون الأحمر.`:'ارفع ملف بالترتيب من اليسار: اسم العميل ثم رقم التليفون.'}</div>
-  </div>`;
+  const d=branchPhoneReviewData[branchId]; const customers=getBranchReviewCustomers(branchId); const count=customers.length; const admin=isBranchPhoneReviewAdmin();
+  const rows=customers.map((c,i)=>`<tr><td>${escapeHtml(c.name)}</td><td dir="ltr">${escapeHtml(c.phone)}</td>${admin?`<td><button class="btn btn-secondary btn-sm" onclick="editBranchPhoneReviewCustomer('${branchId}',${i})">✏️ تعديل</button> <button class="btn btn-danger btn-sm" onclick="deleteBranchPhoneReviewCustomer('${branchId}',${i})">🗑️ حذف</button></td>`:''}</tr>`).join('');
+  return `<div class="branch-phone-review"><div class="branch-phone-review-title">📞 قائمة مراجعة أرقام العملاء</div>
+  ${admin?`<div class="branch-excel-toolbar"><input id="branchPhoneName_${branchId}" class="input" placeholder="اسم العميل" style="max-width:220px;margin:0"><input id="branchPhone_${branchId}" class="input" placeholder="رقم التليفون" dir="ltr" style="max-width:180px;margin:0"><button class="btn btn-success btn-sm" onclick="addBranchPhoneReviewCustomer('${branchId}')">➕ إضافة يدويًا</button><button class="btn btn-danger btn-sm" onclick="document.getElementById('branchPhoneReviewFile_${branchId}').click()">📤 رفع ملف العملاء</button><input id="branchPhoneReviewFile_${branchId}" class="branch-excel-upload" type="file" accept=".xlsx,.xls,.csv" onchange="handleBranchPhoneReviewUpload('${branchId}',this.files[0])">${count?`<button class="btn btn-secondary btn-sm" onclick="clearBranchPhoneReview('${branchId}')">🗑️ مسح القائمة</button>`:''}</div>`:''}
+  <div class="branch-phone-review-info">${count?`عدد العملاء: ${count}. أي رقم مطابق داخل عمود الملاحظات في الشيتات اليومية سيظهر باللون الأحمر.`:'لا توجد أسماء مضافة للقائمة حالياً.'}</div>
+  ${count?`<div class="table-wrap"><table><thead><tr><th>اسم العميل</th><th>رقم التليفون</th>${admin?'<th>إجراءات</th>':''}</tr></thead><tbody>${rows}</tbody></table></div>`:''}</div>`;
 }
+
+function addBranchPhoneReviewCustomer(branchId){
+  if(!isBranchPhoneReviewAdmin()){showToast('❌ هذه الميزة متاحة للأدمن فقط',true);return;}
+  const name=(document.getElementById('branchPhoneName_'+branchId)?.value||'').trim(); const phone=(document.getElementById('branchPhone_'+branchId)?.value||'').trim(); const normalizedPhone=normalizeEgyptPhone(phone);
+  if(!name||!normalizedPhone){showToast('❌ أدخل اسم العميل ورقم تليفون مصري صحيح',true);return;}
+  const d=branchPhoneReviewData[branchId]||{}; const customers=getBranchReviewCustomers(branchId).slice();
+  if(customers.some(c=>c.normalizedPhone===normalizedPhone)){showToast('⚠️ رقم التليفون موجود بالفعل',true);return;}
+  customers.push({name,phone,normalizedPhone});
+  rtdb.ref('branch_phone_review/'+branchId).set({...d,customers,updatedAt:firebase.database.ServerValue.TIMESTAMP,updatedBy:currentUser.name}).then(()=>showToast('✅ تم إضافة العميل'));
+}
+function deleteBranchPhoneReviewCustomer(branchId,index){
+  if(!isBranchPhoneReviewAdmin()){showToast('❌ هذه الميزة متاحة للأدمن فقط',true);return;} if(!confirm('حذف هذا العميل من القائمة؟'))return;
+  const d=branchPhoneReviewData[branchId]||{}; const customers=getBranchReviewCustomers(branchId).slice(); customers.splice(index,1); rtdb.ref('branch_phone_review/'+branchId).set({...d,customers,updatedAt:firebase.database.ServerValue.TIMESTAMP,updatedBy:currentUser.name}).then(()=>showToast('🗑️ تم حذف العميل'));
+}
+function editBranchPhoneReviewCustomer(branchId,index){
+  if(!isBranchPhoneReviewAdmin()){showToast('❌ هذه الميزة متاحة للأدمن فقط',true);return;} const c=getBranchReviewCustomers(branchId)[index]; if(!c)return;
+  const name=prompt('اسم العميل:',c.name); if(name===null)return; const phone=prompt('رقم التليفون:',c.phone); if(phone===null)return; const normalizedPhone=normalizeEgyptPhone(phone);
+  if(!String(name).trim()||!normalizedPhone){showToast('❌ البيانات غير صحيحة',true);return;} const d=branchPhoneReviewData[branchId]||{}; const customers=getBranchReviewCustomers(branchId).slice(); customers[index]={name:String(name).trim(),phone:String(phone).trim(),normalizedPhone}; rtdb.ref('branch_phone_review/'+branchId).set({...d,customers,updatedAt:firebase.database.ServerValue.TIMESTAMP,updatedBy:currentUser.name}).then(()=>showToast('✅ تم تعديل العميل'));
+}
+
 function handleBranchPhoneReviewUpload(branchId,file){
+  if(!isBranchPhoneReviewAdmin()){showToast('❌ هذه الميزة متاحة للأدمن فقط',true);return;}
   if(!file) return;
   if(typeof XLSX==='undefined'){showToast('❌ مكتبة Excel غير جاهزة',true);return;}
   const reader=new FileReader();
@@ -2094,6 +2111,7 @@ function handleBranchPhoneReviewUpload(branchId,file){
   reader.readAsArrayBuffer(file);
 }
 function clearBranchPhoneReview(branchId){
+  if(!isBranchPhoneReviewAdmin()){showToast('❌ هذه الميزة متاحة للأدمن فقط',true);return;}
   if(!confirm('مسح قائمة العملاء لهذا الفرع؟')) return;
   rtdb.ref('branch_phone_review/'+branchId).remove().then(()=>showToast('✅ تم مسح القائمة'));
 }
