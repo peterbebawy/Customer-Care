@@ -1244,7 +1244,23 @@ const STATUS_LABELS = { pending: 'في الانتظار', completed: 'تم', out
 const STATUS_CLASSES = { pending: 'status-pending', completed: 'status-completed', outdelivery: 'status-outdelivery', cancelled: 'status-cancelled' };
 const ALL_SECTION_KEYS = ['newOrder','myOrders','allOrders','allAppOrders','doneOrders','cancelOrders','shortages','shortagesReport','callcenterShortages','ccShortagesReport','archive','users','branches','apps','products','customers','editOrders','editShortages','editStatus'];
 function branchExcelSectionKey(branchId){ return 'branchExcel_' + branchId; }
-function hasBranchExcelPermission(branchId){ if(!currentUser) return false; const branch=(branchesData||[]).find(b=>b.id===branchId); if(!branch || branch.isApp !== true) return false; if(currentUser.role==='admin') return true; const sections=currentUser.sections||getDefaultSectionsForRole(currentUser.role); return sections[branchExcelSectionKey(branchId)]===true; }
+function hasBranchExcelPermission(branchId){
+  if(!currentUser) return false;
+  const branch=(branchesData||[]).find(b=>b.id===branchId);
+  if(!branch || branch.isApp !== true) return false;
+  // Admin + Manager + App User can open branch Excel.
+  // Uploading/replacing/adding continuation remains Admin-only.
+  if(currentUser.role==='admin' || currentUser.role==='manager' || currentUser.role==='appuser') return true;
+  const sections=currentUser.sections||getDefaultSectionsForRole(currentUser.role);
+  return sections[branchExcelSectionKey(branchId)]===true;
+}
+function getBranchExcelEditableColumn(){
+  if(!currentUser) return null;
+  if(currentUser.role==='admin') return -1; // Admin can edit all columns.
+  if(currentUser.role==='appuser') return 10; // Column K.
+  if(currentUser.role==='manager') return 11; // Column L.
+  return null;
+}
 function getAppBranches(){ return (branchesData||[]).filter(b=>b.isApp); }
 // فروع Excel: كل الفروع لها ملف Excel مستقل، سواء كان الفرع مفعّل للأبلكيشن أم لا.
 function getExcelBranches(){ return (branchesData||[]).filter(b => b.isApp === true); }
@@ -2070,7 +2086,7 @@ function renderBranchExcelSection(branchId){
       <button id="${toggleId}" type="button" class="btn btn-secondary branch-excel-toggle" onclick="toggleBranchExcelColumns('${branchId}')">👁️ إظهار باقي الأعمدة</button>
     </div>
     <div class="branch-excel-search-info">
-      الظاهر افتراضياً: <strong>B اسم العميل</strong> + <strong>K</strong> + <strong>L</strong> + صافى الفاتورة + ملاحظات المتابعة. البحث يشمل كل الأعمدة حتى لو كانت مخفية.
+      الظاهر افتراضياً: <strong>B اسم العميل</strong> + <strong>K</strong> + <strong>L</strong> + صافى الفاتورة + ملاحظات المتابعة. <strong>App User يعدّل K فقط، Manager يعدّل L فقط، Admin يعدّل الكل.</strong> البحث يشمل كل الأعمدة حتى لو كانت مخفية.
     </div>
     <div class="branch-excel-table-wrap">
       <table class="branch-excel-table">
@@ -2084,12 +2100,18 @@ function renderBranchExcelSection(branchId){
   </div>`;
 }
 function branchExcelRowHtml(branchId,ri,row,maxCols,priorityCols){
-  const isAdmin=currentUser.role==='admin';
+  const editableCol=getBranchExcelEditableColumn();
+  const isAdmin=editableCol===-1;
+  const headerRow=(branchExcelData[branchId]?.sheets||{});
+  const currentSheetName=branchExcelData[branchId]?.activeSheet;
+  const currentSheetKey=Object.keys(headerRow).find(k=>(headerRow[k]||{}).name===currentSheetName);
+  const sheetRows=currentSheetKey ? (headerRow[currentSheetKey]||{}).rows||[] : [];
+  const headerCells=sheetRows[0]||[];
   return `<tr data-row-index="${ri}" data-search-text="${escapeHtml((row||[]).map(v=>String(v??'')).join(' ').toLowerCase())}">
     ${Array.from({length:maxCols},(_,ci)=>{
       const v=row[ci]??'';
       const isPriority=priorityCols.includes(ci);
-      const header=normalizeExcelText((row?.[ci]??''));
+      const header=normalizeExcelText((headerCells[ci]??''));
       const isNotes=(header.includes('ملاحظ') && (header.includes('متابع')||header.includes('متابعه')||header.includes('follow')));
       const classes=[
         isPriority?'branch-excel-priority':'branch-excel-hidden-col',
@@ -2097,9 +2119,10 @@ function branchExcelRowHtml(branchId,ri,row,maxCols,priorityCols){
         isNotes?'branch-excel-notes-cell':'',
         (ci===1||ci===10||ci===11)?'branch-excel-important-cell':''
       ].filter(Boolean).join(' ');
-      if(ci===11 || isAdmin){
+      const canEdit=isAdmin || editableCol===ci;
+      if(canEdit){
         return `<td class="${classes}" data-col-index="${ci}">
-          <input class="branch-excel-cell-input" data-row="${ri}" data-col="${ci}" value="${escapeHtml(v)}" ${(!isAdmin&&ci!==11)?'readonly':''} onchange="saveBranchExcelCell('${branchId}',${ri},${ci},this.value)">
+          <input class="branch-excel-cell-input" data-row="${ri}" data-col="${ci}" value="${escapeHtml(v)}" onchange="saveBranchExcelCell('${branchId}',${ri},${ci},this.value)">
         </td>`;
       }
       return `<td class="${classes}" data-col-index="${ci}">${escapeHtml(v)}</td>`;
@@ -2137,8 +2160,17 @@ function safeBranchSheetKey(name){
     .replace(/\./g,'%2E').replace(/#/g,'%23').replace(/\$/g,'%24').replace(/\[/g,'%5B').replace(/\]/g,'%5D');
 }
 function saveBranchExcelCell(branchId,rowIndex,colIndex,value){
-  if(currentUser.role!=='admin' && colIndex!==11){
-    showToast('⛔ مسموح لك تعديل Column L فقط',true); renderBranchExcelSection(branchId); return;
+  const editableCol=getBranchExcelEditableColumn();
+  if(editableCol===null){
+    showToast('⛔ ليس لديك صلاحية تعديل ملف Excel',true);
+    renderBranchExcelSection(branchId);
+    return;
+  }
+  if(editableCol!==-1 && colIndex!==editableCol){
+    const allowedLabel=editableCol===10?'Column K':'Column L';
+    showToast(`⛔ مسموح لك تعديل ${allowedLabel} فقط`,true);
+    renderBranchExcelSection(branchId);
+    return;
   }
   if(currentUser.role!=='admin' && !hasBranchExcelPermission(branchId)){
     showToast('⛔ ليس لديك صلاحية لهذا الفرع',true); return;
