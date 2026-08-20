@@ -2049,7 +2049,9 @@ function rowHasBranchPhoneMatch(branchId,row,headerCells){
   return noteIndexes.some(i=>extractPhonesFromNotes(row?.[i]).some(p=>phoneSet.has(p)));
 }
 function renderBranchPhoneReviewBox(branchId){
-  const d=branchPhoneReviewData[branchId]; const customers=getBranchReviewCustomers(branchId); const count=customers.length; const admin=isBranchPhoneReviewAdmin();
+  // قائمة مراجعة أرقام العملاء تظهر بالكامل للأدمن فقط.
+  if(!isBranchPhoneReviewAdmin()) return '';
+  const d=branchPhoneReviewData[branchId]; const customers=getBranchReviewCustomers(branchId); const count=customers.length; const admin=true;
   const rows=customers.map((c,i)=>`<tr><td>${escapeHtml(c.name)}</td><td dir="ltr">${escapeHtml(c.phone)}</td>${admin?`<td><button class="btn btn-secondary btn-sm" onclick="editBranchPhoneReviewCustomer('${branchId}',${i})">✏️ تعديل</button> <button class="btn btn-danger btn-sm" onclick="deleteBranchPhoneReviewCustomer('${branchId}',${i})">🗑️ حذف</button></td>`:''}</tr>`).join('');
   return `<div class="branch-phone-review"><div class="branch-phone-review-title">📞 قائمة مراجعة أرقام العملاء</div>
   ${admin?`<div class="branch-excel-toolbar"><input id="branchPhoneName_${branchId}" class="input" placeholder="اسم العميل" style="max-width:220px;margin:0"><input id="branchPhone_${branchId}" class="input" placeholder="رقم التليفون" dir="ltr" style="max-width:180px;margin:0"><button class="btn btn-success btn-sm" onclick="addBranchPhoneReviewCustomer('${branchId}')">➕ إضافة يدويًا</button><button class="btn btn-danger btn-sm" onclick="document.getElementById('branchPhoneReviewFile_${branchId}').click()">📤 رفع ملف العملاء</button><input id="branchPhoneReviewFile_${branchId}" class="branch-excel-upload" type="file" accept=".xlsx,.xls,.csv" onchange="handleBranchPhoneReviewUpload('${branchId}',this.files[0])">${count?`<button class="btn btn-secondary btn-sm" onclick="clearBranchPhoneReview('${branchId}')">🗑️ مسح القائمة</button>`:''}</div>`:''}
