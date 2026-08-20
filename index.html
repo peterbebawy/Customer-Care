@@ -352,7 +352,7 @@ table th{background:#f8fafc!important;color:#475467!important;font-weight:700!im
 .branch-excel-notes-cell{min-width:280px!important;max-width:520px!important;white-space:normal!important;line-height:1.55}
 .branch-excel-important-cell{font-weight:800!important}
 .branch-excel-hidden-col{display:none!important}
-.branch-excel-toggle{display:inline-flex;align-items:center;gap:6px}
+.branch-excel-toggle{display:inline-flex;align-items:center;gap:6px}.branch-excel-column-filter{position:relative}.branch-excel-column-menu{position:absolute;z-index:20;top:calc(100% + 6px);right:0;min-width:300px;max-width:420px;max-height:360px;overflow:auto;background:#fff;border:1px solid #dbe3ef;border-radius:12px;padding:12px;box-shadow:0 14px 36px rgba(15,23,42,.18)}.branch-excel-column-menu.hidden{display:none}.branch-excel-column-option{display:flex;gap:8px;align-items:center;padding:7px 4px;border-bottom:1px solid #f1f5f9;font-size:12px}
 .branch-excel-search-info{font-size:11px;color:#667085;margin-top:-8px;margin-bottom:10px}
 .branch-excel-table th,.branch-excel-table td{vertical-align:top}
 @media(max-width:700px){.branch-excel-notes-cell{min-width:220px!important;max-width:340px!important}}
@@ -1240,7 +1240,7 @@ let usersData = [], ordersData = [], appOrdersData = [], branchesData = [], prod
 let branchExcelData = {}; // {branchId: {fileName,uploadedAt,uploadedBy,sheets:{sheetKey:{name,rows:[]}}}}
 let branchExcelListeners = {};
 let branchPhoneReviewData = {}; // {branchId:{fileName,uploadedAt,uploadedBy,customers:[{name,phone,normalizedPhone}]}}
-let currentTab = 'dashboardHome';
+let currentTab = localStorage.getItem('cc_current_tab') || 'dashboardHome';
 let orderItems = [], selectedCustomer = null, selectedShortageProducts = [], selectedCCProduct = null;
 let appOrderItems = [], selectedAppOrderCustomer = null;
 let currentFilter = 'all';
@@ -1516,9 +1516,9 @@ function enterDashboard(user, silent) {
   populateBranchSelect(); populateShortageBranch(); populateCCBranch(); populateShortageApp(); populateAppOrderBranch(); populateAppOrderAppSelect();
   document.getElementById('deliveryDate').value = new Date().toISOString().split('T')[0];
   document.getElementById('appOrderDeliveryDate').value = new Date().toISOString().split('T')[0];
-  // تعديل: بعد تسجيل الدخول يبدأ كل مستخدم دائماً من الرئيسية
-  // أما باقي الأقسام فتظهر فقط حسب الصلاحيات الممنوحة له.
-  showTab('dashboardHome');
+  // بعد الريفرش أو إعادة الدخول: ارجع لآخر صفحة مفتوحة، وإذا لم تعد الصلاحية متاحة سيتم الرجوع للرئيسية تلقائياً.
+  const savedTab=localStorage.getItem('cc_current_tab') || currentTab || 'dashboardHome';
+  showTab(savedTab);
   if (!silent) showToast('👋 مرحباً ' + user.name);
   resetIdleTimer();
 }
@@ -2022,15 +2022,7 @@ function sortBranchExcelSheetKeys(data){
     return String(na).localeCompare(String(nb),'ar',{numeric:true,sensitivity:'base'});
   });
 }
-function getTodayContinuationSheetName(data){
-  const d=new Date();
-  const base=`${d.getDate()}-${d.getMonth()+1}-${d.getFullYear()} تكملة`;
-  const names=Object.values(data?.sheets||{}).map(s=>String(s?.name||''));
-  if(!names.includes(base)) return base;
-  let n=2;
-  while(names.includes(`${base} ${n}`)) n++;
-  return `${base} ${n}`;
-}
+function getTodayContinuationSheetName(data){ const d=new Date(); const base=`${d.getDate()}-${d.getMonth()+1}-${d.getFullYear()}`; const names=Object.values(data?.sheets||{}).map(s=>String(s?.name||'')); if(!names.includes(base)) return base; let n=2; while(names.includes(`${base} (${n})`)) n++; return `${base} (${n})`; }
 
 function normalizeEgyptPhone(v){
   let x=String(v??'').trim().replace(/[^\d+]/g,'');
@@ -2187,10 +2179,7 @@ function renderBranchExcelSection(branchId){
       <label class="label" style="margin:0">Sheet</label>
       <select class="input" style="max-width:280px;margin:0" onchange="changeBranchExcelSheet('${branchId}',this.value)">${sheetOptions}</select>
       <input id="${searchId}" class="input" style="max-width:360px;margin:0" placeholder="🔍 ابحث في كل محتوى الشيت..." oninput="filterBranchExcelRows('${branchId}',this.value)">
-      <button id="${toggleId}" type="button" class="btn btn-secondary branch-excel-toggle" onclick="toggleBranchExcelColumns('${branchId}')">👁️ إظهار باقي الأعمدة</button>
-    </div>
-    <div class="branch-excel-search-info">
-      الظاهر افتراضياً: <strong>B اسم العميل</strong> + <strong>K</strong> + <strong>L</strong> + صافى الفاتورة + ملاحظات المتابعة. <strong>App User يعدّل K فقط، Manager يعدّل L فقط، Admin يعدّل الكل.</strong> البحث يشمل كل الأعمدة حتى لو كانت مخفية.
+      <div class="branch-excel-column-filter"><button id="${toggleId}" type="button" class="btn btn-secondary branch-excel-toggle" onclick="toggleBranchExcelColumnFilter('${branchId}')">⚙️ اختيار الأعمدة</button><div id="branchExcelColumnMenu_${branchId}" class="branch-excel-column-menu hidden"><div style="display:flex;gap:8px;margin-bottom:8px"><button type="button" class="btn btn-sm btn-secondary" onclick="setBranchExcelColumns('${branchId}','all')">إظهار الكل</button><button type="button" class="btn btn-sm btn-secondary" onclick="setBranchExcelColumns('${branchId}','priority')">الافتراضي</button></div>${Array.from({length:maxCols},(_,i)=>`<label class="branch-excel-column-option"><input type="checkbox" data-branch-excel-col="${i}" ${priorityCols.includes(i)?'checked':''} onchange="applyBranchExcelColumnFilter('${branchId}')"> <span>${colLabel(i)}</span></label>`).join('')}</div></div>
     </div>
     <div class="branch-excel-table-wrap">
       <table class="branch-excel-table">
@@ -2202,6 +2191,9 @@ function renderBranchExcelSection(branchId){
       </table>
     </div>
   </div>`;
+  const selectedCols=getBranchExcelSelectedColumns(branchId,priorityCols,maxCols);
+  el.querySelectorAll('[data-branch-excel-col]').forEach(c=>c.checked=selectedCols.includes(Number(c.dataset.branchExcelCol)));
+  el.querySelectorAll('[data-col-index]').forEach(cell=>cell.classList.toggle('branch-excel-hidden-col',!selectedCols.includes(Number(cell.dataset.colIndex))));
 }
 function branchExcelRowHtml(branchId,ri,row,maxCols,priorityCols){
   const editableCol=getBranchExcelEditableColumn();
@@ -2234,18 +2226,12 @@ function branchExcelRowHtml(branchId,ri,row,maxCols,priorityCols){
     }).join('')}
   </tr>`;
 }
-function toggleBranchExcelColumns(branchId){
-  const wrap=document.getElementById('branchExcel_'+branchId);
-  if(!wrap) return;
-  const showing=!wrap.classList.contains('show-all-excel-columns');
-  wrap.classList.toggle('show-all-excel-columns',showing);
-  wrap.querySelectorAll('[data-col-index]').forEach(el=>{
-    if(el.classList.contains('branch-excel-priority')) return;
-    el.classList.toggle('branch-excel-hidden-col',!showing);
-  });
-  const btn=wrap.querySelector('#branchExcelToggle_'+branchId);
-  if(btn) btn.textContent=showing?'🙈 إخفاء باقي الأعمدة':'👁️ إظهار باقي الأعمدة';
-}
+function branchExcelColumnStorageKey(branchId){ const d=branchExcelData[branchId]||{}; return `cc_excel_columns_${branchId}_${d.activeSheet||''}`; }
+function getBranchExcelSelectedColumns(branchId,priorityCols,maxCols){ try{const saved=JSON.parse(localStorage.getItem(branchExcelColumnStorageKey(branchId))||'null');if(Array.isArray(saved)&&saved.length)return saved;}catch(e){} return priorityCols.slice(); }
+function toggleBranchExcelColumnFilter(branchId){const menu=document.getElementById('branchExcelColumnMenu_'+branchId);if(menu)menu.classList.toggle('hidden');}
+function setBranchExcelColumns(branchId,mode){const wrap=document.getElementById('branchExcel_'+branchId);if(!wrap)return;const checks=[...wrap.querySelectorAll('[data-branch-excel-col]')];if(mode==='all')checks.forEach(c=>c.checked=true);else{const selected=new Set([...wrap.querySelectorAll('.branch-excel-priority[data-col-index]')].map(x=>Number(x.dataset.colIndex)));checks.forEach(c=>c.checked=selected.has(Number(c.dataset.branchExcelCol)));}applyBranchExcelColumnFilter(branchId);}
+function applyBranchExcelColumnFilter(branchId){const wrap=document.getElementById('branchExcel_'+branchId);if(!wrap)return;const selected=[...wrap.querySelectorAll('[data-branch-excel-col]:checked')].map(c=>Number(c.dataset.branchExcelCol));localStorage.setItem(branchExcelColumnStorageKey(branchId),JSON.stringify(selected));wrap.querySelectorAll('[data-col-index]').forEach(el=>el.classList.toggle('branch-excel-hidden-col',!selected.includes(Number(el.dataset.colIndex))));}
+
 function changeBranchExcelSheet(branchId,sheetName){
   const d=branchExcelData[branchId]; if(!d) return;
   if(!Object.values(d.sheets||{}).some(s=>s.name===sheetName)) return;
@@ -2284,9 +2270,10 @@ function saveBranchExcelCell(branchId,rowIndex,colIndex,value){
   const sheetName=d.activeSheet && Object.values(d.sheets||{}).some(s=>s.name===d.activeSheet)
     ? d.activeSheet : ((d.sheets&&Object.values(d.sheets)[0])||{}).name;
   if(!sheetName) return;
-  rtdb.ref(`branch_excel/${branchId}/sheets/${safeBranchSheetKey(sheetName)}/rows/${rowIndex}/${colIndex}`).set(value)
-    .then(()=>showToast('✅ تم حفظ التعديل'))
-    .catch(err=>{console.error(err);showToast('❌ تعذر حفظ التعديل',true);});
+  const sheetKey=safeBranchSheetKey(sheetName), oldValue=((((d.sheets||{})[sheetKey]||{}).rows||[])[rowIndex]||[])[colIndex]??'', auditKey=rtdb.ref('branch_excel_audit/'+branchId).push().key, now=Date.now(), updateData={};
+  updateData[`branch_excel/${branchId}/sheets/${sheetKey}/rows/${rowIndex}/${colIndex}`]=value;
+  updateData[`branch_excel_audit/${branchId}/${auditKey}`]={userId:currentUser?.id||'',userName:currentUser?.name||'',role:currentUser?.role||'',action:'edit_cell',sheet:sheetName,row:rowIndex+1,column:excelColLetter(colIndex),header:String(((((d.sheets||{})[sheetKey]||{}).rows||[])[0]||[])[colIndex]||''),oldValue:String(oldValue),newValue:String(value??''),at:now};
+  rtdb.ref().update(updateData).then(()=>showToast('✅ تم حفظ التعديل وتسجيله باسم المستخدم')).catch(err=>{console.error(err);showToast('❌ تعذر حفظ التعديل',true);});
 }
 function openBranchExcelUpload(branchId){
   if(!currentUser || currentUser.role!=='admin'){ showToast('⛔ رفع ملفات Excel للأدمن فقط',true); return; }
@@ -2354,17 +2341,9 @@ function handleBranchExcelContinuation(branchId,file){
       const baseData={sheets:mergedSheets};
 
       wb.SheetNames.forEach(name=>{
-        let sheetName=getTodayContinuationSheetName(baseData);
-        if(wb.SheetNames.length>1){
-          const source=String(name||'').trim();
-          if(source) sheetName=`${sheetName} — ${source}`;
-          const names=Object.values(mergedSheets).map(s=>String(s?.name||''));
-          if(names.includes(sheetName)){
-            let n=2, candidate=`${sheetName} ${n}`;
-            while(names.includes(candidate)){ n++; candidate=`${sheetName} ${n}`; }
-            sheetName=candidate;
-          }
-        }
+        let sheetName=String(name||'').trim() || getTodayContinuationSheetName(baseData);
+        const names=Object.values(mergedSheets).map(s=>String(s?.name||''));
+        if(names.includes(sheetName)){ let n=2,candidate=`${sheetName} (${n})`; while(names.includes(candidate)){n++;candidate=`${sheetName} (${n})`;} sheetName=candidate; }
         mergedSheets[safeBranchSheetKey(sheetName)]={
           name:sheetName,
           rows:XLSX.utils.sheet_to_json(wb.Sheets[name],{header:1,defval:''}),
@@ -2622,6 +2601,7 @@ function showTab(tab) {
     tab = 'dashboardHome';
   }
   currentTab = tab;
+  localStorage.setItem('cc_current_tab', currentTab);
   ['dashboardHome','newOrder','myOrders','allOrders','allAppOrders','doneOrders','cancelOrders','shortages','shortagesReport','callcenterShortages','ccShortagesReport','archive','users','branches','apps','products','customers'].forEach(t => {
     const el = document.getElementById(t); 
     const btn = document.getElementById('tab-'+t);
