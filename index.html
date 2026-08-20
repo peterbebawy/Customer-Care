@@ -2270,6 +2270,33 @@ async function handleBranchExcelContinuation(branchId,file){
   }catch(err){console.error(err);showToast('❌ ملف Excel غير صالح أو تعذر حفظه',true);}
 }
 
+function toggleNavPanel(force){
+  const sidebar=document.getElementById('sidebarNav');
+  const backdrop=document.getElementById('sidebarBackdrop');
+  const shell=document.getElementById('appShell');
+  const icon=document.getElementById('topbarMenuIcon');
+  if(!sidebar) return;
+  const shouldOpen = typeof force === 'boolean'
+    ? force
+    : !sidebar.classList.contains('open');
+  sidebar.classList.toggle('open', shouldOpen);
+  if(backdrop) backdrop.classList.toggle('open', shouldOpen);
+  if(shell) shell.classList.toggle('nav-shifted', shouldOpen);
+  if(icon) icon.textContent=shouldOpen?'✕':'☰';
+  sidebar.setAttribute('aria-hidden', shouldOpen?'false':'true');
+}
+
+function toggleNavGroup(group, forceOpen){
+  if(!group) return;
+  const submenu=group.querySelector('.nav-submenu');
+  if(!submenu) return;
+  const shouldOpen=typeof forceOpen==='boolean'
+    ? forceOpen
+    : !group.classList.contains('open');
+  group.classList.toggle('open', shouldOpen);
+  submenu.classList.toggle('open', shouldOpen);
+}
+
 function showTab(tab) {
   // الرئيسية متاحة دائماً بعد تسجيل الدخول. الأقسام الديناميكية لفروع الأبلكيشن تحتاج صلاحية الفرع.
   const branchTabMatch = /^branchExcel_(.+)$/.exec(tab);
