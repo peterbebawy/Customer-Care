@@ -1233,7 +1233,7 @@ const STATUS_LABELS = { pending: 'في الانتظار', completed: 'تم', out
 const STATUS_CLASSES = { pending: 'status-pending', completed: 'status-completed', outdelivery: 'status-outdelivery', cancelled: 'status-cancelled' };
 const ALL_SECTION_KEYS = ['newOrder','myOrders','allOrders','allAppOrders','doneOrders','cancelOrders','shortages','shortagesReport','callcenterShortages','ccShortagesReport','archive','users','branches','apps','products','customers','editOrders','editShortages','editStatus'];
 function branchExcelSectionKey(branchId){ return 'branchExcel_' + branchId; }
-function hasBranchExcelPermission(branchId){ if(!currentUser) return false; if(currentUser.role==='admin') return true; const sections=currentUser.sections||getDefaultSectionsForRole(currentUser.role); return sections[branchExcelSectionKey(branchId)]===true; }
+function hasBranchExcelPermission(branchId){ if(!currentUser) return false; const branch=(branchesData||[]).find(b=>b.id===branchId); if(!branch || !branch.isApp) return false; if(currentUser.role==='admin') return true; const sections=currentUser.sections||getDefaultSectionsForRole(currentUser.role); return sections[branchExcelSectionKey(branchId)]===true; }
 function getAppBranches(){ return (branchesData||[]).filter(b=>b.isApp); }
 // فروع Excel: كل الفروع لها ملف Excel مستقل، سواء كان الفرع مفعّل للأبلكيشن أم لا.
 function getExcelBranches(){ return (branchesData||[]); }
