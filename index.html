@@ -1516,8 +1516,11 @@ function enterDashboard(user, silent) {
   populateBranchSelect(); populateShortageBranch(); populateCCBranch(); populateShortageApp(); populateAppOrderBranch(); populateAppOrderAppSelect();
   document.getElementById('deliveryDate').value = new Date().toISOString().split('T')[0];
   document.getElementById('appOrderDeliveryDate').value = new Date().toISOString().split('T')[0];
-  // بعد الريفرش أو إعادة الدخول: ارجع لآخر صفحة مفتوحة، وإذا لم تعد الصلاحية متاحة سيتم الرجوع للرئيسية تلقائياً.
-  const savedTab=localStorage.getItem('cc_current_tab') || currentTab || 'dashboardHome';
+  // بعد الريفرش أو إعادة الدخول: ارجع لآخر صفحة مفتوحة.
+  // نعطي الأولوية للـ URL ثم localStorage، وإذا لم تعد الصلاحية متاحة showTab يرجع للرئيسية تلقائياً.
+  let hashTab = '';
+  try { hashTab = decodeURIComponent((window.location.hash || '').replace(/^#/, '')); } catch (e) {}
+  const savedTab = hashTab || localStorage.getItem('cc_current_tab') || currentTab || 'dashboardHome';
   showTab(savedTab);
   if (!silent) showToast('👋 مرحباً ' + user.name);
   resetIdleTimer();
@@ -2604,6 +2607,10 @@ function showTab(tab) {
   }
   currentTab = tab;
   localStorage.setItem('cc_current_tab', currentTab);
+  // حفظ الصفحة الحالية أيضاً في الرابط لضمان الرجوع لنفس القسم بعد الـ Refresh.
+  if (window.location.hash !== '#' + encodeURIComponent(currentTab)) {
+    history.replaceState(null, '', '#' + encodeURIComponent(currentTab));
+  }
   ['dashboardHome','newOrder','myOrders','allOrders','allAppOrders','doneOrders','cancelOrders','shortages','shortagesReport','callcenterShortages','ccShortagesReport','archive','users','branches','apps','products','customers'].forEach(t => {
     const el = document.getElementById(t); 
     const btn = document.getElementById('tab-'+t);
@@ -4229,6 +4236,15 @@ function deleteAllCCShortages() {
     .then(() => showToast('🗑️ تم حذف كل النواقص'))
     .catch(err => { showToast('❌ خطأ في الحذف', true); console.error(err); });
 }
+
+
+// عند الرجوع/التقدم في المتصفح افتح القسم الموجود في الرابط.
+window.addEventListener('hashchange', () => {
+  if (!currentUser) return;
+  let tab = '';
+  try { tab = decodeURIComponent((window.location.hash || '').replace(/^#/, '')); } catch (e) {}
+  if (tab && tab !== currentTab) showTab(tab);
+});
 
 window.addEventListener('DOMContentLoaded', () => {
   initApp();
