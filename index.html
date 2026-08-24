@@ -1090,6 +1090,14 @@ table tbody tr:hover{
   </div><!-- /appShell -->
 </div>
 
+<div id="branchCancelledReviewModal" class="hidden modal-overlay">
+  <div class="modal-content" style="max-width:1200px;width:96%;">
+    <div class="modal-header"><h3>❌ مراجعة الأوردرات الملغية</h3><button class="close-btn" onclick="closeBranchCancelledReview()">&times;</button></div>
+    <div id="branchCancelledReviewMeta" style="color:#64748b;font-size:13px;margin-bottom:12px;"></div>
+    <div id="branchCancelledReviewBody" class="table-wrap" style="overflow:auto;max-height:70vh;"></div>
+  </div>
+</div>
+
 <div id="reviewModal" class="hidden modal-overlay">
   <div class="modal-content">
     <div class="modal-header"><h3>📋 مراجعة بيانات الأوردر</h3><button class="close-btn" onclick="closeReviewModal()">&times;</button></div>
@@ -1571,7 +1579,12 @@ function enterDashboard(user, silent) {
   // استعادة جلسة كاملة قبل إظهار الـ Dashboard حتى لا يظهر "تسجيل أوردر جديد" لحظة الـ Refresh.
   let hashTab = '';
   try { hashTab = decodeURIComponent((window.location.hash || '').replace(/^#/, '')); } catch (e) {}
-  const savedTab = hashTab || localStorage.getItem('cc_current_tab') || currentTab || 'dashboardHome';
+  // حساب Branch يبدأ دائمًا من الشاشة الرئيسية الخاصة بالفرع، ولا يفتح قسمًا آخر بعد تسجيل الدخول.
+  const isBranchUser = user.role === 'branch';
+  const savedTab = isBranchUser ? 'dashboardHome' : (hashTab || localStorage.getItem('cc_current_tab') || currentTab || 'dashboardHome');
+  if (isBranchUser) {
+    try { localStorage.setItem('cc_current_tab','dashboardHome'); history.replaceState(null,'','#dashboardHome'); } catch (e) {}
+  }
   restoreTargetTab = savedTab;
   restoringSession = true;
   pendingRestoreTab = /^branchExcel_(.+)$/.test(savedTab) ? savedTab : null;
@@ -2775,40 +2788,83 @@ function renderBranchDashboard(fromValue,toValue,label){
     return;
   }
   const rows=getBranchDashboardRows(branchId,from,to);
-  const total=rows.length, value=sumExcelCol(rows,3);
-  // Column B هو مصدر نوع الأوردر. نجمع كل صيغ الاسم حتى لو كان هناك اختلاف في المسافات/الكتابة.
-  const instashopRows=rows.filter(x=>getExcelOrderType(x.row?.[1]).startsWith('انستاشوب'));
-  const talabatRows=rows.filter(x=>getExcelOrderType(x.row?.[1]).startsWith('طلبات'));
-  const visitaRows=rows.filter(x=>getExcelOrderType(x.row?.[1]).startsWith('فيزيتا'));
+  // لا يدخل في الحساب إلا الأكواد الستة المعتمدة في Column B.
+  const countedRows=rows.filter(x=>!!getExcelOrderType(x.row?.[1]));
+  const instashopRows=countedRows.filter(x=>getExcelOrderType(x.row?.[1]).startsWith('انستاشوب'));
+  const talabatRows=countedRows.filter(x=>getExcelOrderType(x.row?.[1]).startsWith('طلبات'));
+  const visitaRows=countedRows.filter(x=>getExcelOrderType(x.row?.[1]).startsWith('فيزيتا'));
   const instashop=instashopRows.length, instashopValue=sumExcelCol(instashopRows,3);
   const talabat=talabatRows.length, talabatValue=sumExcelCol(talabatRows,3);
   const visita=visitaRows.length, visitaValue=sumExcelCol(visitaRows,3);
+  const total=instashop+talabat+visita;
+  const value=instashopValue+talabatValue+visitaValue;
   const cancelled=countCancelledExcel(rows);
   const money=n=>Number(n||0).toLocaleString('en-US',{maximumFractionDigits:2})+' ج.م';
   const boxes=[
-    ['📦','إجمالي الأوردرات',total,`قيمة الأوردرات: ${money(value)}`],
-    ['💰','قيمة الأوردرات',money(value),'مجموع صافى الفاتورة — Column D'],
-    ['🛍️','انستاشوب',instashop,`قيمة الأوردرات: ${money(instashopValue)} — الأكواد 85 + 84`],
-    ['🛵','طلبات',talabat,`قيمة الأوردرات: ${money(talabatValue)} — الأكواد 68 + 69`],
-    ['🩺','فيزيتا',visita,`قيمة الأوردرات: ${money(visitaValue)} — الأكواد 83 + 82`],
-    ['❌','ملغى',cancelled,'Column F — تحتوي على إلغاء']
+    ['📦','إجمالي الأوردرات',total,money(value),'total'],
+    ['🛍️','انستاشوب',instashop,money(instashopValue),'instashop'],
+    ['🛵','طلبات',talabat,money(talabatValue),'talabat'],
+    ['🩺','فيزيتا',visita,money(visitaValue),'visita'],
+    ['❌','ملغى',cancelled,'اضغط لعرض المراجعة','cancelled']
   ];
   document.getElementById('branchDashMeta').textContent=`${label||'الفترة المحددة'} — ${fromValue} إلى ${toValue}`;
-  document.getElementById('branchDashKpis').innerHTML=boxes.map(k=>`<div class="kpi-card"><div class="kpi-top"><span>${k[1]}</span><span class="kpi-icon">${k[0]}</span></div><div class="kpi-value">${k[2]}</div><div class="kpi-note" style="line-height:1.7">${k[3]}</div></div>`).join('');
+  document.getElementById('branchDashKpis').innerHTML=boxes.map(k=>{
+    const clickable=k[4]==='cancelled';
+    return `<div class="kpi-card" ${clickable?`role="button" tabindex="0" onclick="showBranchCancelledReview()" onkeydown="if(event.key==='Enter'||event.key===' ')showBranchCancelledReview()" style="cursor:pointer;"`:''}>`+
+      `<div class="kpi-top"><span>${k[1]}</span><span class="kpi-icon">${k[0]}</span></div>`+
+      `<div class="kpi-value">${k[2]}</div>`+
+      `<div class="kpi-note" style="line-height:1.7">${k[3]}</div></div>`;
+  }).join('');
 }
-function setBranchDashboardDatesDefault(){
-  const now=new Date();
-  const from=new Date(now.getFullYear(),now.getMonth(),1);
-  const to=new Date(now.getFullYear(),now.getMonth()+1,0);
+function getLatestBranchExcelDate(branchId){
+  const data=branchExcelData[branchId];
+  const today=new Date();
+  const todayStart=new Date(today.getFullYear(),today.getMonth(),today.getDate());
+  let latest=null;
+  Object.values(data?.sheets||{}).forEach(sh=>{
+    const d=getBranchExcelSheetDate(sh.name);
+    if(!d || d>todayStart) return;
+    if(!latest || d>latest) latest=d;
+  });
+  return latest || new Date(today.getFullYear(),today.getMonth(),today.getDate()-1);
+}
+function setBranchDashboardDatesDefault(force=false){
+  const branchId=currentUser?.branchId || currentUser?.branch || currentUser?.branchID;
+  const d=getLatestBranchExcelDate(branchId);
+  const key=branchExcelDateKey(d);
   const f=document.getElementById('branchDashFrom'), t=document.getElementById('branchDashTo');
-  if(f && !f.value) f.value=branchExcelDateKey(from);
-  if(t && !t.value) t.value=branchExcelDateKey(to);
+  if(f && (force || !f.value)) f.value=key;
+  if(t && (force || !t.value)) t.value=key;
 }
 function refreshBranchDashboard(){
   setBranchDashboardDatesDefault();
   const f=document.getElementById('branchDashFrom')?.value, t=document.getElementById('branchDashTo')?.value;
   renderBranchDashboard(f,t,'الفترة المحددة');
   document.getElementById('branchDashLastOrders')?.classList.add('hidden');
+}
+function showBranchCancelledReview(){
+  const branchId=currentUser?.branchId || currentUser?.branch || currentUser?.branchID;
+  const f=document.getElementById('branchDashFrom')?.value, t=document.getElementById('branchDashTo')?.value;
+  const from=branchExcelParseDateInput(f), to=branchExcelParseDateInput(t);
+  if(!branchId || !from || !to) return;
+  const rows=getBranchDashboardRows(branchId,from,to).filter(x=>normalizeExcelText(x.row?.[5]).includes('الغاء') || normalizeExcelText(x.row?.[5]).includes('إلغاء'));
+  const modal=document.getElementById('branchCancelledReviewModal');
+  const body=document.getElementById('branchCancelledReviewBody');
+  const meta=document.getElementById('branchCancelledReviewMeta');
+  if(!modal||!body) return;
+  if(meta) meta.textContent=`عدد الأوردرات الملغية: ${rows.length} — الفترة ${f} إلى ${t}`;
+  if(!rows.length){
+    body.innerHTML='<div style="padding:30px;text-align:center;color:#64748b;">لا توجد أوردرات ملغية في الفترة المحددة.</div>';
+  } else {
+    const maxCols=Math.max(...rows.map(x=>(x.row||[]).length),6);
+    const firstHeader=rows.find(x=>Array.isArray(x.row)&&x.row.length)?.row||[];
+    const headers=Array.from({length:maxCols},(_,i)=>String(firstHeader[i]??`Column ${String.fromCharCode(65+i)}`));
+    body.innerHTML=`<table style="width:max-content;min-width:100%;border-collapse:collapse;"><thead><tr>${headers.map((h,i)=>`<th style="padding:9px;border-bottom:1px solid #e2e8f0;background:#f8fafc;white-space:nowrap;">${escapeHtml(h||`Column ${String.fromCharCode(65+i)}`)}</th>`).join('')}</tr></thead><tbody>${rows.map(x=>`<tr>${Array.from({length:maxCols},(_,i)=>`<td style="padding:8px;border-bottom:1px solid #eef2f7;vertical-align:top;">${escapeHtml(x.row?.[i]??'')}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
+  }
+  modal.classList.remove('hidden');
+}
+function closeBranchCancelledReview(){
+  document.getElementById('branchCancelledReviewModal')?.classList.add('hidden');
 }
 function showLastBranchOrders(){
   const branchId=currentUser?.branchId || currentUser?.branch || currentUser?.branchID;
@@ -2833,7 +2889,7 @@ function renderDashboardHome(){
   if(currentUser?.role==='branch'){
     document.getElementById('homeKpis').innerHTML='';
     document.querySelector('.home-grid')?.classList.add('hidden');
-    setBranchDashboardDatesDefault();
+    setBranchDashboardDatesDefault(true);
     refreshBranchDashboard();
     return;
   }
