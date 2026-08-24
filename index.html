@@ -660,6 +660,20 @@ table tbody tr:hover{
       <div class="home-date" id="homeDate">اليوم</div>
     </div>
     <div class="kpi-grid" id="homeKpis"></div>
+    <div id="branchDashboardPanel" class="hidden" style="margin-top:18px;">
+      <div class="home-panel" style="margin-bottom:16px;">
+        <div class="home-panel-head"><h3>📊 متابعة الفرع من Excel</h3><span>Branch Excel Dashboard</span></div>
+        <div style="display:flex;gap:10px;align-items:end;flex-wrap:wrap;margin-bottom:16px;">
+          <div><label class="label">من تاريخ</label><input type="date" id="branchDashFrom" class="input" style="margin:0;"></div>
+          <div><label class="label">إلى تاريخ</label><input type="date" id="branchDashTo" class="input" style="margin:0;"></div>
+          <button class="btn btn-primary" type="button" onclick="refreshBranchDashboard()">🔄 تحديث</button>
+          <button class="btn btn-success" type="button" onclick="showLastBranchOrders()">🕛 آخر أوردرات اليوم</button>
+        </div>
+        <div id="branchDashMeta" style="color:#64748b;font-size:13px;margin-bottom:12px;"></div>
+        <div class="kpi-grid" id="branchDashKpis"></div>
+        <div id="branchDashLastOrders" class="hidden" style="margin-top:16px;"></div>
+      </div>
+    </div>
     <div class="home-grid">
       <div class="home-panel"><div class="home-panel-head"><h3>إجراءات سريعة</h3><span>Quick actions</span></div><div class="quick-grid" id="homeQuickActions"></div></div>
       <div class="home-panel"><div class="home-panel-head"><h3>حالة التشغيل</h3><span>Live status</span></div><div class="status-list" id="homeStatusList"></div></div>
@@ -945,7 +959,13 @@ table tbody tr:hover{
           <option value="manager">Manager - مانجر</option>
           <option value="employee">Call Center</option>
           <option value="appuser">App User - مستخدم أبلكيشن</option>
+          <option value="branch">Branch - فرع</option>
         </select>
+        <div id="branchUserAssignmentBox" class="hidden" style="margin:12px 0 16px;padding:14px;background:#fff7ed;border:1px solid #fed7aa;border-radius:12px;">
+          <label class="label" style="margin-bottom:6px;">🏢 الفرع المرتبط بحساب Branch</label>
+          <select id="newUserBranchId" class="input" style="margin:0;"><option value="">اختر الفرع</option></select>
+          <div style="font-size:12px;color:#9a3412;margin-top:6px;">حساب Branch يرى لوحة الإكسيل والبيانات الخاصة بهذا الفرع فقط.</div>
+        </div>
         <label class="label">الأقسام المتاحة لهذا المستخدم (تحديد يدوي)</label>
         <div class="radio-group" id="userSectionsBox">
           <label class="radio-item"><input type="checkbox" class="userSectionChk" value="newOrder"> ➕ تسجيل أوردر جديد</label>
@@ -964,6 +984,7 @@ table tbody tr:hover{
           <label class="radio-item"><input type="checkbox" class="userSectionChk" value="apps"> 📱 الأبلكيشنز</label>
           <label class="radio-item"><input type="checkbox" class="userSectionChk" value="products"> 📦 الأصناف</label>
           <label class="radio-item"><input type="checkbox" class="userSectionChk" value="customers"> 👤 العملاء</label>
+          <label class="radio-item"><input type="checkbox" class="userSectionChk" value="branchExcelSections"> 📊 متابعة الفروع Excel</label>
           <div id="branchExcelPermissionsBox" style="width:100%;margin-top:8px;padding-top:12px;border-top:1px solid #e5e7eb;font-weight:800;color:#475569;">📊 صلاحيات ملفات Excel للفروع</div>
           <div id="branchExcelPermissionChecks" style="width:100%;display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:8px;margin:8px 0 12px;"></div>
           <div style="width:100%;margin-top:8px;padding-top:12px;border-top:1px solid #e5e7eb;font-weight:800;color:#475569;">🔐 صلاحيات العمليات</div>
@@ -1255,19 +1276,24 @@ let productSelIndex = -1, customerSelIndex = -1, shortageProductSelIndex = -1, c
 let appOrderProductSelIndex = -1, appOrderCustomerSelIndex = -1;
 let quickProductContext = 'order', quickCustomerContext = 'order';
 
-const ROLES = { admin: 'أدمن', manager: 'مانجر', employee: 'Call Center', appuser: 'مستخدم أبلكيشن' };
+const ROLES = { admin: 'أدمن', manager: 'مانجر', employee: 'Call Center', appuser: 'مستخدم أبلكيشن', branch: 'Branch' };
 const STATUS_LABELS = { pending: 'في الانتظار', completed: 'تم', outdelivery: 'Out of Delivery', cancelled: 'ملغي' };
 const STATUS_CLASSES = { pending: 'status-pending', completed: 'status-completed', outdelivery: 'status-outdelivery', cancelled: 'status-cancelled' };
-const ALL_SECTION_KEYS = ['newOrder','myOrders','allOrders','allAppOrders','doneOrders','cancelOrders','shortages','shortagesReport','callcenterShortages','ccShortagesReport','archive','users','branches','apps','products','customers','editOrders','editShortages','editStatus'];
+const ALL_SECTION_KEYS = ['newOrder','myOrders','allOrders','allAppOrders','doneOrders','cancelOrders','shortages','shortagesReport','callcenterShortages','ccShortagesReport','archive','users','branches','apps','products','customers','branchExcelSections','editOrders','editShortages','editStatus'];
 function branchExcelSectionKey(branchId){ return 'branchExcel_' + branchId; }
 function hasBranchExcelPermission(branchId){
   if(!currentUser) return false;
   const branch=(branchesData||[]).find(b=>b.id===branchId);
-  if(!branch || branch.isApp !== true) return false;
-  // Admin + Manager + App User can open branch Excel.
-  // Uploading/replacing/adding continuation remains Admin-only.
-  if(currentUser.role==='admin' || currentUser.role==='manager' || currentUser.role==='appuser') return true;
+  if(!branch) return false;
+  if(currentUser.role==='admin') return true;
   const sections=currentUser.sections||getDefaultSectionsForRole(currentUser.role);
+  // مستخدم Branch مربوط بفرع واحد فقط، ولا يرى ملفات أي فرع آخر.
+  if(currentUser.role==='branch'){
+    const assigned = currentUser.branchId || currentUser.branch || currentUser.branchID || '';
+    return assigned===branchId && (sections.branchExcelSections!==false);
+  }
+  // باقي الأدوار تحتفظ بصلاحيات Excel الحالية، مع إمكانية منح صلاحية موحدة.
+  if(sections.branchExcelSections===true) return true;
   return sections[branchExcelSectionKey(branchId)]===true;
 }
 function getBranchExcelEditableColumn(){
@@ -1278,7 +1304,7 @@ function getBranchExcelEditableColumn(){
 }
 function getAppBranches(){ return (branchesData||[]).filter(b=>b.isApp); }
 // فروع Excel: كل الفروع لها ملف Excel مستقل، سواء كان الفرع مفعّل للأبلكيشن أم لا.
-function getExcelBranches(){ return (branchesData||[]).filter(b => b.isApp === true); }
+function getExcelBranches(){ return (branchesData||[]); }
 
 
 // تعديل: الأقسام الافتراضية حسب الدور (تُستخدم كـ fallback للمستخدمين القدامى بدون تحديد يدوي للأقسام)
@@ -1287,6 +1313,9 @@ function getDefaultSectionsForRole(role) {
   const s = {};
   if (role === 'admin' || role === 'manager' || role === 'employee' || role === 'appuser') {
     s.newOrder = true;
+  }
+  if (role === 'branch') {
+    s.branchExcelSections = true;
   }
   if (role === 'employee' || role === 'admin') s.myOrders = true;
   if (role === 'manager' || role === 'admin') s.allOrders = true;
@@ -1381,7 +1410,7 @@ function initApp() {
     // مهم: نربط Listener ملفات Excel بعد تحميل الفروع فعلياً، وليس قبلها.
     setupBranchExcelListeners();
     if (currentUser) {
-      populateBranchSelect(); populateShortageBranch(); populateCCBranch(); populateAppOrderBranch();
+      populateBranchSelect(); populateShortageBranch(); populateCCBranch(); populateAppOrderBranch(); populateBranchUserSelect(currentUser?.branchId||'');
       if (typeof renderBranches === 'function') renderBranches();
       if (typeof setupNavByRole === 'function') setupNavByRole();
       if (typeof renderUsers === 'function' && document.getElementById('users') && !document.getElementById('users').classList.contains('hidden')) renderUsers();
@@ -1529,6 +1558,7 @@ function enterDashboard(user, silent) {
   let roleLabel = 'Call Center';
   if (user.role === 'admin') roleLabel = 'Call Center (Admin)';
   else if (user.role === 'appuser') roleLabel = 'Call Center (App)';
+  else if (user.role === 'branch') roleLabel = 'Branch';
   userRoleEl.textContent = roleLabel;
   userRoleEl.classList.remove('hidden');
   document.getElementById('userAvatar').textContent = user.name.charAt(0);
@@ -1657,6 +1687,14 @@ function renderUsers() {
 }
 
 // تعديل: تحديد الأقسام تلقائياً كبداية عند اختيار الدور (يظل قابل للتعديل يدوياً)
+function populateBranchUserSelect(selectedId=''){
+  const box=document.getElementById('branchUserAssignmentBox');
+  const sel=document.getElementById('newUserBranchId');
+  if(!box||!sel) return;
+  const role=document.getElementById('newUserRole')?.value;
+  box.classList.toggle('hidden',role!=='branch');
+  sel.innerHTML='<option value="">اختر الفرع</option>'+(branchesData||[]).map(b=>`<option value="${escapeHtml(b.id)}" ${b.id===selectedId?'selected':''}>${escapeHtml(b.name||'فرع')}</option>`).join('');
+}
 function applyRoleDefaults() {
   const editId = document.getElementById('editUserId').value;
   if (editId) return; // لا تلمس التحديد اليدوي عند التعديل
@@ -1664,6 +1702,7 @@ function applyRoleDefaults() {
   const defaults = getDefaultSectionsForRole(role);
   document.querySelectorAll('.userSectionChk').forEach(chk => { chk.checked = !!defaults[chk.value]; });
   renderBranchExcelPermissionChecks(defaults);
+  populateBranchUserSelect();
 }
 
 
@@ -1672,13 +1711,18 @@ function addUser() {
   const name = document.getElementById('newUserName').value.trim();
   const pass = document.getElementById('newUserPass').value.trim();
   const role = document.getElementById('newUserRole').value;
+  const branchId = document.getElementById('newUserBranchId')?.value || '';
   const sections = {};
   document.querySelectorAll('.userSectionChk').forEach(chk => { sections[chk.value] = chk.checked; });
   collectBranchExcelPermissions(sections);
   if (!name) { showToast('❌ أدخل اسم المستخدم', true); return; }
   if (!pass) { showToast('❌ أدخل كلمة المرور', true); return; }
   if (!role) { showToast('❌ اختر الدور', true); return; }
-  const userData = { name, pass, role, sections };
+  if (role==='branch') {
+    if (!branchId) { showToast('❌ اختر الفرع المرتبط بحساب Branch', true); return; }
+    if (!(branchesData||[]).some(b => String(b.id) === String(branchId))) { showToast('❌ الفرع المختار غير موجود، اختر الفرع مرة أخرى', true); populateBranchUserSelect(branchId); return; }
+  }
+  const userData = { name, pass, role, sections, branchId: role==='branch' ? branchId : '' };
   if (editId) {
     rtdb.ref('users/' + editId).update(userData)
       .then(() => { showToast('✅ تم تحديث بيانات المستخدم'); cancelEditUser(); })
@@ -1698,6 +1742,7 @@ function editUser(id) {
   document.getElementById('newUserName').value = u.name || '';
   document.getElementById('newUserPass').value = u.pass || '';
   document.getElementById('newUserRole').value = u.role || '';
+  populateBranchUserSelect(u.branchId||'');
   const sections = { ...getDefaultSectionsForRole(u.role), ...(u.sections || {}) };
   document.querySelectorAll('.userSectionChk').forEach(chk => { chk.checked = !!sections[chk.value]; });
   renderBranchExcelPermissionChecks(sections);
@@ -1710,6 +1755,7 @@ function cancelEditUser() {
   document.getElementById('newUserName').value = '';
   document.getElementById('newUserPass').value = '';
   document.getElementById('newUserRole').value = '';
+  populateBranchUserSelect('');
   document.querySelectorAll('.userSectionChk').forEach(chk => { chk.checked = false; });
   renderBranchExcelPermissionChecks({});
   document.getElementById('cancelEditBtn').classList.add('hidden');
@@ -1998,6 +2044,7 @@ function setupBranchExcelListeners(){
       branchExcelData[b.id]=snap.val()||null;
       renderBranchExcelSections();
       if(currentTab==='branchExcel_'+b.id) renderBranchExcelSection(b.id);
+      if(currentUser?.role==='branch' && currentUser.branchId===b.id && currentTab==='dashboardHome') renderDashboardHome();
     }, err=>console.error('Branch Excel '+b.id+':',err));
   });
   renderBranchExcelSections();
@@ -2006,7 +2053,7 @@ function renderBranchExcelSections(){
   const wrap=document.getElementById('branchExcelSections'); if(!wrap) return;
   const allowed=getExcelBranches().filter(b=>hasBranchExcelPermission(b.id));
   const activeId=currentTab && currentTab.indexOf('branchExcel_')===0 ? currentTab.substring('branchExcel_'.length) : (allowed[0]?.id||'');
-  wrap.innerHTML=`
+  const pickerHtml = allowed.length ? `
     <div class="card branch-excel-branch-picker" style="margin-bottom:14px">
       <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
         <label class="label" style="margin:0;font-weight:800">🏢 اختر الفرع</label>
@@ -2014,8 +2061,8 @@ function renderBranchExcelSections(){
           ${allowed.map(b=>`<option value="${escapeHtml(b.id)}" ${b.id===activeId?'selected':''}>${escapeHtml(b.name||'فرع')}</option>`).join('')}
         </select>
       </div>
-    </div>
-    ${allowed.map(b=>`<div id="branchExcel_${b.id}" class="branch-excel-section hidden"></div>`).join('')}`;
+    </div>` : `<div class="card"><div class="branch-excel-empty">لا توجد ملفات Excel متاحة لهذا المستخدم.</div></div>`;
+  wrap.innerHTML=pickerHtml + allowed.map(b=>`<div id="branchExcel_${b.id}" class="branch-excel-section hidden"></div>`).join('');
   renderBranchExcelPermissionChecks(currentUser ? (currentUser.sections||getDefaultSectionsForRole(currentUser.role)) : {});
   // بعد اكتمال تحميل الفروع، نفّذ الصفحة التي كانت محفوظة قبل الـ Refresh.
   if (pendingRestoreTab && /^branchExcel_(.+)$/.test(pendingRestoreTab)) {
@@ -2548,12 +2595,10 @@ function setupNavByRole() {
   if (sections.allAppOrders) appHtml += `<button class="nav-btn" onclick="showTab('allAppOrders')" id="tab-allAppOrders">📊 ريبورت كل أوردرات الأبلكيشن <span class="nav-count hidden" id="navcount-allAppOrders"></span></button>`;
   if (appHtml) nav.innerHTML += buildNavGroup('app', '📱 الأبلكيشن', appHtml);
 
-  // ملفات Excel الخاصة بكل فرع مفعّل له الأبلكيشن — كل فرع يظهر كقسم مستقل وبصلاحية منفصلة
-  let branchHtml = '';
-  getExcelBranches().forEach(b=>{ if(hasBranchExcelPermission(b.id)) branchHtml += `<button class="nav-btn" onclick="showTab('branchExcel_${b.id}')" id="tab-branchExcel_${b.id}">📊 ${b.name}</button>`; });
-  if(branchHtml) nav.innerHTML += buildNavGroup('branchExcel', '📁 ملفات Excel الفروع', branchHtml);
-  if(role==='admin' && !branchHtml && getExcelBranches().length===0) {
-    // لا نظهر قسماً فارغاً؛ زر الرفع متاح من صفحة الفروع بمجرد تفعيل أي فرع كأبلكيشن.
+  // Excel الفروع أصبح قسماً واحداً، والفرع يتم اختياره من داخل الصفحة.
+  if (role==='admin' || sections.branchExcelSections===true || getExcelBranches().some(b=>hasBranchExcelPermission(b.id))) {
+    nav.innerHTML += buildNavGroup('branchExcel', '📁 ملفات Excel الفروع',
+      `<button class="nav-btn" onclick="showTab('branchExcelSections')" id="tab-branchExcelSections">📊 متابعة الفروع Excel</button>`);
   }
 
   // تم: Done + Cancel
@@ -2671,11 +2716,125 @@ function toggleNavPanel(forceOpen) {
   if (menuIcon) menuIcon.textContent = shouldOpen ? '✕' : '☰';
 }
 
+function getBranchExcelSheetDate(sheetName){
+  const m=String(sheetName||'').match(/(?:^|\D)(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})(?:\D|$)/);
+  if(!m) return null;
+  const d=new Date(Number(m[3]),Number(m[2])-1,Number(m[1]));
+  return isNaN(d.getTime()) ? null : new Date(d.getFullYear(),d.getMonth(),d.getDate());
+}
+function branchExcelDateKey(d){ return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
+function branchExcelParseDateInput(v){ if(!v) return null; const [y,m,d]=v.split('-').map(Number); const x=new Date(y,m-1,d); return isNaN(x.getTime())?null:x; }
+function getBranchDashboardRows(branchId,fromDate,toDate){
+  const data=branchExcelData[branchId]; if(!data) return [];
+  const out=[];
+  Object.values(data.sheets||{}).forEach(sh=>{
+    const sd=getBranchExcelSheetDate(sh.name);
+    if(!sd || sd<fromDate || sd>toDate) return;
+    const rows=sh.rows||[];
+    rows.slice(1).forEach((r,idx)=>out.push({row:r,sheet:sh.name,rowIndex:idx+1,date:sd}));
+  });
+  return out;
+}
+function sumExcelCol(rows,col){ return rows.reduce((s,x)=>s+(Number(String(x.row?.[col]??'').replace(/,/g,''))||0),0); }
+function countExcelType(rows,types){
+  const normalizedTypes=types.map(t=>normalizeExcelText(t));
+  return rows.filter(x=>{
+    const v=normalizeExcelText(x.row?.[1]);
+    if(!v) return false;
+    return normalizedTypes.some(t=>v===t || v.includes(t) || t.includes(v));
+  }).length;
+}
+function getExcelOrderType(v){
+  const x=normalizeExcelText(v);
+  if(!x) return '';
+  // أنواع الأوردرات المعتمدة في شيتات الفروع: الكود + اسم الخدمة
+  // انستاشوب: 85 كاش / 84 أون لاين
+  if(/(^|\D)85(\D|$)/.test(x) && x.includes('انستاشوب') && x.includes('كاش')) return 'انستاشوب (كاش)';
+  if(/(^|\D)84(\D|$)/.test(x) && x.includes('انستاشوب') && (x.includes('اون لاين') || x.includes('اونلاين') || x.includes('online'))) return 'انستاشوب (اون لاين)';
+  // طلبات: 68 أون لاين / 69 كاش
+  if(/(^|\D)68(\D|$)/.test(x) && x.includes('طلبات') && (x.includes('اون لاين') || x.includes('اونلاين') || x.includes('online'))) return 'طلبات (اون لاين)';
+  if(/(^|\D)69(\D|$)/.test(x) && x.includes('طلبات') && x.includes('كاش')) return 'طلبات (كاش)';
+  // فيزيتا: 83 كاش / 82 أون لاين
+  if(/(^|\D)83(\D|$)/.test(x) && x.includes('فيزيتا') && x.includes('كاش')) return 'فيزيتا (كاش)';
+  if(/(^|\D)82(\D|$)/.test(x) && x.includes('فيزيتا') && (x.includes('اون لاين') || x.includes('اونلاين') || x.includes('online'))) return 'فيزيتا (اون لاين)';
+  return '';
+}
+function countCancelledExcel(rows){
+  return rows.filter(x=>normalizeExcelText(x.row?.[5]).includes('الغاء') || normalizeExcelText(x.row?.[5]).includes('إلغاء')).length;
+}
+function renderBranchDashboard(fromValue,toValue,label){
+  const panel=document.getElementById('branchDashboardPanel'); if(!panel) return;
+  const branchId=currentUser?.branchId || currentUser?.branch || currentUser?.branchID;
+  panel.classList.remove('hidden');
+  const from=branchExcelParseDateInput(fromValue);
+  const to=branchExcelParseDateInput(toValue);
+  if(!branchId || !from || !to || from>to){
+    document.getElementById('branchDashMeta').textContent='اختر فترة صحيحة لعرض بيانات الفرع.';
+    document.getElementById('branchDashKpis').innerHTML='';
+    return;
+  }
+  const rows=getBranchDashboardRows(branchId,from,to);
+  const total=rows.length, value=sumExcelCol(rows,3);
+  // Column B هو مصدر نوع الأوردر. نجمع كل صيغ الاسم حتى لو كان هناك اختلاف في المسافات/الكتابة.
+  const instashop=rows.filter(x=>getExcelOrderType(x.row?.[1]).startsWith('انستاشوب')).length;
+  const talabat=rows.filter(x=>getExcelOrderType(x.row?.[1]).startsWith('طلبات')).length;
+  const visita=rows.filter(x=>getExcelOrderType(x.row?.[1]).startsWith('فيزيتا')).length;
+  const cancelled=countCancelledExcel(rows);
+  const boxes=[
+    ['📦','إجمالي الأوردرات',total,'عدد الأوردرات'],
+    ['💰','قيمة الأوردرات',value.toLocaleString('en-US',{maximumFractionDigits:2})+' ج.م','مجموع صافى الفاتورة — Column D'],
+    ['🛍️','انستاشوب',instashop,'كاش + أون لاين — Column B'],
+    ['🛵','طلبات',talabat,'كاش + أون لاين — Column B'],
+    ['🩺','فيزيتا',visita,'كاش + أون لاين — Column B'],
+    ['❌','ملغى',cancelled,'Column F — تحتوي على إلغاء']
+  ];
+  document.getElementById('branchDashMeta').textContent=`${label||'الفترة المحددة'} — ${fromValue} إلى ${toValue}`;
+  document.getElementById('branchDashKpis').innerHTML=boxes.map(k=>`<div class="kpi-card"><div class="kpi-top"><span>${k[1]}</span><span class="kpi-icon">${k[0]}</span></div><div class="kpi-value">${k[2]}</div><div class="kpi-note">${k[3]}</div></div>`).join('');
+}
+function setBranchDashboardDatesDefault(){
+  const now=new Date();
+  const from=new Date(now.getFullYear(),now.getMonth(),1);
+  const to=new Date(now.getFullYear(),now.getMonth()+1,0);
+  const f=document.getElementById('branchDashFrom'), t=document.getElementById('branchDashTo');
+  if(f && !f.value) f.value=branchExcelDateKey(from);
+  if(t && !t.value) t.value=branchExcelDateKey(to);
+}
+function refreshBranchDashboard(){
+  setBranchDashboardDatesDefault();
+  const f=document.getElementById('branchDashFrom')?.value, t=document.getElementById('branchDashTo')?.value;
+  renderBranchDashboard(f,t,'الفترة المحددة');
+  document.getElementById('branchDashLastOrders')?.classList.add('hidden');
+}
+function showLastBranchOrders(){
+  const branchId=currentUser?.branchId || currentUser?.branch || currentUser?.branchID;
+  if(!branchId) return;
+  const now=new Date(), from=new Date(now.getFullYear(),now.getMonth(),now.getDate()), to=new Date(now.getFullYear(),now.getMonth(),now.getDate());
+  const rows=getBranchDashboardRows(branchId,from,to);
+  const box=document.getElementById('branchDashLastOrders'); if(!box) return;
+  box.classList.remove('hidden');
+  box.innerHTML=`<div style="font-weight:800;margin-bottom:10px;">🕛 آخر أوردرات اليوم — من 12:00 بالليل إلى 12:00 بالليل</div>
+    <div class="table-wrap"><table><thead><tr><th>#</th><th>نوع الأوردر</th><th>صافى الفاتورة</th><th>الحالة</th></tr></thead><tbody>
+    ${rows.length?rows.map((x,i)=>`<tr><td>${i+1}</td><td>${escapeHtml(x.row?.[1]??'')}</td><td>${escapeHtml(x.row?.[3]??'')}</td><td>${normalizeExcelText(x.row?.[5]).includes('الغاء')||normalizeExcelText(x.row?.[5]).includes('إلغاء')?'ملغى':'—'}</td></tr>`).join(''):'<tr><td colspan="4" style="text-align:center">لا توجد أوردرات اليوم.</td></tr>'}
+    </tbody></table></div>`;
+  renderBranchDashboard(branchExcelDateKey(from),branchExcelDateKey(to),'آخر أوردرات اليوم');
+}
 function renderDashboardHome(){
   const today = new Date();
   const pad=n=>String(n).padStart(2,'0');
   const dateEl=document.getElementById('homeDate');
   if(dateEl) dateEl.textContent=`${pad(today.getDate())}/${pad(today.getMonth()+1)}/${today.getFullYear()}`;
+
+  const branchPanel=document.getElementById('branchDashboardPanel');
+  if(currentUser?.role==='branch'){
+    document.getElementById('homeKpis').innerHTML='';
+    document.querySelector('.home-grid')?.classList.add('hidden');
+    setBranchDashboardDatesDefault();
+    refreshBranchDashboard();
+    return;
+  }
+  if(branchPanel) branchPanel.classList.add('hidden');
+  document.querySelector('.home-grid')?.classList.remove('hidden');
+
   const all=[...(ordersData||[]),...(appOrdersData||[])];
   const pending=all.filter(o=>o.status==='pending').length;
   const out=all.filter(o=>o.status==='outdelivery').length;
@@ -2693,8 +2852,6 @@ function renderDashboardHome(){
   ];
   const box=document.getElementById('homeKpis');
   if(box) box.innerHTML=kpis.map(k=>`<div class="kpi-card" style="--accent:${k[4]}"><div class="kpi-top"><span>${k[1]}</span><span class="kpi-icon">${k[0]}</span></div><div class="kpi-value">${k[2]}</div><div class="kpi-note">${k[3]}</div></div>`).join('');
-
-  // الرئيسية متاحة للجميع، لكن الاختصارات لا تظهر إلا للأقسام المسموحة للمستخدم.
   const sections = currentUser ? (currentUser.sections || getDefaultSectionsForRole(currentUser.role)) : {};
   const quick = [];
   if (sections.newOrder) quick.push(`<button class="quick-action" onclick="showTab('newOrder')"><b>➕ تسجيل أوردر</b><span>إنشاء أوردر جديد</span></button>`);
@@ -2705,15 +2862,14 @@ function renderDashboardHome(){
   if (sections.callcenterShortages) quick.push(`<button class="quick-action" onclick="showTab('callcenterShortages')"><b>📞 نواقص كول سنتر</b><span>متابعة النواقص</span></button>`);
   const quickBox=document.getElementById('homeQuickActions');
   if(quickBox) quickBox.innerHTML=quick.length ? quick.join('') : `<div style="color:#64748b;padding:12px;">لا توجد أقسام تشغيلية إضافية متاحة لهذا المستخدم.</div>`;
-
   const st=document.getElementById('homeStatusList');
   if(st) st.innerHTML=`<div class="status-row"><span class="status-label"><i class="status-dot" style="--dot:#f59e0b"></i>في الانتظار</span><b class="status-num">${pending}</b></div><div class="status-row"><span class="status-label"><i class="status-dot" style="--dot:#2563eb"></i>قيد التوصيل</span><b class="status-num">${out}</b></div><div class="status-row"><span class="status-label"><i class="status-dot" style="--dot:#16a34a"></i>تم التنفيذ</span><b class="status-num">${done}</b></div><div class="status-row"><span class="status-label"><i class="status-dot" style="--dot:#dc2626"></i>ملغي</span><b class="status-num">${cancelled}</b></div><div class="status-row"><span class="status-label"><i class="status-dot" style="--dot:#7c3aed"></i>أوردرات اليوم</span><b class="status-num">${todayOrders}</b></div>`;
 }
-
 function hasSectionPermission(section) {
   if (!currentUser) return false;
   if (currentUser.role === 'admin') return true;
   const sections = currentUser.sections || getDefaultSectionsForRole(currentUser.role);
+  if(section==='branchExcelSections' && currentUser.role==='branch') return (currentUser.branchId || currentUser.branch || currentUser.branchID) && sections.branchExcelSections!==false;
   return !!sections[section];
 }
 
@@ -2734,8 +2890,15 @@ window.addEventListener('beforeunload',()=>{ try { localStorage.setItem('cc_curr
 
 function showTab(tab) {
   saveCurrentTabScroll();
-  // الرئيسية متاحة دائماً بعد تسجيل الدخول. الأقسام الديناميكية لفروع الأبلكيشن تحتاج صلاحية الفرع.
+  const isBranchExcelHome = tab === 'branchExcelSections';
+  // الرئيسية متاحة دائماً بعد تسجيل الدخول. صفحة Excel تجمع الفروع داخلها.
   const branchTabMatch = /^branchExcel_(.+)$/.exec(tab);
+  if (isBranchExcelHome) {
+    if (!hasSectionPermission('branchExcelSections')) {
+      showToast('⛔ ليس لديك صلاحية لمتابعة Excel الفروع', true);
+      tab='dashboardHome';
+    }
+  }
   if (branchTabMatch) {
     const branchReady = (branchesData || []).some(b => b.id === branchTabMatch[1]);
     if (!branchReady) {
@@ -2747,7 +2910,7 @@ function showTab(tab) {
         localStorage.setItem('cc_current_tab', tab);
         history.replaceState(null, '', '#' + encodeURIComponent(tab));
       } catch(e) {}
-      ['dashboardHome','newOrder','myOrders','allOrders','allAppOrders','doneOrders','cancelOrders','shortages','shortagesReport','callcenterShortages','ccShortagesReport','archive','users','branches','apps','products','customers'].forEach(t => {
+      ['dashboardHome','newOrder','myOrders','allOrders','allAppOrders','doneOrders','cancelOrders','shortages','shortagesReport','callcenterShortages','ccShortagesReport','archive','users','branches','apps','products','customers','branchExcelSections'].forEach(t => {
         const el=document.getElementById(t); if(el) el.classList.add('hidden');
         const btn=document.getElementById('tab-'+t); if(btn) btn.classList.remove('active');
       });
@@ -2764,7 +2927,7 @@ function showTab(tab) {
       if (dash) dash.classList.remove('session-restoring');
     }
   }
-  else if (tab !== 'dashboardHome' && !hasSectionPermission(tab)) {
+  else if (!isBranchExcelHome && tab !== 'dashboardHome' && !hasSectionPermission(tab)) {
     showToast('⛔ ليس لديك صلاحية للوصول إلى هذا القسم', true);
     tab = 'dashboardHome';
   }
@@ -2774,14 +2937,14 @@ function showTab(tab) {
   if (window.location.hash !== '#' + encodeURIComponent(currentTab)) {
     history.replaceState(null, '', '#' + encodeURIComponent(currentTab));
   }
-  ['dashboardHome','newOrder','myOrders','allOrders','allAppOrders','doneOrders','cancelOrders','shortages','shortagesReport','callcenterShortages','ccShortagesReport','archive','users','branches','apps','products','customers'].forEach(t => {
+  ['dashboardHome','newOrder','myOrders','allOrders','allAppOrders','doneOrders','cancelOrders','shortages','shortagesReport','callcenterShortages','ccShortagesReport','archive','users','branches','apps','products','customers','branchExcelSections'].forEach(t => {
     const el = document.getElementById(t); 
     const btn = document.getElementById('tab-'+t);
     if(el) el.classList.add('hidden'); 
     if(btn) btn.classList.remove('active');
   });
   const branchExcelWrap = document.getElementById('branchExcelSections');
-  if (branchExcelWrap) branchExcelWrap.classList.toggle('hidden', !branchTabMatch || tab === 'dashboardHome');
+  if (branchExcelWrap) branchExcelWrap.classList.toggle('hidden', !(branchTabMatch || isBranchExcelHome));
   document.querySelectorAll('#branchExcelSections > .branch-excel-section').forEach(el=>el.classList.add('hidden'));
   const target = document.getElementById(tab); 
   const targetBtn = document.getElementById('tab-'+tab);
@@ -2799,6 +2962,7 @@ function showTab(tab) {
 
   // تعديل: مسح النموذج عند الذهاب لأوردر جديد
   if(tab==='dashboardHome') renderDashboardHome();
+  if(tab==='branchExcelSections') renderBranchExcelSections();
   if(tab==='newOrder') clearNewOrderForm();
   if(tab==='myOrders') renderMyOrders();
   if(tab==='allOrders') renderAllOrders();
