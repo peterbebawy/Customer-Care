@@ -940,6 +940,28 @@ table tbody tr:hover{
     </div>
   </div>
 
+  <div id="shortagesArchive" class="hidden">
+    <div class="card">
+      <h2 style="margin-top:0;color:#1e293b;">🗄️ أرشيف النواقص</h2>
+      <div class="stats" id="shortagesArchiveStats"></div>
+      <div class="export-bar" style="margin-bottom:14px;">
+        <button class="btn btn-secondary" onclick="renderShortagesArchive()">🔄 تحديث</button>
+      </div>
+      <div class="card" style="margin-bottom:16px;border:1px solid #fde68a;background:#fffbeb;">
+        <h3 style="margin:0 0 12px;color:#92400e;">⏳ طلبات إرجاع الأصناف المسوّاة</h3>
+        <div class="table-wrap"><table><thead><tr><th>#</th><th>الصنف</th><th>الفرع</th><th>طالب الإرجاع</th><th>التاريخ</th><th>الحالة</th><th>إجراءات</th></tr></thead><tbody id="shortageRestoreRequestsTable"></tbody></table></div>
+      </div>
+      <div class="card" style="margin-bottom:16px;">
+        <h3 style="margin:0 0 12px;color:#374151;">📱 أرشيف نواقص الأبلكيشن</h3>
+        <div class="table-wrap"><table><thead><tr><th>#</th><th>الصنف</th><th>الأبلكيشن</th><th>الفرع</th><th>الموظف</th><th>التاريخ</th><th>الحالة</th><th>أرشفة</th></tr></thead><tbody id="archivedShortagesTable"></tbody></table></div>
+      </div>
+      <div class="card">
+        <h3 style="margin:0 0 12px;color:#374151;">📞 أرشيف نواقص كول سنتر</h3>
+        <div class="table-wrap"><table><thead><tr><th>#</th><th>الصنف</th><th>العميل</th><th>الفرع</th><th>الموظف</th><th>التاريخ</th><th>أرشفة</th></tr></thead><tbody id="archivedCCShortagesTable"></tbody></table></div>
+      </div>
+    </div>
+  </div>
+
   <div id="branchExcelSections" class="hidden"></div>
 
 <div id="users" class="hidden">
@@ -979,6 +1001,7 @@ table tbody tr:hover{
           <label class="radio-item"><input type="checkbox" class="userSectionChk" value="callcenterShortages"> 📞 نواقص كول سنتر</label>
           <label class="radio-item"><input type="checkbox" class="userSectionChk" value="ccShortagesReport"> 📊 ريبورت نواقص كول سنتر</label>
           <label class="radio-item"><input type="checkbox" class="userSectionChk" value="archive"> 📦 أرشيف الأوردرات</label>
+          <label class="radio-item"><input type="checkbox" class="userSectionChk" value="shortagesArchive"> 🗄️ أرشيف النواقص (أبلكيشن + كول سنتر)</label>
           <label class="radio-item"><input type="checkbox" class="userSectionChk" value="users"> 👥 المستخدمين</label>
           <label class="radio-item"><input type="checkbox" class="userSectionChk" value="branches"> 🏢 الفروع</label>
           <label class="radio-item"><input type="checkbox" class="userSectionChk" value="apps"> 📱 الأبلكيشنز</label>
@@ -1270,6 +1293,7 @@ window.db = db;
 
 let currentUser = null;
 let usersData = [], ordersData = [], appOrdersData = [], branchesData = [], productsData = [], customersData = [], appsData = [], shortagesData = [], ccShortagesData = [], archiveData = [];
+let archivedShortagesData = [], archivedCCShortagesData = [], shortageRestoreRequestsData = [];
 let branchExcelData = {}; // {branchId: {fileName,uploadedAt,uploadedBy,sheets:{sheetKey:{name,rows:[]}}}}
 let branchExcelListeners = {};
 let branchPhoneReviewData = {}; // {branchId:{fileName,uploadedAt,uploadedBy,customers:[{name,phone,normalizedPhone}]}}
@@ -1288,7 +1312,7 @@ let quickProductContext = 'order', quickCustomerContext = 'order';
 const ROLES = { admin: 'أدمن', manager: 'مانجر', employee: 'Call Center', appuser: 'مستخدم أبلكيشن', branch: 'Branch' };
 const STATUS_LABELS = { pending: 'في الانتظار', completed: 'تم', outdelivery: 'Out of Delivery', cancelled: 'ملغي' };
 const STATUS_CLASSES = { pending: 'status-pending', completed: 'status-completed', outdelivery: 'status-outdelivery', cancelled: 'status-cancelled' };
-const ALL_SECTION_KEYS = ['newOrder','myOrders','allOrders','allAppOrders','doneOrders','cancelOrders','shortages','shortagesReport','callcenterShortages','ccShortagesReport','archive','users','branches','apps','products','customers','branchExcelSections','editOrders','editShortages','editStatus'];
+const ALL_SECTION_KEYS = ['newOrder','myOrders','allOrders','allAppOrders','doneOrders','cancelOrders','shortages','shortagesReport','callcenterShortages','ccShortagesReport','archive','shortagesArchive','users','branches','apps','products','customers','branchExcelSections','editOrders','editShortages','editStatus'];
 function branchExcelSectionKey(branchId){ return 'branchExcel_' + branchId; }
 function hasBranchExcelPermission(branchId){
   if(!currentUser) return false;
@@ -1340,7 +1364,7 @@ function getDefaultSectionsForRole(role) {
   }
   if (role === 'admin' || role === 'manager' || role === 'appuser') s.shortagesReport = true;
   if (role === 'admin') {
-    s.ccShortagesReport = true; s.archive = true;
+    s.ccShortagesReport = true; s.archive = true; s.shortagesArchive = true;
     s.users = true; s.branches = true; s.apps = true; s.products = true; s.customers = true;
     s.editOrders = true;
     s.editShortages = true;
@@ -1361,7 +1385,7 @@ function hasPermission(permissionKey) {
 }
 
 function hideAllAppTabsOnStartup(){
-  const tabs=['dashboardHome','newOrder','myOrders','allOrders','allAppOrders','doneOrders','cancelOrders','shortages','shortagesReport','callcenterShortages','ccShortagesReport','archive','users','branches','apps','products','customers','branchExcelSections'];
+  const tabs=['dashboardHome','newOrder','myOrders','allOrders','allAppOrders','doneOrders','cancelOrders','shortages','shortagesReport','callcenterShortages','ccShortagesReport','archive','shortagesArchive','users','branches','apps','products','customers','branchExcelSections'];
   tabs.forEach(t=>{ const el=document.getElementById(t); if(el) el.classList.add('hidden'); const btn=document.getElementById('tab-'+t); if(btn) btn.classList.remove('active'); });
 }
 
@@ -1491,6 +1515,27 @@ function initApp() {
     archiveData.sort((a, b) => (b.archivedAt || 0) - (a.archivedAt || 0));
     if (currentUser) renderArchive();
   }, error => console.error('Archive:', error));
+
+  rtdb.ref('archived_shortages').on('value', snapshot => {
+    archivedShortagesData = [];
+    snapshot.forEach(child => { archivedShortagesData.push({ id: child.key, ...child.val() }); });
+    archivedShortagesData.sort((a,b)=>(b.archivedAt||0)-(a.archivedAt||0));
+    if (currentUser && typeof renderShortagesArchive==='function') renderShortagesArchive();
+  }, error => console.error('Archived Shortages:', error));
+
+  rtdb.ref('archived_cc_shortages').on('value', snapshot => {
+    archivedCCShortagesData = [];
+    snapshot.forEach(child => { archivedCCShortagesData.push({ id: child.key, ...child.val() }); });
+    archivedCCShortagesData.sort((a,b)=>(b.archivedAt||0)-(a.archivedAt||0));
+    if (currentUser && typeof renderShortagesArchive==='function') renderShortagesArchive();
+  }, error => console.error('Archived CC Shortages:', error));
+
+  rtdb.ref('shortage_restore_requests').on('value', snapshot => {
+    shortageRestoreRequestsData = [];
+    snapshot.forEach(child => { shortageRestoreRequestsData.push({ id: child.key, ...child.val() }); });
+    shortageRestoreRequestsData.sort((a,b)=>(b.requestedAt||0)-(a.requestedAt||0));
+    if (currentUser) { renderShortagesReport(); if (typeof renderShortagesArchive==='function') renderShortagesArchive(); }
+  }, error => console.error('Shortage Restore Requests:', error));
 }
 
 // تعديل: فلترة الفروع - فرع عام يظهر فقط في السياقات العادية، وفرع الأبلكيشن (isApp) يظهر أيضاً في سياقات الأبلكيشن
@@ -1599,7 +1644,7 @@ function enterDashboard(user, silent) {
   // عند Refresh داخل نفس جلسة المتصفح: نستعيد نفس الشاشة بالضبط.
   const isBranchUser = user.role === 'branch';
   const storedTabRaw = (hashTab || localStorage.getItem('cc_current_tab') || currentTab || 'dashboardHome');
-  const allowedTabs = new Set(['dashboardHome','newOrder','myOrders','allOrders','allAppOrders','doneOrders','cancelOrders','shortages','shortagesReport','callcenterShortages','ccShortagesReport','archive','users','branches','apps','products','customers','branchExcelSections']);
+  const allowedTabs = new Set(['dashboardHome','newOrder','myOrders','allOrders','allAppOrders','doneOrders','cancelOrders','shortages','shortagesReport','callcenterShortages','ccShortagesReport','archive','shortagesArchive','users','branches','apps','products','customers','branchExcelSections']);
   const storedTab = allowedTabs.has(storedTabRaw) || /^branchExcel_[^/]+$/.test(storedTabRaw) ? storedTabRaw : 'dashboardHome';
   const shouldStartHome = !activeSession || !silent;
   const savedTab = shouldStartHome ? 'dashboardHome' : storedTab;
@@ -2618,7 +2663,7 @@ function setupNavByRole() {
   nav.innerHTML = '';
   nav.innerHTML += `<button class="nav-btn active" onclick="showTab('dashboardHome')" id="tab-dashboardHome">🏠 الرئيسية</button>`;
   const role = currentUser.role;
-  const sections = currentUser.sections || getDefaultSectionsForRole(role);
+  const sections = { ...getDefaultSectionsForRole(role), ...(currentUser.sections || {}) };
 
   // العمليات: كل قسم يظهر فقط إذا كانت صلاحيته مفعلة للمستخدم
   let opsHtml = '';
@@ -2651,6 +2696,7 @@ function setupNavByRole() {
   let reportHtml = '';
   if (sections.ccShortagesReport) reportHtml += `<button class="nav-btn" onclick="showTab('ccShortagesReport')" id="tab-ccShortagesReport">📊 ريبورت نواقص كول سنتر</button>`;
   if (sections.archive) reportHtml += `<button class="nav-btn" onclick="showTab('archive')" id="tab-archive">📦 أرشيف الأوردرات</button>`;
+  if (sections.shortagesArchive) reportHtml += `<button class="nav-btn" onclick="showTab('shortagesArchive')" id="tab-shortagesArchive">🗄️ أرشيف النواقص</button>`;
   if (reportHtml) nav.innerHTML += buildNavGroup('reports', '📊 التقارير', reportHtml);
 
   // الإدارة كما هي
@@ -2997,7 +3043,7 @@ function showTab(tab) {
         localStorage.setItem('cc_current_tab', tab);
         history.replaceState(null, '', '#' + encodeURIComponent(tab));
       } catch(e) {}
-      ['dashboardHome','newOrder','myOrders','allOrders','allAppOrders','doneOrders','cancelOrders','shortages','shortagesReport','callcenterShortages','ccShortagesReport','archive','users','branches','apps','products','customers','branchExcelSections'].forEach(t => {
+      ['dashboardHome','newOrder','myOrders','allOrders','allAppOrders','doneOrders','cancelOrders','shortages','shortagesReport','callcenterShortages','ccShortagesReport','archive','shortagesArchive','users','branches','apps','products','customers','branchExcelSections'].forEach(t => {
         const el=document.getElementById(t); if(el) el.classList.add('hidden');
         const btn=document.getElementById('tab-'+t); if(btn) btn.classList.remove('active');
       });
@@ -3024,7 +3070,7 @@ function showTab(tab) {
   if (window.location.hash !== '#' + encodeURIComponent(currentTab)) {
     history.replaceState(null, '', '#' + encodeURIComponent(currentTab));
   }
-  ['dashboardHome','newOrder','myOrders','allOrders','allAppOrders','doneOrders','cancelOrders','shortages','shortagesReport','callcenterShortages','ccShortagesReport','archive','users','branches','apps','products','customers','branchExcelSections'].forEach(t => {
+  ['dashboardHome','newOrder','myOrders','allOrders','allAppOrders','doneOrders','cancelOrders','shortages','shortagesReport','callcenterShortages','ccShortagesReport','archive','shortagesArchive','users','branches','apps','products','customers','branchExcelSections'].forEach(t => {
     const el = document.getElementById(t); 
     const btn = document.getElementById('tab-'+t);
     if(el) el.classList.add('hidden'); 
@@ -3061,6 +3107,7 @@ function showTab(tab) {
   if(tab==='callcenterShortages') renderCCShortages();
   if(tab==='ccShortagesReport') renderCCShortagesReport();
   if(tab==='archive') renderArchive();
+  if(tab==='shortagesArchive') renderShortagesArchive();
   if(branchTabMatch && tab!=='dashboardHome') renderBranchExcelSection(branchTabMatch[1]);
   if(tab==='users') renderUsers();
   if(tab==='branches') renderBranches();
@@ -4406,13 +4453,21 @@ function renderShortagesReport() {
     const settleBtn = canSettle && !settled
       ? `<button type="button" class="btn btn-success btn-sm" style="padding:5px 9px;font-size:11px;margin-inline:3px;" onclick="settleShortage('${s.id}')">✅ تم التسوية</button>`
       : '';
+    const pendingRestore = shortageRestoreRequestsData.find(r => r.shortageId === s.id && r.status === 'pending');
+    const restoreBtn = canSettle && settled
+      ? (pendingRestore
+        ? `<span class="badge badge-orange" style="margin-inline:3px;">⏳ طلب إرجاع بانتظار الأدمن</span>`
+        : `<button type="button" class="btn btn-warning btn-sm" style="padding:5px 9px;font-size:11px;margin-inline:3px;background:#f59e0b;border-color:#f59e0b;color:#fff;" onclick="restoreShortage('${s.id}')">↩️ إرجاع عادي</button>`) 
+      : '';
     const settledBadge = settled
       ? `<span style="display:inline-block;background:#dcfce7;color:#166534;border:1px solid #bbf7d0;border-radius:999px;padding:3px 8px;font-size:11px;font-weight:800;text-decoration:none;">تمت التسوية</span>`
       : '';
     const editBtn = hasPermission('editShortages') && !settled
       ? `<span class="edit-link" style="${actionStyle}" onclick="openEditShortage('${s.id}','app')">✏️ تعديل</span>` : '';
+    const adminRestore = (isAdminS && pendingRestore)
+      ? `<button type="button" class="btn btn-success btn-sm" style="padding:5px 9px;font-size:11px;margin-inline:3px;" onclick="approveShortageRestore('${pendingRestore.id}')">✅ موافقة الإرجاع</button><button type="button" class="btn btn-danger btn-sm" style="padding:5px 9px;font-size:11px;margin-inline:3px;" onclick="rejectShortageRestore('${pendingRestore.id}')">❌ رفض</button>` : '';
     const adminBtns = isAdminS
-      ? `<span class="archive-link" style="${actionStyle}" onclick="archiveShortage('${s.id}')">📦 أرشفة</span><span class="delete-link" style="${actionStyle}" onclick="deleteShortage('${s.id}')">🗑️ حذف</span>` : '';
+      ? `${adminRestore}<span class="archive-link" style="${actionStyle}" onclick="archiveShortage('${s.id}')">📦 أرشفة</span><span class="delete-link" style="${actionStyle}" onclick="deleteShortage('${s.id}')">🗑️ حذف</span>` : '';
     return `<tr style="${rowStyle}">
       <td>${i+1}</td><td><strong>${s.productCode}</strong></td><td>${s.productName}</td>
       <td><span class="badge badge-purple" style="${settled?'text-decoration:line-through;':''}">${s.appName}</span></td>
@@ -4421,7 +4476,7 @@ function renderShortagesReport() {
       <td>${(s.currentQty!==undefined && s.currentQty!=='')?`<span class="badge badge-orange">${s.currentQty}</span>`:'-'}</td>
       <td><span class="badge badge-gray">${s.employee}</span></td>
       <td>${s.date||''}</td><td>${s.notes||'-'}${settled ? `<div style="margin-top:5px;text-decoration:none;font-size:11px;color:#64748b;">${settledBadge}</div>` : ''}</td>
-      <td style="white-space:nowrap;text-decoration:none;">${settleBtn}${editBtn}${adminBtns}</td>
+      <td style="white-space:nowrap;text-decoration:none;">${settleBtn}${restoreBtn}${editBtn}${adminBtns}</td>
     </tr>`;
   }).join('');
 }
@@ -4447,6 +4502,70 @@ function settleShortage(id) {
       renderShortagesReport();
     })
     .catch(err => { showToast('❌ خطأ في تسجيل التسوية', true); console.error(err); });
+}
+
+function restoreShortage(id) {
+  const item = shortagesData.find(x => x.id === id);
+  if (!item) return;
+  if (!item.settled) { showToast('ℹ️ الصنف بالفعل في حالته العادية'); return; }
+
+  // الفرع لا يعيد الصنف مباشرة؛ يرسل طلب موافقة للأدمن.
+  if (currentUser?.role === 'branch') {
+    const existing = shortageRestoreRequestsData.find(r => r.shortageId === id && r.status === 'pending');
+    if (existing) { showToast('⏳ يوجد بالفعل طلب إرجاع بانتظار موافقة الأدمن'); return; }
+    if (!confirm(`إرسال طلب للأدمن لإرجاع الصنف ${item.productCode} - ${item.productName} لحالته العادية؟`)) return;
+    const request = {
+      shortageId: id,
+      productCode: item.productCode || '', productName: item.productName || '',
+      branch: item.branch || '', branchId: item.branchId || currentUser.branchId || '',
+      requestedBy: currentUser.name || '', requestedById: currentUser.id || '',
+      requestedAt: firebase.database.ServerValue.TIMESTAMP, status: 'pending'
+    };
+    db.ref('shortage_restore_requests').push(request)
+      .then(() => { showToast('📨 تم إرسال طلب الإرجاع للأدمن للموافقة'); renderShortagesReport(); })
+      .catch(err => { showToast('❌ خطأ في إرسال طلب الإرجاع', true); console.error(err); });
+    return;
+  }
+
+  // الأدمن يستطيع الإرجاع مباشرة.
+  if (currentUser?.role !== 'admin') {
+    showToast('❌ إرجاع الصنف العادي يحتاج موافقة الأدمن', true); return;
+  }
+  if (!confirm(`إرجاع الصنف ${item.productCode} - ${item.productName} إلى حالة عادي؟`)) return;
+  const updates = { settled:false, settledAt:null, settledBy:null, settledById:null, restoredAt:firebase.database.ServerValue.TIMESTAMP, restoredBy:currentUser.name||'', restoredById:currentUser.id||'' };
+  db.ref('shortages/' + id).update(updates)
+    .then(() => showToast('↩️ تم إرجاع الصنف لحالته العادية'))
+    .catch(err => { showToast('❌ خطأ في إرجاع الصنف', true); console.error(err); });
+}
+
+function approveShortageRestore(requestId) {
+  if (currentUser?.role !== 'admin') { showToast('❌ الموافقة متاحة للأدمن فقط', true); return; }
+  const req = shortageRestoreRequestsData.find(r=>r.id===requestId);
+  if (!req || req.status !== 'pending') return;
+  const item = shortagesData.find(x=>x.id===req.shortageId);
+  if (!item) {
+    db.ref('shortage_restore_requests/'+requestId).update({status:'rejected', reviewedAt:firebase.database.ServerValue.TIMESTAMP, reviewedBy:currentUser.name||'', reviewNote:'الصنف غير موجود'});
+    showToast('⚠️ الصنف غير موجود وتم رفض الطلب', true); return;
+  }
+  const updates={};
+  updates['shortages/'+item.id+'/settled']=false;
+  updates['shortages/'+item.id+'/settledAt']=null;
+  updates['shortages/'+item.id+'/settledBy']=null;
+  updates['shortages/'+item.id+'/settledById']=null;
+  updates['shortages/'+item.id+'/restoredAt']=firebase.database.ServerValue.TIMESTAMP;
+  updates['shortages/'+item.id+'/restoredBy']=currentUser.name||'';
+  updates['shortages/'+item.id+'/restoredById']=currentUser.id||'';
+  updates['shortage_restore_requests/'+requestId+'/status']='approved';
+  updates['shortage_restore_requests/'+requestId+'/reviewedAt']=firebase.database.ServerValue.TIMESTAMP;
+  updates['shortage_restore_requests/'+requestId+'/reviewedBy']=currentUser.name||'';
+  db.ref().update(updates).then(()=>showToast('✅ تمت الموافقة وإرجاع الصنف لحالته العادية')).catch(err=>{showToast('❌ خطأ في الموافقة',true);console.error(err);});
+}
+function rejectShortageRestore(requestId) {
+  if (currentUser?.role !== 'admin') { showToast('❌ الرفض متاح للأدمن فقط', true); return; }
+  const req=shortageRestoreRequestsData.find(r=>r.id===requestId); if(!req || req.status!=='pending') return;
+  if(!confirm(`رفض طلب إرجاع الصنف ${req.productCode||''}؟`)) return;
+  db.ref('shortage_restore_requests/'+requestId).update({status:'rejected',reviewedAt:firebase.database.ServerValue.TIMESTAMP,reviewedBy:currentUser.name||''})
+    .then(()=>showToast('❌ تم رفض طلب الإرجاع')).catch(err=>{showToast('❌ خطأ في رفض الطلب',true);console.error(err);});
 }
 
 function openEditShortage(id, type) {
@@ -4715,6 +4834,25 @@ function deleteAllCCShortages() {
   db.ref('callcenter_shortages').remove()
     .then(() => showToast('🗑️ تم حذف كل النواقص'))
     .catch(err => { showToast('❌ خطأ في الحذف', true); console.error(err); });
+}
+
+function deleteArchivedShortage(id, type) {
+  if (currentUser?.role !== 'admin') { showToast('❌ الحذف متاح للأدمن فقط', true); return; }
+  if (!confirm('حذف هذا السجل من الأرشيف نهائياً؟')) return;
+  const path = type === 'cc' ? 'archived_cc_shortages/' + id : 'archived_shortages/' + id;
+  db.ref(path).remove().then(()=>showToast('🗑️ تم حذف السجل من الأرشيف')).catch(err=>{showToast('❌ خطأ في الحذف',true);console.error(err);});
+}
+function renderShortagesArchive() {
+  const stats=document.getElementById('shortagesArchiveStats');
+  const appT=document.getElementById('archivedShortagesTable');
+  const ccT=document.getElementById('archivedCCShortagesTable');
+  const reqT=document.getElementById('shortageRestoreRequestsTable');
+  if(!stats || !appT || !ccT || !reqT) return;
+  const pending=shortageRestoreRequestsData.filter(r=>r.status==='pending');
+  stats.innerHTML=`<div class="stat-card"><div class="stat-number" style="color:#7c3aed;">${archivedShortagesData.length}</div><div class="stat-label">أرشيف نواقص الأبلكيشن</div></div><div class="stat-card"><div class="stat-number" style="color:#2563eb;">${archivedCCShortagesData.length}</div><div class="stat-label">أرشيف نواقص كول سنتر</div></div><div class="stat-card"><div class="stat-number" style="color:#d97706;">${pending.length}</div><div class="stat-label">طلبات إرجاع معلقة</div></div>`;
+  reqT.innerHTML = pending.length ? pending.map((r,i)=>`<tr><td>${i+1}</td><td><strong>${escapeHtml(r.productCode||'')}</strong><br><span style="font-size:12px;color:#64748b;">${escapeHtml(r.productName||'')}</span></td><td>${escapeHtml(r.branch||'')}</td><td><span class="badge badge-purple">${escapeHtml(r.requestedBy||'')}</span></td><td>${r.requestedAt?new Date(r.requestedAt).toLocaleString('ar-EG'):''}</td><td><span class="badge badge-orange">قيد المراجعة</span></td><td><button class="btn btn-success btn-sm" onclick="approveShortageRestore('${r.id}')">✅ موافقة</button> <button class="btn btn-danger btn-sm" onclick="rejectShortageRestore('${r.id}')">❌ رفض</button></td></tr>`).join('') : '<tr><td colspan="7" class="empty-state">لا توجد طلبات إرجاع معلقة</td></tr>';
+  appT.innerHTML = archivedShortagesData.length ? archivedShortagesData.map((s,i)=>`<tr><td>${i+1}</td><td><strong>${escapeHtml(s.productCode||'')}</strong><br>${escapeHtml(s.productName||'')}</td><td>${escapeHtml(s.appName||'')}</td><td>${escapeHtml(s.branch||'')}</td><td>${escapeHtml(s.employee||'')}</td><td>${escapeHtml(s.date||'')}</td><td><span class="badge ${s.settled?'badge-green':'badge-gray'}">${s.settled?'تمت التسوية':'أرشيف'}</span></td><td><button class="btn btn-danger btn-sm" onclick="deleteArchivedShortage('${s.id}','app')">🗑️ حذف</button></td></tr>`).join('') : '<tr><td colspan="8" class="empty-state">أرشيف نواقص الأبلكيشن فارغ</td></tr>';
+  ccT.innerHTML = archivedCCShortagesData.length ? archivedCCShortagesData.map((s,i)=>`<tr><td>${i+1}</td><td><strong>${escapeHtml(s.productCode||'')}</strong><br>${escapeHtml(s.productName||'')}</td><td>${escapeHtml(s.customerName||'-')}</td><td>${escapeHtml(s.branch||'')}</td><td>${escapeHtml(s.employee||'')}</td><td>${escapeHtml(s.date||'')}</td><td><button class="btn btn-danger btn-sm" onclick="deleteArchivedShortage('${s.id}','cc')">🗑️ حذف</button></td></tr>`).join('') : '<tr><td colspan="7" class="empty-state">أرشيف نواقص كول سنتر فارغ</td></tr>';
 }
 
 
