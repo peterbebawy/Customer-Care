@@ -1579,10 +1579,12 @@ function enterDashboard(user, silent) {
   // استعادة جلسة كاملة قبل إظهار الـ Dashboard حتى لا يظهر "تسجيل أوردر جديد" لحظة الـ Refresh.
   let hashTab = '';
   try { hashTab = decodeURIComponent((window.location.hash || '').replace(/^#/, '')); } catch (e) {}
-  // حساب Branch يبدأ دائمًا من الشاشة الرئيسية الخاصة بالفرع، ولا يفتح قسمًا آخر بعد تسجيل الدخول.
+  // حساب Branch: عند تسجيل الدخول فعلياً يبدأ من الرئيسية، أما عند الـ Refresh فيستعيد نفس الشاشة السابقة.
+  // silent=true يعني استعادة جلسة موجودة بعد Refresh، وsilent=false يعني Login جديد.
   const isBranchUser = user.role === 'branch';
-  const savedTab = isBranchUser ? 'dashboardHome' : (hashTab || localStorage.getItem('cc_current_tab') || currentTab || 'dashboardHome');
-  if (isBranchUser) {
+  const storedTab = (hashTab || localStorage.getItem('cc_current_tab') || currentTab || 'dashboardHome');
+  const savedTab = (isBranchUser && !silent) ? 'dashboardHome' : storedTab;
+  if (isBranchUser && !silent) {
     try { localStorage.setItem('cc_current_tab','dashboardHome'); history.replaceState(null,'','#dashboardHome'); } catch (e) {}
   }
   restoreTargetTab = savedTab;
