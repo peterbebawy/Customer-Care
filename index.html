@@ -990,6 +990,7 @@ table tbody tr:hover{
           <div style="width:100%;margin-top:8px;padding-top:12px;border-top:1px solid #e5e7eb;font-weight:800;color:#475569;">🔐 صلاحيات العمليات</div>
           <label class="radio-item"><input type="checkbox" class="userSectionChk" value="editOrders"> ✏️ السماح بتعديل الأوردرات</label>
           <label class="radio-item"><input type="checkbox" class="userSectionChk" value="editShortages"> ✏️ السماح بتعديل النواقص المدخلة</label>
+          <label class="radio-item"><input type="checkbox" class="userSectionChk" value="settleShortages"> ✅ السماح بعمل تم التسوية في ريبورت نواقص الأبلكيشن</label>
           <label class="radio-item"><input type="checkbox" class="userSectionChk" value="editStatus"> 🔄 السماح بتعديل حالة الأوردر</label>
         </div>
         <button class="btn btn-primary" onclick="addUser()">💾 حفظ المستخدم</button>
@@ -1355,6 +1356,7 @@ function hasPermission(permissionKey) {
   const sections = currentUser.sections || getDefaultSectionsForRole(currentUser.role);
   if (Object.prototype.hasOwnProperty.call(sections, permissionKey)) return sections[permissionKey] === true;
   if (permissionKey === 'editStatus') return ['admin','manager','appuser'].includes(currentUser.role);
+  if (permissionKey === 'settleShortages') return false;
   return false;
 }
 
@@ -4370,8 +4372,10 @@ function renderShortagesReport() {
   const tbody = document.getElementById('shortagesReportTable');
   if (!tbody) return;
   const isAdminS = currentUser.role === 'admin';
+  const canSettle = hasPermission('settleShortages');
   document.getElementById('shortagesArchiveAllBtn')?.classList.toggle('hidden', !isAdminS);
   document.getElementById('shortagesDeleteAllBtn')?.classList.toggle('hidden', !isAdminS);
+
   const visibleShortages = currentUser?.role === 'branch'
     ? shortagesData.filter(s => {
         const assigned = currentUser.branchId || currentUser.branch || currentUser.branchID || '';
@@ -4381,18 +4385,70 @@ function renderShortagesReport() {
         return (branchId && branchId === String(assigned)) || (!branchId && assignedName && branchName === assignedName);
       })
     : shortagesData;
-  if (visibleShortages.length === 0) { tbody.innerHTML = '<tr><td colspan="11" class="empty-state">لا يوجد نواقص لهذا الفرع</td></tr>'; return; }
-  tbody.innerHTML = visibleShortages.map((s, i) => `<tr>
-    <td>${i+1}</td><td><strong>${s.productCode}</strong></td><td>${s.productName}</td>
-    <td><span class="badge badge-purple">${s.appName}</span></td>
-    <td>${s.orderNumber?`<span class="badge badge-pink">#${s.orderNumber}</span>`:'-'}</td>
-    <td><span class="badge badge-blue">${s.branch}</span></td>
-    <td>${(s.currentQty!==undefined && s.currentQty!=='')?`<span class="badge badge-orange">${s.currentQty}</span>`:'-'}</td>
-    <td><span class="badge badge-gray">${s.employee}</span></td>
-    <td>${s.date||''}</td><td>${s.notes||'-'}</td>
-    <td>${hasPermission('editShortages')?`<span class="edit-link" onclick="openEditShortage('${s.id}','app')">✏️ تعديل</span>`:''}${currentUser.role==='admin'?`<span class="archive-link" onclick="archiveShortage('${s.id}')">📦 أرشفة</span><span class="delete-link" onclick="deleteShortage('${s.id}')">🗑️ حذف</span>`:''}</td>
-  </tr>`).join('');
+
+  // غير المسوّى أولاً، ثم المسوّى في آخر التقرير مع شكل مشطوب.
+  const ordered = [...visibleShortages].sort((a,b) => {
+    const sa = a.settled ? 1 : 0;
+    const sb = b.settled ? 1 : 0;
+    if (sa !== sb) return sa - sb;
+    return (b.timestamp || 0) - (a.timestamp || 0);
+  });
+
+  if (ordered.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="11" class="empty-state">لا يوجد نواقص لهذا الفرع</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = ordered.map((s, i) => {
+    const settled = !!s.settled;
+    const rowStyle = settled ? 'background:#f8fafc;color:#98a2b3;text-decoration:line-through;text-decoration-thickness:1.5px;opacity:.78;' : '';
+    const actionStyle = settled ? 'text-decoration:none;opacity:1;' : '';
+    const settleBtn = canSettle && !settled
+      ? `<button type="button" class="btn btn-success btn-sm" style="padding:5px 9px;font-size:11px;margin-inline:3px;" onclick="settleShortage('${s.id}')">✅ تم التسوية</button>`
+      : '';
+    const settledBadge = settled
+      ? `<span style="display:inline-block;background:#dcfce7;color:#166534;border:1px solid #bbf7d0;border-radius:999px;padding:3px 8px;font-size:11px;font-weight:800;text-decoration:none;">تمت التسوية</span>`
+      : '';
+    const editBtn = hasPermission('editShortages') && !settled
+      ? `<span class="edit-link" style="${actionStyle}" onclick="openEditShortage('${s.id}','app')">✏️ تعديل</span>` : '';
+    const adminBtns = isAdminS
+      ? `<span class="archive-link" style="${actionStyle}" onclick="archiveShortage('${s.id}')">📦 أرشفة</span><span class="delete-link" style="${actionStyle}" onclick="deleteShortage('${s.id}')">🗑️ حذف</span>` : '';
+    return `<tr style="${rowStyle}">
+      <td>${i+1}</td><td><strong>${s.productCode}</strong></td><td>${s.productName}</td>
+      <td><span class="badge badge-purple" style="${settled?'text-decoration:line-through;':''}">${s.appName}</span></td>
+      <td>${s.orderNumber?`<span class="badge badge-pink">#${s.orderNumber}</span>`:'-'}</td>
+      <td><span class="badge badge-blue">${s.branch}</span></td>
+      <td>${(s.currentQty!==undefined && s.currentQty!=='')?`<span class="badge badge-orange">${s.currentQty}</span>`:'-'}</td>
+      <td><span class="badge badge-gray">${s.employee}</span></td>
+      <td>${s.date||''}</td><td>${s.notes||'-'}${settled ? `<div style="margin-top:5px;text-decoration:none;font-size:11px;color:#64748b;">${settledBadge}</div>` : ''}</td>
+      <td style="white-space:nowrap;text-decoration:none;">${settleBtn}${editBtn}${adminBtns}</td>
+    </tr>`;
+  }).join('');
 }
+
+function settleShortage(id) {
+  if (!hasPermission('settleShortages')) {
+    showToast('❌ لا تملك صلاحية عمل تم التسوية', true);
+    return;
+  }
+  const item = shortagesData.find(x => x.id === id);
+  if (!item) return;
+  if (item.settled) { showToast('ℹ️ الصنف تم تسويته بالفعل'); return; }
+  if (!confirm(`تأكيد تسوية الصنف ${item.productCode} - ${item.productName}؟`)) return;
+  const update = {
+    settled: true,
+    settledAt: firebase.database.ServerValue.TIMESTAMP,
+    settledBy: currentUser?.name || '',
+    settledById: currentUser?.id || ''
+  };
+  db.ref('shortages/' + id).update(update)
+    .then(() => {
+      showToast('✅ تم التسوية، وتم نقل الصنف لآخر التقرير وشطبه');
+      renderShortagesReport();
+    })
+    .catch(err => { showToast('❌ خطأ في تسجيل التسوية', true); console.error(err); });
+}
+
 function openEditShortage(id, type) {
   if (!hasPermission('editShortages')) { showToast('❌ لا تملك صلاحية تعديل النواقص', true); return; }
   const data = type === 'cc' ? ccShortagesData : shortagesData;
@@ -4465,7 +4521,9 @@ function exportShortagesToExcel() {
   const rows = shortagesData.map(s => ({
     'كود الصنف': s.productCode, 'اسم الصنف': s.productName, 'الأبلكيشن': s.appName,
     'رقم الأوردر': s.orderNumber || '', 'الفرع': s.branch, 'الكمية الحالية بالفرع': s.currentQty || '',
-    'الموظف': s.employee, 'التاريخ': s.date || '', 'ملاحظات': s.notes || ''
+    'الموظف': s.employee, 'التاريخ': s.date || '', 'ملاحظات': s.notes || '',
+    'الحالة': s.settled ? 'تمت التسوية' : 'قيد المتابعة', 'تمت التسوية بواسطة': s.settledBy || '',
+    'تاريخ التسوية': s.settledAt ? new Date(s.settledAt).toLocaleString('ar-EG') : ''
   }));
   const ws = XLSX.utils.json_to_sheet(rows);
   const wb = XLSX.utils.book_new();
