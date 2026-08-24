@@ -680,7 +680,7 @@ table tbody tr:hover{
     </div>
   </section>
 
-  <div id="newOrder" class="card">
+  <div id="newOrder" class="card hidden">
     <h2 style="margin-top:0;color:#1e293b;">تسجيل أوردر جديد</h2>
     <label class="label">العميل</label>
     <div class="search-wrap">
@@ -1358,7 +1358,13 @@ function hasPermission(permissionKey) {
   return false;
 }
 
+function hideAllAppTabsOnStartup(){
+  const tabs=['dashboardHome','newOrder','myOrders','allOrders','allAppOrders','doneOrders','cancelOrders','shortages','shortagesReport','callcenterShortages','ccShortagesReport','archive','users','branches','apps','products','customers','branchExcelSections'];
+  tabs.forEach(t=>{ const el=document.getElementById(t); if(el) el.classList.add('hidden'); const btn=document.getElementById('tab-'+t); if(btn) btn.classList.remove('active'); });
+}
+
 function initApp() {
+  hideAllAppTabsOnStartup();
   rtdb.ref('users').on('value', snapshot => {
     usersData = [];
     snapshot.forEach(child => { usersData.push({ id: child.key, ...child.val() }); });
@@ -1582,7 +1588,9 @@ function enterDashboard(user, silent) {
   // حساب Branch: عند تسجيل الدخول فعلياً يبدأ من الرئيسية، أما عند الـ Refresh فيستعيد نفس الشاشة السابقة.
   // silent=true يعني استعادة جلسة موجودة بعد Refresh، وsilent=false يعني Login جديد.
   const isBranchUser = user.role === 'branch';
-  const storedTab = (hashTab || localStorage.getItem('cc_current_tab') || currentTab || 'dashboardHome');
+  const storedTabRaw = (hashTab || localStorage.getItem('cc_current_tab') || currentTab || 'dashboardHome');
+  const allowedTabs = new Set(['dashboardHome','newOrder','myOrders','allOrders','allAppOrders','doneOrders','cancelOrders','shortages','shortagesReport','callcenterShortages','ccShortagesReport','archive','users','branches','apps','products','customers','branchExcelSections']);
+  const storedTab = allowedTabs.has(storedTabRaw) || /^branchExcel_[^/]+$/.test(storedTabRaw) ? storedTabRaw : 'dashboardHome';
   const savedTab = (isBranchUser && !silent) ? 'dashboardHome' : storedTab;
   if (isBranchUser && !silent) {
     try { localStorage.setItem('cc_current_tab','dashboardHome'); history.replaceState(null,'','#dashboardHome'); } catch (e) {}
