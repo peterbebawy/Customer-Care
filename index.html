@@ -1316,6 +1316,7 @@ function getDefaultSectionsForRole(role) {
   }
   if (role === 'branch') {
     s.branchExcelSections = true;
+    s.shortagesReport = true;
   }
   if (role === 'employee' || role === 'admin') s.myOrders = true;
   if (role === 'manager' || role === 'admin') s.allOrders = true;
@@ -2776,20 +2777,24 @@ function renderBranchDashboard(fromValue,toValue,label){
   const rows=getBranchDashboardRows(branchId,from,to);
   const total=rows.length, value=sumExcelCol(rows,3);
   // Column B هو مصدر نوع الأوردر. نجمع كل صيغ الاسم حتى لو كان هناك اختلاف في المسافات/الكتابة.
-  const instashop=rows.filter(x=>getExcelOrderType(x.row?.[1]).startsWith('انستاشوب')).length;
-  const talabat=rows.filter(x=>getExcelOrderType(x.row?.[1]).startsWith('طلبات')).length;
-  const visita=rows.filter(x=>getExcelOrderType(x.row?.[1]).startsWith('فيزيتا')).length;
+  const instashopRows=rows.filter(x=>getExcelOrderType(x.row?.[1]).startsWith('انستاشوب'));
+  const talabatRows=rows.filter(x=>getExcelOrderType(x.row?.[1]).startsWith('طلبات'));
+  const visitaRows=rows.filter(x=>getExcelOrderType(x.row?.[1]).startsWith('فيزيتا'));
+  const instashop=instashopRows.length, instashopValue=sumExcelCol(instashopRows,3);
+  const talabat=talabatRows.length, talabatValue=sumExcelCol(talabatRows,3);
+  const visita=visitaRows.length, visitaValue=sumExcelCol(visitaRows,3);
   const cancelled=countCancelledExcel(rows);
+  const money=n=>Number(n||0).toLocaleString('en-US',{maximumFractionDigits:2})+' ج.م';
   const boxes=[
-    ['📦','إجمالي الأوردرات',total,'عدد الأوردرات'],
-    ['💰','قيمة الأوردرات',value.toLocaleString('en-US',{maximumFractionDigits:2})+' ج.م','مجموع صافى الفاتورة — Column D'],
-    ['🛍️','انستاشوب',instashop,'كاش + أون لاين — Column B'],
-    ['🛵','طلبات',talabat,'كاش + أون لاين — Column B'],
-    ['🩺','فيزيتا',visita,'كاش + أون لاين — Column B'],
+    ['📦','إجمالي الأوردرات',total,`قيمة الأوردرات: ${money(value)}`],
+    ['💰','قيمة الأوردرات',money(value),'مجموع صافى الفاتورة — Column D'],
+    ['🛍️','انستاشوب',instashop,`قيمة الأوردرات: ${money(instashopValue)} — الأكواد 85 + 84`],
+    ['🛵','طلبات',talabat,`قيمة الأوردرات: ${money(talabatValue)} — الأكواد 68 + 69`],
+    ['🩺','فيزيتا',visita,`قيمة الأوردرات: ${money(visitaValue)} — الأكواد 83 + 82`],
     ['❌','ملغى',cancelled,'Column F — تحتوي على إلغاء']
   ];
   document.getElementById('branchDashMeta').textContent=`${label||'الفترة المحددة'} — ${fromValue} إلى ${toValue}`;
-  document.getElementById('branchDashKpis').innerHTML=boxes.map(k=>`<div class="kpi-card"><div class="kpi-top"><span>${k[1]}</span><span class="kpi-icon">${k[0]}</span></div><div class="kpi-value">${k[2]}</div><div class="kpi-note">${k[3]}</div></div>`).join('');
+  document.getElementById('branchDashKpis').innerHTML=boxes.map(k=>`<div class="kpi-card"><div class="kpi-top"><span>${k[1]}</span><span class="kpi-icon">${k[0]}</span></div><div class="kpi-value">${k[2]}</div><div class="kpi-note" style="line-height:1.7">${k[3]}</div></div>`).join('');
 }
 function setBranchDashboardDatesDefault(){
   const now=new Date();
@@ -4287,8 +4292,17 @@ function renderShortagesReport() {
   const isAdminS = currentUser.role === 'admin';
   document.getElementById('shortagesArchiveAllBtn')?.classList.toggle('hidden', !isAdminS);
   document.getElementById('shortagesDeleteAllBtn')?.classList.toggle('hidden', !isAdminS);
-  if (shortagesData.length === 0) { tbody.innerHTML = '<tr><td colspan="11" class="empty-state">لا يوجد نواقص</td></tr>'; return; }
-  tbody.innerHTML = shortagesData.map((s, i) => `<tr>
+  const visibleShortages = currentUser?.role === 'branch'
+    ? shortagesData.filter(s => {
+        const assigned = currentUser.branchId || currentUser.branch || currentUser.branchID || '';
+        const branchId = String(s.branchId || s.branchID || s.branch_id || '');
+        const branchName = String(s.branch || '').trim();
+        const assignedName = String((branchesData||[]).find(b=>b.id===assigned)?.name || '').trim();
+        return (branchId && branchId === String(assigned)) || (!branchId && assignedName && branchName === assignedName);
+      })
+    : shortagesData;
+  if (visibleShortages.length === 0) { tbody.innerHTML = '<tr><td colspan="11" class="empty-state">لا يوجد نواقص لهذا الفرع</td></tr>'; return; }
+  tbody.innerHTML = visibleShortages.map((s, i) => `<tr>
     <td>${i+1}</td><td><strong>${s.productCode}</strong></td><td>${s.productName}</td>
     <td><span class="badge badge-purple">${s.appName}</span></td>
     <td>${s.orderNumber?`<span class="badge badge-pink">#${s.orderNumber}</span>`:'-'}</td>
