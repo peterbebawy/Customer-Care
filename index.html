@@ -641,6 +641,9 @@ table tbody tr:hover{
         <span class="topbar-menu-icon" id="topbarMenuIcon">☰</span>
       </button>
       <div class="topbar-title"><span id="curTabLabel">القائمة</span></div>
+      <button type="button" id="shortageRestoreNotifBtn" class="topbar-menu-btn" style="margin-inline-start:auto;position:relative;display:none;" onclick="openShortageRestoreNotifications()" aria-label="طلبات إرجاع النواقص">
+        🔔<span id="shortageRestoreNotifBadge" style="position:absolute;top:2px;right:2px;min-width:18px;height:18px;padding:0 4px;border-radius:999px;background:#ef4444;color:#fff;font-size:10px;font-weight:900;line-height:18px;text-align:center;display:none;">0</span>
+      </button>
     </div>
 
   <div class="prof-user-bar">
@@ -1534,7 +1537,8 @@ function initApp() {
     shortageRestoreRequestsData = [];
     snapshot.forEach(child => { shortageRestoreRequestsData.push({ id: child.key, ...child.val() }); });
     shortageRestoreRequestsData.sort((a,b)=>(b.requestedAt||0)-(a.requestedAt||0));
-    if (currentUser) { renderShortagesReport(); if (typeof renderShortagesArchive==='function') renderShortagesArchive(); }
+    handleShortageRestoreNotifications(shortageRestoreRequestsData);
+      if (currentUser) { renderShortagesReport(); if (typeof renderShortagesArchive==='function') renderShortagesArchive(); }
   }, error => console.error('Shortage Restore Requests:', error));
 }
 
@@ -4842,17 +4846,78 @@ function deleteArchivedShortage(id, type) {
   const path = type === 'cc' ? 'archived_cc_shortages/' + id : 'archived_shortages/' + id;
   db.ref(path).remove().then(()=>showToast('🗑️ تم حذف السجل من الأرشيف')).catch(err=>{showToast('❌ خطأ في الحذف',true);console.error(err);});
 }
+let adminShortageRestoreNotifIds = new Set();
+let adminShortageRestoreNotifInitialized = false;
+let adminShortageRestoreNotifCount = 0;
+
+function updateShortageRestoreNotificationUI() {
+  const btn = document.getElementById('shortageRestoreNotifBtn');
+  const badge = document.getElementById('shortageRestoreNotifBadge');
+  if (!btn || !badge) return;
+  const isAdmin = currentUser?.role === 'admin';
+  btn.style.display = isAdmin ? 'inline-flex' : 'none';
+  badge.textContent = String(isAdmin ? adminShortageRestoreNotifCount : 0);
+  badge.style.display = (isAdmin && adminShortageRestoreNotifCount > 0) ? 'block' : 'none';
+}
+function openShortageRestoreNotifications() {
+  if (currentUser?.role !== 'admin') return;
+  adminShortageRestoreNotifCount = 0;
+  updateShortageRestoreNotificationUI();
+  showTab('shortagesArchive');
+}
+function handleShortageRestoreNotifications(list) {
+  if (currentUser?.role !== 'admin') return;
+  const pendingIds = new Set(list.filter(r => r.status === 'pending').map(r => r.id));
+  if (!adminShortageRestoreNotifInitialized) {
+    adminShortageRestoreNotifIds = pendingIds;
+    adminShortageRestoreNotifInitialized = true;
+    updateShortageRestoreNotificationUI();
+    return;
+  }
+  let added = 0;
+  pendingIds.forEach(id => { if (!adminShortageRestoreNotifIds.has(id)) added++; });
+  adminShortageRestoreNotifIds = pendingIds;
+  if (added > 0) {
+    adminShortageRestoreNotifCount += added;
+    const newest = list.find(r => r.status === 'pending');
+    showToast(`🔔 طلب إرجاع جديد من الفرع${newest?.branch ? ` (${newest.branch})` : ''}`, false);
+  }
+  updateShortageRestoreNotificationUI();
+}
+function restoreArchivedShortage(id, type) {
+  if (currentUser?.role !== 'admin') { showToast('❌ إرجاع من الأرشيف متاح للأدمن فقط', true); return; }
+  const source = type === 'cc' ? archivedCCShortagesData : archivedShortagesData;
+  const item = source.find(x => x.id === id);
+  if (!item) return;
+  const targetPath = type === 'cc' ? 'callcenter_shortages/' : 'shortages/';
+  const archivePath = type === 'cc' ? 'archived_cc_shortages/' : 'archived_shortages/';
+  if (!confirm(`إرجاع الصنف ${item.productCode || ''} - ${item.productName || ''} من الأرشيف؟`)) return;
+  const restored = { ...item };
+  delete restored.id; delete restored.archivedAt;
+  restored.restoredFromArchiveAt = firebase.database.ServerValue.TIMESTAMP;
+  restored.restoredFromArchiveBy = currentUser.name || '';
+  restored.restoredFromArchiveById = currentUser.id || '';
+  const newKey = db.ref(targetPath).push().key;
+  const updates = {};
+  updates[targetPath + newKey] = restored;
+  updates[archivePath + id] = null;
+  db.ref().update(updates)
+    .then(() => showToast('↩️ تم إرجاع الصنف من الأرشيف'))
+    .catch(err => { showToast('❌ خطأ في إرجاع الصنف من الأرشيف', true); console.error(err); });
+}
+
 function renderShortagesArchive() {
   const stats=document.getElementById('shortagesArchiveStats');
   const appT=document.getElementById('archivedShortagesTable');
   const ccT=document.getElementById('archivedCCShortagesTable');
   const reqT=document.getElementById('shortageRestoreRequestsTable');
   if(!stats || !appT || !ccT || !reqT) return;
+  updateShortageRestoreNotificationUI();
   const pending=shortageRestoreRequestsData.filter(r=>r.status==='pending');
   stats.innerHTML=`<div class="stat-card"><div class="stat-number" style="color:#7c3aed;">${archivedShortagesData.length}</div><div class="stat-label">أرشيف نواقص الأبلكيشن</div></div><div class="stat-card"><div class="stat-number" style="color:#2563eb;">${archivedCCShortagesData.length}</div><div class="stat-label">أرشيف نواقص كول سنتر</div></div><div class="stat-card"><div class="stat-number" style="color:#d97706;">${pending.length}</div><div class="stat-label">طلبات إرجاع معلقة</div></div>`;
   reqT.innerHTML = pending.length ? pending.map((r,i)=>`<tr><td>${i+1}</td><td><strong>${escapeHtml(r.productCode||'')}</strong><br><span style="font-size:12px;color:#64748b;">${escapeHtml(r.productName||'')}</span></td><td>${escapeHtml(r.branch||'')}</td><td><span class="badge badge-purple">${escapeHtml(r.requestedBy||'')}</span></td><td>${r.requestedAt?new Date(r.requestedAt).toLocaleString('ar-EG'):''}</td><td><span class="badge badge-orange">قيد المراجعة</span></td><td><button class="btn btn-success btn-sm" onclick="approveShortageRestore('${r.id}')">✅ موافقة</button> <button class="btn btn-danger btn-sm" onclick="rejectShortageRestore('${r.id}')">❌ رفض</button></td></tr>`).join('') : '<tr><td colspan="7" class="empty-state">لا توجد طلبات إرجاع معلقة</td></tr>';
-  appT.innerHTML = archivedShortagesData.length ? archivedShortagesData.map((s,i)=>`<tr><td>${i+1}</td><td><strong>${escapeHtml(s.productCode||'')}</strong><br>${escapeHtml(s.productName||'')}</td><td>${escapeHtml(s.appName||'')}</td><td>${escapeHtml(s.branch||'')}</td><td>${escapeHtml(s.employee||'')}</td><td>${escapeHtml(s.date||'')}</td><td><span class="badge ${s.settled?'badge-green':'badge-gray'}">${s.settled?'تمت التسوية':'أرشيف'}</span></td><td><button class="btn btn-danger btn-sm" onclick="deleteArchivedShortage('${s.id}','app')">🗑️ حذف</button></td></tr>`).join('') : '<tr><td colspan="8" class="empty-state">أرشيف نواقص الأبلكيشن فارغ</td></tr>';
-  ccT.innerHTML = archivedCCShortagesData.length ? archivedCCShortagesData.map((s,i)=>`<tr><td>${i+1}</td><td><strong>${escapeHtml(s.productCode||'')}</strong><br>${escapeHtml(s.productName||'')}</td><td>${escapeHtml(s.customerName||'-')}</td><td>${escapeHtml(s.branch||'')}</td><td>${escapeHtml(s.employee||'')}</td><td>${escapeHtml(s.date||'')}</td><td><button class="btn btn-danger btn-sm" onclick="deleteArchivedShortage('${s.id}','cc')">🗑️ حذف</button></td></tr>`).join('') : '<tr><td colspan="7" class="empty-state">أرشيف نواقص كول سنتر فارغ</td></tr>';
+  appT.innerHTML = archivedShortagesData.length ? archivedShortagesData.map((s,i)=>`<tr><td>${i+1}</td><td><strong>${escapeHtml(s.productCode||'')}</strong><br>${escapeHtml(s.productName||'')}</td><td>${escapeHtml(s.appName||'')}</td><td>${escapeHtml(s.branch||'')}</td><td>${escapeHtml(s.employee||'')}</td><td>${escapeHtml(s.date||'')}</td><td><span class="badge ${s.settled?'badge-green':'badge-gray'}">${s.settled?'تمت التسوية':'أرشيف'}</span></td><td><button class="btn btn-success btn-sm" onclick="restoreArchivedShortage('${s.id}','app')">↩️ إرجاع</button> <button class="btn btn-danger btn-sm" onclick="deleteArchivedShortage('${s.id}','app')">🗑️ حذف</button></td></tr>`).join('') : '<tr><td colspan="8" class="empty-state">أرشيف نواقص الأبلكيشن فارغ</td></tr>';
+  ccT.innerHTML = archivedCCShortagesData.length ? archivedCCShortagesData.map((s,i)=>`<tr><td>${i+1}</td><td><strong>${escapeHtml(s.productCode||'')}</strong><br>${escapeHtml(s.productName||'')}</td><td>${escapeHtml(s.customerName||'-')}</td><td>${escapeHtml(s.branch||'')}</td><td>${escapeHtml(s.employee||'')}</td><td>${escapeHtml(s.date||'')}</td><td><button class="btn btn-success btn-sm" onclick="restoreArchivedShortage('${s.id}','cc')">↩️ إرجاع</button> <button class="btn btn-danger btn-sm" onclick="deleteArchivedShortage('${s.id}','cc')">🗑️ حذف</button></td></tr>`).join('') : '<tr><td colspan="7" class="empty-state">أرشيف نواقص كول سنتر فارغ</td></tr>';
 }
 
 
