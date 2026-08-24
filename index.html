@@ -1564,7 +1564,15 @@ function showToast(message, isError = false) {
 
 function enterDashboard(user, silent) {
   currentUser = user;
-  try { localStorage.setItem('currentUserId', user.id); } catch (e) { console.warn('localStorage غير متاح:', e); }
+  // sessionStorage يميز بين تسجيل الدخول/فتح الموقع لأول مرة وبين Refresh.
+  // localStorage وحده كان يجعل الحساب يستعيد آخر قسم حتى عند فتح الموقع من جديد.
+  let activeSession = false;
+  try { activeSession = sessionStorage.getItem('cc_active_session') === '1'; } catch (e) {}
+  if (!silent) activeSession = false;
+  try {
+    localStorage.setItem('currentUserId', user.id);
+    sessionStorage.setItem('cc_active_session', '1');
+  } catch (e) { console.warn('storage غير متاح:', e); }
   document.getElementById('loginPage').classList.add('hidden');
   document.getElementById('dashboard').classList.remove('hidden');
   document.getElementById('userName').textContent = user.name;
@@ -1585,14 +1593,15 @@ function enterDashboard(user, silent) {
   // استعادة جلسة كاملة قبل إظهار الـ Dashboard حتى لا يظهر "تسجيل أوردر جديد" لحظة الـ Refresh.
   let hashTab = '';
   try { hashTab = decodeURIComponent((window.location.hash || '').replace(/^#/, '')); } catch (e) {}
-  // حساب Branch: عند تسجيل الدخول فعلياً يبدأ من الرئيسية، أما عند الـ Refresh فيستعيد نفس الشاشة السابقة.
-  // silent=true يعني استعادة جلسة موجودة بعد Refresh، وsilent=false يعني Login جديد.
+  // عند تسجيل الدخول/فتح الموقع من جديد: الرئيسية دائماً.
+  // عند Refresh داخل نفس جلسة المتصفح: نستعيد نفس الشاشة بالضبط.
   const isBranchUser = user.role === 'branch';
   const storedTabRaw = (hashTab || localStorage.getItem('cc_current_tab') || currentTab || 'dashboardHome');
   const allowedTabs = new Set(['dashboardHome','newOrder','myOrders','allOrders','allAppOrders','doneOrders','cancelOrders','shortages','shortagesReport','callcenterShortages','ccShortagesReport','archive','users','branches','apps','products','customers','branchExcelSections']);
   const storedTab = allowedTabs.has(storedTabRaw) || /^branchExcel_[^/]+$/.test(storedTabRaw) ? storedTabRaw : 'dashboardHome';
-  const savedTab = (isBranchUser && !silent) ? 'dashboardHome' : storedTab;
-  if (isBranchUser && !silent) {
+  const shouldStartHome = !activeSession || !silent;
+  const savedTab = shouldStartHome ? 'dashboardHome' : storedTab;
+  if (shouldStartHome) {
     try { localStorage.setItem('cc_current_tab','dashboardHome'); history.replaceState(null,'','#dashboardHome'); } catch (e) {}
   }
   restoreTargetTab = savedTab;
@@ -1646,7 +1655,12 @@ document.addEventListener('click', (e) => {
 
 function doLogout() {
   currentUser = null;
-  try { localStorage.removeItem('currentUserId'); } catch (e) {}
+  try {
+    localStorage.removeItem('currentUserId');
+    sessionStorage.removeItem('cc_active_session');
+    localStorage.setItem('cc_current_tab','dashboardHome');
+    history.replaceState(null,'','#dashboardHome');
+  } catch (e) {}
   document.getElementById('dashboard').classList.add('hidden');
   document.getElementById('loginPage').classList.remove('hidden');
   document.getElementById('loginUser').value = '';
