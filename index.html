@@ -1339,8 +1339,8 @@ function getBranchExcelEditableColumn(){
   return 8; // Any other user with branch Excel access can edit Column I only.
 }
 function getAppBranches(){ return (branchesData||[]).filter(b=>b.isApp); }
-// فروع Excel: كل الفروع لها ملف Excel مستقل، سواء كان الفرع مفعّل للأبلكيشن أم لا.
-function getExcelBranches(){ return (branchesData||[]); }
+// ملفات Excel الخاصة بالفروع: تظهر فقط للفروع المفعّل لها الأبلكيشن.
+function getExcelBranches(){ return getAppBranches(); }
 
 
 // تعديل: الأقسام الافتراضية حسب الدور (تُستخدم كـ fallback للمستخدمين القدامى بدون تحديد يدوي للأقسام)
@@ -2458,7 +2458,7 @@ function branchExcelRowHtml(branchId,ri,row,maxCols,priorityCols,sheetName){
       const canEdit=isAdmin || editableCol===ci;
       if(canEdit){
         return `<td class="${classes}" data-col-index="${ci}">
-          <input class="branch-excel-cell-input" data-row="${ri}" data-col="${ci}" value="${escapeHtml(v)}" onchange="saveBranchExcelCell('${branchId}',${ri},${ci},this.value,${JSON.stringify(currentSheetName)})">
+          <input class="branch-excel-cell-input" data-row="${ri}" data-col="${ci}" value="${escapeHtml(v)}" onchange="saveBranchExcelCell('${branchId}',${ri},${ci},this.value,${JSON.stringify(currentSheetName)})" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}">
         </td>`;
       }
       return `<td class="${classes}" data-col-index="${ci}">${escapeHtml(v)}</td>`;
@@ -2531,10 +2531,29 @@ function saveBranchExcelCell(branchId,rowIndex,colIndex,value,sourceSheetName){
   const d=branchExcelData[branchId]; if(!d) return;
   const sheetName=sourceSheetName && Object.values(d.sheets||{}).some(s=>s.name===sourceSheetName) ? sourceSheetName : (d.activeSheet && Object.values(d.sheets||{}).some(s=>s.name===d.activeSheet) ? d.activeSheet : ((d.sheets&&Object.values(d.sheets)[0])||{}).name);
   if(!sheetName) return;
-  const sheetKey=safeBranchSheetKey(sheetName), oldValue=((((d.sheets||{})[sheetKey]||{}).rows||[])[rowIndex]||[])[colIndex]??'', auditKey=rtdb.ref('branch_excel_audit/'+branchId).push().key, now=Date.now(), updateData={};
+  const sheetKey=safeBranchSheetKey(sheetName), sheetObj=(d.sheets||{})[sheetKey];
+  if(!sheetObj || !Array.isArray(sheetObj.rows) || !sheetObj.rows[rowIndex]){ showToast('❌ تعذر تحديد الصف المطلوب حفظه',true); return; }
+  const oldValue=sheetObj.rows[rowIndex][colIndex]??'';
+  const auditKey=rtdb.ref('branch_excel_audit/'+branchId).push().key, now=Date.now(), updateData={};
   updateData[`branch_excel/${branchId}/sheets/${sheetKey}/rows/${rowIndex}/${colIndex}`]=value;
-  updateData[`branch_excel_audit/${branchId}/${auditKey}`]={userId:currentUser?.id||'',userName:currentUser?.name||'',role:currentUser?.role||'',action:'edit_cell',sheet:sheetName,row:rowIndex+1,column:excelColLetter(colIndex),header:String(((((d.sheets||{})[sheetKey]||{}).rows||[])[0]||[])[colIndex]||''),oldValue:String(oldValue),newValue:String(value??''),at:now};
-  rtdb.ref().update(updateData).then(()=>showToast('✅ تم حفظ التعديل وتسجيله باسم المستخدم')).catch(err=>{console.error(err);showToast('❌ تعذر حفظ التعديل',true);});
+  updateData[`branch_excel_audit/${branchId}/${auditKey}`]={userId:currentUser?.id||'',userName:currentUser?.name||'',role:currentUser?.role||'',action:'edit_cell',sheet:sheetName,row:rowIndex+1,column:excelColLetter(colIndex),header:String((sheetObj.rows[0]||[])[colIndex]||''),oldValue:String(oldValue),newValue:String(value??''),at:now};
+
+  // تحديث الواجهة فورًا وإظهار حالة الحفظ للمستخدم، ثم تأكيد الحفظ من قاعدة البيانات.
+  sheetObj.rows[rowIndex][colIndex]=value;
+  const wrap=document.getElementById('branchExcel_'+branchId);
+  const input=wrap?.querySelector(`input[data-row="${rowIndex}"][data-col="${colIndex}"]`);
+  if(input){ input.dataset.saveState='saving'; input.style.borderColor='#f59e0b'; input.title='جاري الحفظ...'; }
+  showToast('⏳ جاري حفظ التعديل...');
+  rtdb.ref().update(updateData).then(()=>{
+    if(input){ input.dataset.saveState='saved'; input.style.borderColor='#16a34a'; input.title='تم الحفظ'; setTimeout(()=>{ if(input) input.style.borderColor=''; },1200); }
+    showToast('✅ تم الحفظ بنجاح');
+  }).catch(err=>{
+    console.error('Branch Excel save error:',err);
+    sheetObj.rows[rowIndex][colIndex]=oldValue;
+    if(input){ input.value=oldValue; input.dataset.saveState='error'; input.style.borderColor='#dc2626'; input.title='فشل الحفظ'; }
+    showToast('❌ لم يتم الحفظ. تحقق من اتصال قاعدة البيانات والصلاحيات.',true);
+    renderBranchExcelSection(branchId);
+  });
 }
 function openBranchExcelUpload(branchId){
   if(!currentUser || currentUser.role!=='admin'){ showToast('⛔ رفع ملفات Excel للأدمن فقط',true); return; }
