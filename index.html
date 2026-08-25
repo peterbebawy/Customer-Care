@@ -1748,6 +1748,20 @@ function setupIdleWatcher() {
   });
 }
 
+// ESC يعمل من أي مكان في الموقع لإغلاق أي نافذة/قائمة/اقتراح مفتوح.
+document.addEventListener('keydown', function(e){
+  if(e.key !== 'Escape') return;
+  e.preventDefault();
+  // Close all modal overlays.
+  document.querySelectorAll('.modal-overlay:not(.hidden)').forEach(el=>el.classList.add('hidden'));
+  // Close sidebar.
+  try { toggleNavPanel(false); } catch(_) {}
+  // Close common suggestion/dropdown menus.
+  document.querySelectorAll('.suggestions:not(.hidden), .branch-excel-column-menu:not(.hidden)').forEach(el=>el.classList.add('hidden'));
+  // Close the branch dashboard's last-orders panel if open.
+  document.getElementById('branchDashLastOrders')?.classList.add('hidden');
+});
+
 function renderBranchExcelPermissionChecks(selectedSections){
   const box=document.getElementById('branchExcelPermissionChecks');
   if(!box) return;
@@ -2866,8 +2880,37 @@ function getExcelOrderType(v){
   if(/(^|\D)82(\D|$)/.test(x) && x.includes('فيزيتا') && (x.includes('اون لاين') || x.includes('اونلاين') || x.includes('online'))) return 'فيزيتا (اون لاين)';
   return '';
 }
+// Branch Excel order counting is based on Column J (index 9):
+// - Blank application number = NOT counted
+// - Same application number across multiple Excel rows = ONE order
+// - One application number may have multiple item/line rows; the representative row is used for type/value.
+function normalizeBranchAppNumber(v){
+  return String(v ?? '').trim().replace(/\s+/g,' ').toLowerCase();
+}
+function getUniqueBranchExcelOrders(rows){
+  const groups=new Map();
+  const missing=[];
+  (rows||[]).forEach(x=>{
+    const appNo=normalizeBranchAppNumber(x.row?.[9]); // Column J
+    if(!appNo){ missing.push(x); return; }
+    if(!groups.has(appNo)) groups.set(appNo,[]);
+    groups.get(appNo).push(x);
+  });
+  const unique=[];
+  groups.forEach((group,appNo)=>{
+    // Use the first row as the representative order row.
+    // If any line is cancelled, the order is considered cancelled.
+    const representative={...group[0], appNumber:appNo, sourceRows:group};
+    representative.isCancelled=group.some(x=>{
+      const st=normalizeExcelText(x.row?.[5]);
+      return st.includes('الغاء') || st.includes('إلغاء');
+    });
+    unique.push(representative);
+  });
+  return {unique,missing};
+}
 function countCancelledExcel(rows){
-  return rows.filter(x=>normalizeExcelText(x.row?.[5]).includes('الغاء') || normalizeExcelText(x.row?.[5]).includes('إلغاء')).length;
+  return getUniqueBranchExcelOrders(rows).unique.filter(x=>x.isCancelled).length;
 }
 function renderBranchDashboard(fromValue,toValue,label){
   const panel=document.getElementById('branchDashboardPanel'); if(!panel) return;
@@ -2881,29 +2924,33 @@ function renderBranchDashboard(fromValue,toValue,label){
     return;
   }
   const rows=getBranchDashboardRows(branchId,from,to);
-  // لا يدخل في الحساب إلا الأكواد الستة المعتمدة في Column B.
-  const countedRows=rows.filter(x=>!!getExcelOrderType(x.row?.[1]));
-  const instashopRows=countedRows.filter(x=>getExcelOrderType(x.row?.[1]).startsWith('انستاشوب'));
-  const talabatRows=countedRows.filter(x=>getExcelOrderType(x.row?.[1]).startsWith('طلبات'));
-  const visitaRows=countedRows.filter(x=>getExcelOrderType(x.row?.[1]).startsWith('فيزيتا'));
+  const grouped=getUniqueBranchExcelOrders(rows);
+  // الحساب كله يعتمد على رقم التطبيق في Column J. الصفوف بدون رقم تطبيق مستبعدة بالكامل.
+  const countedOrders=grouped.unique.filter(x=>!!getExcelOrderType(x.row?.[1]));
+  const instashopRows=countedOrders.filter(x=>getExcelOrderType(x.row?.[1]).startsWith('انستاشوب'));
+  const talabatRows=countedOrders.filter(x=>getExcelOrderType(x.row?.[1]).startsWith('طلبات'));
+  const visitaRows=countedOrders.filter(x=>getExcelOrderType(x.row?.[1]).startsWith('فيزيتا'));
   const instashop=instashopRows.length, instashopValue=sumExcelCol(instashopRows,3);
   const talabat=talabatRows.length, talabatValue=sumExcelCol(talabatRows,3);
   const visita=visitaRows.length, visitaValue=sumExcelCol(visitaRows,3);
   const total=instashop+talabat+visita;
   const value=instashopValue+talabatValue+visitaValue;
-  const cancelled=countCancelledExcel(rows);
+  const cancelled=grouped.unique.filter(x=>x.isCancelled).length;
+  const missingAppCount=grouped.missing.length;
   const money=n=>Number(n||0).toLocaleString('en-US',{maximumFractionDigits:2})+' ج.م';
   const boxes=[
     ['📦','إجمالي الأوردرات',total,money(value),'total'],
     ['🛍️','انستاشوب',instashop,money(instashopValue),'instashop'],
     ['🛵','طلبات',talabat,money(talabatValue),'talabat'],
     ['🩺','فيزيتا',visita,money(visitaValue),'visita'],
-    ['❌','ملغى',cancelled,'اضغط لعرض المراجعة','cancelled']
+    ['❌','ملغى',cancelled,'اضغط لعرض المراجعة','cancelled'],
+    ...(currentUser?.role==='admin' ? [['⚠️','بدون رقم تطبيق',missingAppCount,'أوردرات مستبعدة من الحساب — اضغط للمراجعة','missingApp']] : [])
   ];
   document.getElementById('branchDashMeta').textContent=`${label||'الفترة المحددة'} — ${fromValue} إلى ${toValue}`;
   document.getElementById('branchDashKpis').innerHTML=boxes.map(k=>{
-    const clickable=k[4]==='cancelled';
-    return `<div class="kpi-card" ${clickable?`role="button" tabindex="0" onclick="showBranchCancelledReview()" onkeydown="if(event.key==='Enter'||event.key===' ')showBranchCancelledReview()" style="cursor:pointer;"`:''}>`+
+    const clickable=k[4]==='cancelled' || k[4]==='missingApp';
+    const clickAction=k[4]==='missingApp'?'showBranchMissingAppReview()':'showBranchCancelledReview()';
+    return `<div class="kpi-card" ${clickable?`role="button" tabindex="0" onclick="${clickAction}" onkeydown="if(event.key==='Enter'||event.key===' ')${clickAction}" style="cursor:pointer;"`:''}>`+
       `<div class="kpi-top"><span>${k[1]}</span><span class="kpi-icon">${k[0]}</span></div>`+
       `<div class="kpi-value">${k[2]}</div>`+
       `<div class="kpi-note" style="line-height:1.7">${k[3]}</div></div>`;
@@ -2959,16 +3006,55 @@ function showBranchCancelledReview(){
 function closeBranchCancelledReview(){
   document.getElementById('branchCancelledReviewModal')?.classList.add('hidden');
 }
+function showBranchMissingAppReview(){
+  if(currentUser?.role!=='admin') return;
+  const branchId=currentUser?.branchId || currentUser?.branch || currentUser?.branchID;
+  const f=document.getElementById('branchDashFrom')?.value, t=document.getElementById('branchDashTo')?.value;
+  const from=branchExcelParseDateInput(f), to=branchExcelParseDateInput(t);
+  if(!branchId || !from || !to) return;
+  const grouped=getUniqueBranchExcelOrders(getBranchDashboardRows(branchId,from,to));
+  const rows=grouped.missing||[];
+  let modal=document.getElementById('branchMissingAppReviewModal');
+  if(!modal){
+    modal=document.createElement('div');
+    modal.id='branchMissingAppReviewModal';
+    modal.className='hidden modal-overlay';
+    modal.innerHTML=`<div class="modal-content" style="max-width:1200px;width:96%;max-height:90vh;overflow:auto;">
+      <div class="modal-header"><h3>⚠️ أوردرات بدون رقم تطبيق</h3><button class="close-btn" onclick="closeBranchMissingAppReview()">&times;</button></div>
+      <div id="branchMissingAppReviewMeta" style="font-size:12px;color:#64748b;margin-bottom:12px;"></div>
+      <div id="branchMissingAppReviewBody"></div>
+    </div>`;
+    document.body.appendChild(modal);
+  }
+  const body=document.getElementById('branchMissingAppReviewBody');
+  const meta=document.getElementById('branchMissingAppReviewMeta');
+  if(meta) meta.textContent=`عدد الصفوف بدون رقم تطبيق: ${rows.length} — الفترة ${f} إلى ${t}. هذه الصفوف لا تدخل في أي إجمالي.`;
+  if(!rows.length){
+    body.innerHTML='<div style="padding:30px;text-align:center;color:#64748b;">لا توجد أوردرات بدون رقم تطبيق في الفترة المحددة.</div>';
+  }else{
+    const maxCols=Math.max(...rows.map(x=>(x.row||[]).length),10);
+    const firstHeader=rows.find(x=>Array.isArray(x.row)&&x.row.length)?.row||[];
+    const headers=Array.from({length:maxCols},(_,i)=>String(firstHeader[i]??`Column ${String.fromCharCode(65+i)}`));
+    body.innerHTML=`<div style="overflow:auto;"><table style="width:max-content;min-width:100%;border-collapse:collapse;"><thead><tr>${headers.map((h,i)=>`<th style="padding:9px;border-bottom:1px solid #e2e8f0;background:#f8fafc;white-space:nowrap;">${escapeHtml(h||`Column ${String.fromCharCode(65+i)}`)}</th>`).join('')}</tr></thead><tbody>${rows.map(x=>`<tr>${Array.from({length:maxCols},(_,i)=>`<td style="padding:8px;border-bottom:1px solid #eef2f7;vertical-align:top;">${escapeHtml(x.row?.[i]??'')}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
+  }
+  modal.classList.remove('hidden');
+}
+function closeBranchMissingAppReview(){
+  document.getElementById('branchMissingAppReviewModal')?.classList.add('hidden');
+}
+
 function showLastBranchOrders(){
   const branchId=currentUser?.branchId || currentUser?.branch || currentUser?.branchID;
   if(!branchId) return;
   const now=new Date(), from=new Date(now.getFullYear(),now.getMonth(),now.getDate()), to=new Date(now.getFullYear(),now.getMonth(),now.getDate());
   const rows=getBranchDashboardRows(branchId,from,to);
+  const grouped=getUniqueBranchExcelOrders(rows);
+  const uniqueRows=grouped.unique.filter(x=>!!getExcelOrderType(x.row?.[1]));
   const box=document.getElementById('branchDashLastOrders'); if(!box) return;
   box.classList.remove('hidden');
   box.innerHTML=`<div style="font-weight:800;margin-bottom:10px;">🕛 آخر أوردرات اليوم — من 12:00 بالليل إلى 12:00 بالليل</div>
     <div class="table-wrap"><table><thead><tr><th>#</th><th>نوع الأوردر</th><th>صافى الفاتورة</th><th>الحالة</th></tr></thead><tbody>
-    ${rows.length?rows.map((x,i)=>`<tr><td>${i+1}</td><td>${escapeHtml(x.row?.[1]??'')}</td><td>${escapeHtml(x.row?.[3]??'')}</td><td>${normalizeExcelText(x.row?.[5]).includes('الغاء')||normalizeExcelText(x.row?.[5]).includes('إلغاء')?'ملغى':'—'}</td></tr>`).join(''):'<tr><td colspan="4" style="text-align:center">لا توجد أوردرات اليوم.</td></tr>'}
+    ${uniqueRows.length?uniqueRows.map((x,i)=>`<tr><td>${i+1}</td><td>${escapeHtml(x.row?.[1]??'')}</td><td>${escapeHtml(x.row?.[3]??'')}</td><td>${normalizeExcelText(x.row?.[5]).includes('الغاء')||normalizeExcelText(x.row?.[5]).includes('إلغاء')?'ملغى':'—'}</td></tr>`).join(''):'<tr><td colspan="4" style="text-align:center">لا توجد أوردرات اليوم.</td></tr>'}
     </tbody></table></div>`;
   renderBranchDashboard(branchExcelDateKey(from),branchExcelDateKey(to),'آخر أوردرات اليوم');
 }
