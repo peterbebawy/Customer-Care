@@ -2538,8 +2538,11 @@ function saveBranchExcelCell(branchId,rowIndex,colIndex,value,sourceSheetName){
     : (d.activeSheet && Object.values(sheets).some(s=>s.name===d.activeSheet)
       ? d.activeSheet : ((Object.values(sheets)[0]||{}).name||''));
   if(!sheetName){ showToast('❌ تعذر تحديد الشيت',true); return; }
-  const sheetKey=safeBranchSheetKey(sheetName), sheetObj=sheets[sheetKey];
+  // استخدم المفتاح الفعلي المخزن في Firebase حسب اسم الشيت؛ لا تفترض أن المفتاح مولد بنفس الطريقة القديمة.
+  const sheetKey=Object.keys(sheets).find(k=>String((sheets[k]||{}).name||'')===String(sheetName)) || safeBranchSheetKey(sheetName);
+  const sheetObj=sheets[sheetKey];
   if(!sheetObj || !Array.isArray(sheetObj.rows) || !sheetObj.rows[rowIndex]){
+    console.error('Excel save: sheet/row not found',{branchId,rowIndex,colIndex,sheetName,sheetKey,availableSheets:Object.keys(sheets)});
     showToast('❌ تعذر تحديد الصف المطلوب حفظه',true); return;
   }
   const oldValue=sheetObj.rows[rowIndex][colIndex]??'';
@@ -2550,7 +2553,8 @@ function saveBranchExcelCell(branchId,rowIndex,colIndex,value,sourceSheetName){
 
   // حدّث الذاكرة المحلية فورًا، ثم احفظ الخلية نفسها مباشرة.
   sheetObj.rows[rowIndex][colIndex]=cleanValue;
-  const cellRef=rtdb.ref(`branch_excel/${branchId}/sheets/${sheetKey}/rows/${rowIndex}/${colIndex}`);
+  const cellPath=`branch_excel/${branchId}/sheets/${sheetKey}/rows/${rowIndex}/${colIndex}`;
+  const cellRef=rtdb.ref(cellPath);
   cellRef.set(cleanValue).then(()=>{
     // سجل التدقيق بشكل مستقل؛ فشل سجل التدقيق لا يفشل حفظ الخلية.
     const auditKey=rtdb.ref(`branch_excel_audit/${branchId}`).push().key;
@@ -2571,10 +2575,13 @@ function saveBranchExcelCell(branchId,rowIndex,colIndex,value,sourceSheetName){
     }
     showToast('✅ تم الحفظ بنجاح');
   }).catch(err=>{
-    console.error('Branch Excel cell save error:',err);
+    console.error('Branch Excel cell save error:',err, {path:cellPath});
     sheetObj.rows[rowIndex][colIndex]=oldValue;
     if(input){ input.value=String(oldValue); input.dataset.saveState='error'; input.style.borderColor='#dc2626'; input.title='فشل الحفظ'; }
-    showToast('❌ لم يتم الحفظ. تحقق من صلاحيات قاعدة البيانات أو الاتصال.',true);
+    const msg=err && (err.code==='PERMISSION_DENIED' || /permission/i.test(String(err.message||'')))
+      ? '❌ Firebase رفض الحفظ: لا توجد صلاحية كتابة لهذا المسار.'
+      : `❌ لم يتم الحفظ: ${String(err?.message||err||'خطأ غير معروف')}`;
+    showToast(msg,true);
   });
 }
 function openBranchExcelUpload(branchId){
