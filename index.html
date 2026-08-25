@@ -2517,64 +2517,193 @@ function safeBranchSheetKey(name){
 }
 function saveBranchExcelCell(branchId,rowIndex,colIndex,value,sourceSheetName){
   if(!currentUser){ showToast('⛔ يجب تسجيل الدخول أولاً',true); return; }
+
   const editableCol=getBranchExcelEditableColumn();
-  if(editableCol===null){ showToast('⛔ ليس لديك صلاحية تعديل ملف Excel',true); return; }
+  if(editableCol===null){
+    showToast('⛔ ليس لديك صلاحية تعديل ملف Excel',true);
+    return;
+  }
   if(editableCol!==-1 && colIndex!==editableCol){
     const allowedLabel=editableCol===9?'Column J':'Column I';
-    showToast(`⛔ مسموح لك تعديل ${allowedLabel} فقط`,true); return;
+    showToast(`⛔ مسموح لك تعديل ${allowedLabel} فقط`,true);
+    return;
   }
   if(currentUser.role!=='admin' && !hasBranchExcelPermission(branchId)){
-    showToast('⛔ ليس لديك صلاحية لهذا الفرع',true); return;
+    showToast('⛔ ليس لديك صلاحية لهذا الفرع',true);
+    return;
   }
+
   const d=branchExcelData[branchId];
-  if(!d || !d.sheets){ showToast('❌ بيانات ملف الفرع غير متاحة',true); return; }
+  if(!d || !d.sheets){
+    showToast('❌ بيانات ملف الفرع غير متاحة',true);
+    return;
+  }
 
   const sheets=d.sheets||{};
   const sheetName = sourceSheetName && Object.values(sheets).some(s=>String(s?.name||'')===String(sourceSheetName))
     ? String(sourceSheetName)
     : (d.activeSheet && Object.values(sheets).some(s=>String(s?.name||'')===String(d.activeSheet))
-      ? String(d.activeSheet) : String((Object.values(sheets)[0]||{}).name||''));
-  if(!sheetName){ showToast('❌ تعذر تحديد الشيت',true); return; }
+      ? String(d.activeSheet)
+      : String((Object.values(sheets)[0]||{}).name||''));
+
+  if(!sheetName){
+    showToast('❌ تعذر تحديد الشيت',true);
+    return;
+  }
 
   const sheetKey=Object.keys(sheets).find(k=>String((sheets[k]||{}).name||'')===sheetName);
   const sheetObj=sheetKey ? sheets[sheetKey] : null;
+
   if(!sheetKey || !sheetObj || !Array.isArray(sheetObj.rows) || !sheetObj.rows[rowIndex]){
-    console.error('Excel save: sheet/row not found',{branchId,rowIndex,colIndex,sheetName,sheetKey,availableSheets:Object.keys(sheets)});
-    showToast('❌ تعذر تحديد الصف المطلوب حفظه',true); return;
+    console.error('Excel save: sheet/row not found',{
+      branchId,rowIndex,colIndex,sheetName,sheetKey,
+      availableSheets:Object.keys(sheets)
+    });
+    showToast('❌ تعذر تحديد الصف المطلوب حفظه',true);
+    return;
   }
 
   const oldValue=sheetObj.rows[rowIndex][colIndex]??'';
   const cleanValue=value==null?'':String(value);
-  const input=document.querySelector(`#branchExcel_${CSS.escape(branchId)} input[data-row="${rowIndex}"][data-col="${colIndex}"]`);
-  if(input){ input.dataset.saveState='saving'; input.style.borderColor='#f59e0b'; input.title='جاري الحفظ...'; }
+
+  const input=document.querySelector(
+    `#branchExcel_${CSS.escape(branchId)} input[data-row="${rowIndex}"][data-col="${colIndex}"]`
+  );
+
+  if(input){
+    input.dataset.saveState='saving';
+    input.style.borderColor='#f59e0b';
+    input.title='جاري الحفظ...';
+  }
+
   showToast('⏳ جاري حفظ التعديل...');
 
-  // حفظ الخلية مباشرة في Firebase. هذا يمنع إعادة بناء ملف الشيت كاملًا أو الكتابة فوق تعديلات أخرى.
+  /*
+   * مهم:
+   * لا نستخدم set() على /rows/... مباشرة فقط.
+   * نستخدم update() من root مع المسار الكامل، ثم نتحقق من القيمة
+   * فعلياً من Firebase. هذا يمنع مشكلة أن التعديل يظهر محلياً
+   * ثم يختفي بعد إعادة تحميل الصفحة.
+   */
   const cellPath=`branch_excel/${branchId}/sheets/${sheetKey}/rows/${rowIndex}/${colIndex}`;
-  const cellRef=rtdb.ref(cellPath);
   const auditKey=rtdb.ref(`branch_excel_audit/${branchId}`).push().key;
+
   const audit={
-    userId:currentUser?.id||'', userName:currentUser?.name||'', role:currentUser?.role||'',
-    action:'edit_cell', sheet:sheetName, row:rowIndex+1, column:excelColLetter(colIndex),
-    header:String((sheetObj.rows[0]||[])[colIndex]||''), oldValue:String(oldValue),
-    newValue:cleanValue, at:Date.now()
+    userId:currentUser?.id||'',
+    userName:currentUser?.name||'',
+    role:currentUser?.role||'',
+    action:'edit_cell',
+    sheet:sheetName,
+    row:rowIndex+1,
+    column:excelColLetter(colIndex),
+    header:String((sheetObj.rows[0]||[])[colIndex]||''),
+    oldValue:String(oldValue),
+    newValue:cleanValue,
+    at:Date.now()
   };
 
-  cellRef.set(cleanValue).then(()=>{
-    // حدث الذاكرة المحلية فقط بعد نجاح Firebase.
+  const markSaved=()=>{
     sheetObj.rows[rowIndex][colIndex]=cleanValue;
-    if(input){ input.value=cleanValue; input.dataset.saveState='saved'; input.style.borderColor='#16a34a'; input.title='تم الحفظ'; }
+
+    if(input){
+      input.value=cleanValue;
+      input.dataset.saveState='saved';
+      input.style.borderColor='#16a34a';
+      input.title='تم الحفظ';
+    }
+
     showToast('✅ تم الحفظ بنجاح');
-    // الـ Audit اختياري ولا يمنع نجاح الحفظ.
-    return rtdb.ref(`branch_excel_audit/${branchId}/${auditKey}`).set(audit).catch(e=>console.warn('Excel audit save failed:',e));
-  }).catch(err=>{
-    console.error('Branch Excel cell save error:',err,{path:cellPath,code:err?.code,message:err?.message});
-    if(input){ input.value=String(oldValue); input.dataset.saveState='error'; input.style.borderColor='#dc2626'; input.title='فشل الحفظ'; }
-    const msg=err && (err.code==='PERMISSION_DENIED' || /permission/i.test(String(err.message||'')))
+
+    // Audit اختياري: لو فشل لا نعتبر حفظ الخلية فاشلاً.
+    if(auditKey){
+      rtdb.ref(`branch_excel_audit/${branchId}/${auditKey}`)
+        .set(audit)
+        .catch(e=>console.warn('Excel audit save failed:',e));
+    }
+  };
+
+  const markError=(err)=>{
+    console.error('Branch Excel cell save error:',err,{
+      path:cellPath,
+      code:err?.code,
+      message:err?.message
+    });
+
+    if(input){
+      input.value=String(oldValue);
+      input.dataset.saveState='error';
+      input.style.borderColor='#dc2626';
+      input.title='فشل الحفظ';
+    }
+
+    const msg=err && (
+      err.code==='PERMISSION_DENIED' ||
+      /permission/i.test(String(err.message||''))
+    )
       ? '❌ Firebase رفض الحفظ: راجع صلاحيات الكتابة على branch_excel.'
       : `❌ لم يتم الحفظ: ${String(err?.message||err||'خطأ غير معروف')}`;
+
     showToast(msg,true);
-  });
+  };
+
+  // الطريقة الأساسية: root update
+  const updatePayload={};
+  updatePayload[cellPath]=cleanValue;
+
+  rtdb.ref().update(updatePayload)
+    .then(()=>{
+      // تحقق فعلي من Firebase قبل إظهار "تم الحفظ".
+      return rtdb.ref(cellPath).once('value').then(snap=>{
+        const savedValue=snap.val()==null?'':String(snap.val());
+        if(savedValue!==cleanValue){
+          throw new Error(
+            `تم إرسال التعديل لكن Firebase أعاد قيمة مختلفة: "${savedValue}"`
+          );
+        }
+        markSaved();
+      });
+    })
+    .catch(err=>{
+      /*
+       * Fallback:
+       * لو كانت قواعد Firebase الحالية تمنع الكتابة الجزئية داخل rows،
+       * نحفظ نسخة branch_excel كاملة بعد تعديل الذاكرة.
+       */
+      console.warn('Excel cell root update failed, trying full branch fallback...',err);
+
+      try{
+        // عدّل نسخة منفصلة حتى لا نخرب البيانات المحلية الأصلية إذا فشل الـ fallback.
+        const fallbackData=JSON.parse(JSON.stringify(d));
+        const fallbackSheet=fallbackData.sheets?.[sheetKey];
+
+        if(!fallbackSheet || !Array.isArray(fallbackSheet.rows) || !fallbackSheet.rows[rowIndex]){
+          throw err;
+        }
+
+        fallbackSheet.rows[rowIndex][colIndex]=cleanValue;
+
+        return rtdb.ref(`branch_excel/${branchId}`).set(fallbackData)
+          .then(()=>{
+            return rtdb.ref(cellPath).once('value').then(snap=>{
+              const savedValue=snap.val()==null?'':String(snap.val());
+              if(savedValue!==cleanValue){
+                throw new Error(
+                  `فشل التحقق بعد الحفظ الكامل. القيمة الحالية: "${savedValue}"`
+                );
+              }
+
+              // استبدال النسخة المحلية فقط بعد نجاح Firebase.
+              branchExcelData[branchId]=fallbackData;
+              markSaved();
+            });
+          })
+          .catch(fallbackErr=>{
+            markError(fallbackErr);
+          });
+      }catch(fallbackBuildErr){
+        markError(fallbackBuildErr);
+      }
+    });
 }
 
 function handleBranchExcelUpload(branchId,file){
