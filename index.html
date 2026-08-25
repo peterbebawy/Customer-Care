@@ -1298,6 +1298,7 @@ let currentUser = null;
 let usersData = [], ordersData = [], appOrdersData = [], branchesData = [], productsData = [], customersData = [], appsData = [], shortagesData = [], ccShortagesData = [], archiveData = [];
 let archivedShortagesData = [], archivedCCShortagesData = [], shortageRestoreRequestsData = [];
 let branchExcelData = {}; // {branchId: {fileName,uploadedAt,uploadedBy,sheets:{sheetKey:{name,rows:[]}}}}
+let branchExcelEdits = {}; // {branchId: {sheetKey: {rowIndex: {colIndex: value}}}} - persistent cell edits
 let branchExcelListeners = {};
 let branchPhoneReviewData = {}; // {branchId:{fileName,uploadedAt,uploadedBy,customers:[{name,phone,normalizedPhone}]}}
 let currentTab = localStorage.getItem('cc_current_tab') || 'dashboardHome';
@@ -2134,10 +2135,20 @@ function setupBranchExcelListeners(){
     branchExcelListeners[b.id]=true;
     rtdb.ref('branch_excel/'+b.id).on('value',snap=>{
       branchExcelData[b.id]=snap.val()||null;
+      branchExcelApplySavedEdits(b.id);
       renderBranchExcelSections();
       if(currentTab==='branchExcel_'+b.id) renderBranchExcelSection(b.id);
       if(currentUser?.role==='branch' && currentUser.branchId===b.id && currentTab==='dashboardHome') renderDashboardHome();
     }, err=>console.error('Branch Excel '+b.id+':',err));
+
+    // Separate lightweight listener for cell edits. This makes edits survive refresh
+    // even when the original Excel payload is large or has strict validation rules.
+    rtdb.ref('branch_excel_edits/'+b.id).on('value',snap=>{
+      branchExcelEdits[b.id]=snap.val()||{};
+      branchExcelApplySavedEdits(b.id);
+      renderBranchExcelSections();
+      if(currentTab==='branchExcel_'+b.id) renderBranchExcelSection(b.id);
+    }, err=>console.error('Branch Excel edits '+b.id+':',err));
   });
   renderBranchExcelSections();
 }
@@ -2515,79 +2526,68 @@ function safeBranchSheetKey(name){
   return 'sheet_' + encodeURIComponent(String(name||''))
     .replace(/\./g,'%2E').replace(/#/g,'%23').replace(/\$/g,'%24').replace(/\[/g,'%5B').replace(/\]/g,'%5D');
 }
-function saveBranchExcelCell(branchId,rowIndex,colIndex,value,sourceSheetName){
+function branchExcelApplySavedEdits(branchId){
+  const d=branchExcelData[branchId];
+  const edits=branchExcelEdits[branchId];
+  if(!d || !d.sheets || !edits) return;
+  Object.keys(edits).forEach(sheetKey=>{
+    const sheet=d.sheets[sheetKey];
+    if(!sheet || !Array.isArray(sheet.rows)) return;
+    const rows=edits[sheetKey];
+    Object.keys(rows||{}).forEach(rowKey=>{
+      const rowIndex=Number(rowKey);
+      if(!Number.isInteger(rowIndex) || !Array.isArray(rows[rowKey]) || !sheet.rows[rowIndex]) return;
+      Object.keys(rows[rowKey]).forEach(colKey=>{
+        const colIndex=Number(colKey);
+        if(Number.isInteger(colIndex)) sheet.rows[rowIndex][colIndex]=rows[rowKey][colKey];
+      });
+    });
+  });
+}
+
+async function saveBranchExcelCell(branchId,rowIndex,colIndex,value,sourceSheetName){
   if(!currentUser){ showToast('⛔ يجب تسجيل الدخول أولاً',true); return; }
 
   const editableCol=getBranchExcelEditableColumn();
-  if(editableCol===null){
-    showToast('⛔ ليس لديك صلاحية تعديل ملف Excel',true);
-    return;
-  }
+  if(editableCol===null){ showToast('⛔ ليس لديك صلاحية تعديل ملف Excel',true); return; }
   if(editableCol!==-1 && colIndex!==editableCol){
     const allowedLabel=editableCol===9?'Column J':'Column I';
-    showToast(`⛔ مسموح لك تعديل ${allowedLabel} فقط`,true);
-    return;
+    showToast(`⛔ مسموح لك تعديل ${allowedLabel} فقط`,true); return;
   }
   if(currentUser.role!=='admin' && !hasBranchExcelPermission(branchId)){
-    showToast('⛔ ليس لديك صلاحية لهذا الفرع',true);
-    return;
+    showToast('⛔ ليس لديك صلاحية لهذا الفرع',true); return;
   }
 
   const d=branchExcelData[branchId];
-  if(!d || !d.sheets){
-    showToast('❌ بيانات ملف الفرع غير متاحة',true);
-    return;
-  }
+  if(!d || !d.sheets){ showToast('❌ بيانات ملف الفرع غير متاحة',true); return; }
 
   const sheets=d.sheets||{};
-  const sheetName = sourceSheetName && Object.values(sheets).some(s=>String(s?.name||'')===String(sourceSheetName))
+  const sheetName=sourceSheetName && Object.values(sheets).some(s=>String(s?.name||'')===String(sourceSheetName))
     ? String(sourceSheetName)
     : (d.activeSheet && Object.values(sheets).some(s=>String(s?.name||'')===String(d.activeSheet))
-      ? String(d.activeSheet)
-      : String((Object.values(sheets)[0]||{}).name||''));
+      ? String(d.activeSheet) : String((Object.values(sheets)[0]||{}).name||''));
 
-  if(!sheetName){
-    showToast('❌ تعذر تحديد الشيت',true);
-    return;
-  }
+  if(!sheetName){ showToast('❌ تعذر تحديد الشيت',true); return; }
 
   const sheetKey=Object.keys(sheets).find(k=>String((sheets[k]||{}).name||'')===sheetName);
   const sheetObj=sheetKey ? sheets[sheetKey] : null;
-
   if(!sheetKey || !sheetObj || !Array.isArray(sheetObj.rows) || !sheetObj.rows[rowIndex]){
-    console.error('Excel save: sheet/row not found',{
-      branchId,rowIndex,colIndex,sheetName,sheetKey,
-      availableSheets:Object.keys(sheets)
-    });
-    showToast('❌ تعذر تحديد الصف المطلوب حفظه',true);
-    return;
+    console.error('Excel save: sheet/row not found',{branchId,rowIndex,colIndex,sheetName,sheetKey});
+    showToast('❌ تعذر تحديد الصف المطلوب حفظه',true); return;
   }
 
   const oldValue=sheetObj.rows[rowIndex][colIndex]??'';
   const cleanValue=value==null?'':String(value);
-
-  const input=document.querySelector(
-    `#branchExcel_${CSS.escape(branchId)} input[data-row="${rowIndex}"][data-col="${colIndex}"]`
-  );
+  const input=document.querySelector(`#branchExcel_${CSS.escape(branchId)} input[data-row="${rowIndex}"][data-col="${colIndex}"]`);
 
   if(input){
     input.dataset.saveState='saving';
     input.style.borderColor='#f59e0b';
     input.title='جاري الحفظ...';
   }
+  showToast('⏳ جاري حفظ تعديل Excel...');
 
-  showToast('⏳ جاري حفظ التعديل...');
-
-  /*
-   * مهم:
-   * لا نستخدم set() على /rows/... مباشرة فقط.
-   * نستخدم update() من root مع المسار الكامل، ثم نتحقق من القيمة
-   * فعلياً من Firebase. هذا يمنع مشكلة أن التعديل يظهر محلياً
-   * ثم يختفي بعد إعادة تحميل الصفحة.
-   */
-  const cellPath=`branch_excel/${branchId}/sheets/${sheetKey}/rows/${rowIndex}/${colIndex}`;
   const auditKey=rtdb.ref(`branch_excel_audit/${branchId}`).push().key;
-
   const audit={
     userId:currentUser?.id||'',
     userName:currentUser?.name||'',
@@ -2602,32 +2602,48 @@ function saveBranchExcelCell(branchId,rowIndex,colIndex,value,sourceSheetName){
     at:Date.now()
   };
 
-  const markSaved=()=>{
+  // الحل الأساسي: نحفظ نسخة صغيرة مستقلة للتعديل.
+  // بهذه الطريقة لا نعتمد على إعادة كتابة ملف Excel بالكامل، ولا نخاطر بأن
+  // Firebase يرفض الكتابة بسبب حجم/شكل الـ rows الأصلي.
+  const editPath=`branch_excel_edits/${branchId}/${sheetKey}/${rowIndex}/${colIndex}`;
+  const editRef=rtdb.ref(editPath);
+
+  try{
+    await editRef.set(cleanValue);
+
+    // تأكيد فعلي من Firebase، وليس مجرد نجاح Promise.
+    const verify=await editRef.once('value');
+    if(String(verify.val()??'')!==cleanValue){
+      throw new Error('Firebase لم يؤكد حفظ قيمة الخلية');
+    }
+
+    if(!branchExcelEdits[branchId]) branchExcelEdits[branchId]={};
+    if(!branchExcelEdits[branchId][sheetKey]) branchExcelEdits[branchId][sheetKey]={};
+    if(!branchExcelEdits[branchId][sheetKey][rowIndex]) branchExcelEdits[branchId][sheetKey][rowIndex]=[];
+    branchExcelEdits[branchId][sheetKey][rowIndex][colIndex]=cleanValue;
+
     sheetObj.rows[rowIndex][colIndex]=cleanValue;
 
     if(input){
       input.value=cleanValue;
       input.dataset.saveState='saved';
       input.style.borderColor='#16a34a';
-      input.title='تم الحفظ';
+      input.title='تم الحفظ في Firebase';
     }
 
-    showToast('✅ تم الحفظ بنجاح');
+    showToast('✅ تم حفظ تعديل الخلية بنجاح');
 
-    // Audit اختياري: لو فشل لا نعتبر حفظ الخلية فاشلاً.
-    if(auditKey){
-      rtdb.ref(`branch_excel_audit/${branchId}/${auditKey}`)
-        .set(audit)
-        .catch(e=>console.warn('Excel audit save failed:',e));
-    }
-  };
+    // نحاول أيضًا تحديث النسخة الأصلية. لو قواعد Firebase تمنع ذلك
+    // يظل التعديل محفوظًا في branch_excel_edits.
+    rtdb.ref(`branch_excel/${branchId}/sheets/${sheetKey}/rows/${rowIndex}/${colIndex}`)
+      .set(cleanValue)
+      .catch(e=>console.warn('Primary Excel cell write skipped; edit copy is saved:',e));
 
-  const markError=(err)=>{
-    console.error('Branch Excel cell save error:',err,{
-      path:cellPath,
-      code:err?.code,
-      message:err?.message
-    });
+    rtdb.ref(`branch_excel_audit/${branchId}/${auditKey}`).set(audit)
+      .catch(e=>console.warn('Excel audit save failed:',e));
+
+  }catch(err){
+    console.error('Branch Excel edit save error:',err,{editPath,code:err?.code,message:err?.message});
 
     if(input){
       input.value=String(oldValue);
@@ -2636,74 +2652,11 @@ function saveBranchExcelCell(branchId,rowIndex,colIndex,value,sourceSheetName){
       input.title='فشل الحفظ';
     }
 
-    const msg=err && (
-      err.code==='PERMISSION_DENIED' ||
-      /permission/i.test(String(err.message||''))
-    )
-      ? '❌ Firebase رفض الحفظ: راجع صلاحيات الكتابة على branch_excel.'
+    const msg=err && (err.code==='PERMISSION_DENIED' || /permission/i.test(String(err.message||'')))
+      ? '❌ Firebase رفض حفظ تعديل Excel. المشكلة في صلاحيات قاعدة البيانات.'
       : `❌ لم يتم الحفظ: ${String(err?.message||err||'خطأ غير معروف')}`;
-
     showToast(msg,true);
-  };
-
-  // الطريقة الأساسية: root update
-  const updatePayload={};
-  updatePayload[cellPath]=cleanValue;
-
-  rtdb.ref().update(updatePayload)
-    .then(()=>{
-      // تحقق فعلي من Firebase قبل إظهار "تم الحفظ".
-      return rtdb.ref(cellPath).once('value').then(snap=>{
-        const savedValue=snap.val()==null?'':String(snap.val());
-        if(savedValue!==cleanValue){
-          throw new Error(
-            `تم إرسال التعديل لكن Firebase أعاد قيمة مختلفة: "${savedValue}"`
-          );
-        }
-        markSaved();
-      });
-    })
-    .catch(err=>{
-      /*
-       * Fallback:
-       * لو كانت قواعد Firebase الحالية تمنع الكتابة الجزئية داخل rows،
-       * نحفظ نسخة branch_excel كاملة بعد تعديل الذاكرة.
-       */
-      console.warn('Excel cell root update failed, trying full branch fallback...',err);
-
-      try{
-        // عدّل نسخة منفصلة حتى لا نخرب البيانات المحلية الأصلية إذا فشل الـ fallback.
-        const fallbackData=JSON.parse(JSON.stringify(d));
-        const fallbackSheet=fallbackData.sheets?.[sheetKey];
-
-        if(!fallbackSheet || !Array.isArray(fallbackSheet.rows) || !fallbackSheet.rows[rowIndex]){
-          throw err;
-        }
-
-        fallbackSheet.rows[rowIndex][colIndex]=cleanValue;
-
-        return rtdb.ref(`branch_excel/${branchId}`).set(fallbackData)
-          .then(()=>{
-            return rtdb.ref(cellPath).once('value').then(snap=>{
-              const savedValue=snap.val()==null?'':String(snap.val());
-              if(savedValue!==cleanValue){
-                throw new Error(
-                  `فشل التحقق بعد الحفظ الكامل. القيمة الحالية: "${savedValue}"`
-                );
-              }
-
-              // استبدال النسخة المحلية فقط بعد نجاح Firebase.
-              branchExcelData[branchId]=fallbackData;
-              markSaved();
-            });
-          })
-          .catch(fallbackErr=>{
-            markError(fallbackErr);
-          });
-      }catch(fallbackBuildErr){
-        markError(fallbackBuildErr);
-      }
-    });
+  }
 }
 
 function handleBranchExcelUpload(branchId,file){
