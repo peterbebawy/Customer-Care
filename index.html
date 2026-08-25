@@ -1638,8 +1638,11 @@ function enterDashboard(user, silent) {
   document.getElementById('userAvatar').textContent = user.name.charAt(0);
   setupNavByRole();
   populateBranchSelect(); populateShortageBranch(); populateCCBranch(); populateShortageApp(); populateAppOrderBranch(); populateAppOrderAppSelect();
-  document.getElementById('deliveryDate').value = new Date().toISOString().split('T')[0];
-  document.getElementById('appOrderDeliveryDate').value = new Date().toISOString().split('T')[0];
+  const todayISO = new Date().toISOString().split('T')[0];
+  const deliveryDateEl = document.getElementById('deliveryDate');
+  if (deliveryDateEl) deliveryDateEl.value = todayISO;
+  const appOrderDeliveryDateEl = document.getElementById('appOrderDeliveryDate');
+  if (appOrderDeliveryDateEl) appOrderDeliveryDateEl.value = todayISO;
 
   // استعادة جلسة كاملة قبل إظهار الـ Dashboard حتى لا يظهر "تسجيل أوردر جديد" لحظة الـ Refresh.
   let hashTab = '';
@@ -2515,93 +2518,65 @@ function safeBranchSheetKey(name){
 function saveBranchExcelCell(branchId,rowIndex,colIndex,value,sourceSheetName){
   if(!currentUser){ showToast('⛔ يجب تسجيل الدخول أولاً',true); return; }
   const editableCol=getBranchExcelEditableColumn();
-  // الأدمن: جميع الخانات مسموحة. باقي الأدوار حسب العمود المسموح.
-  if(editableCol===null){
-    showToast('⛔ ليس لديك صلاحية تعديل ملف Excel',true);
-    renderBranchExcelSection(branchId);
-    return;
-  }
+  if(editableCol===null){ showToast('⛔ ليس لديك صلاحية تعديل ملف Excel',true); return; }
   if(editableCol!==-1 && colIndex!==editableCol){
     const allowedLabel=editableCol===9?'Column J':'Column I';
-    showToast(`⛔ مسموح لك تعديل ${allowedLabel} فقط`,true);
-    renderBranchExcelSection(branchId);
-    return;
+    showToast(`⛔ مسموح لك تعديل ${allowedLabel} فقط`,true); return;
   }
   if(currentUser.role!=='admin' && !hasBranchExcelPermission(branchId)){
     showToast('⛔ ليس لديك صلاحية لهذا الفرع',true); return;
   }
   const d=branchExcelData[branchId];
-  if(!d){ showToast('❌ بيانات ملف الفرع غير متاحة',true); return; }
+  if(!d || !d.sheets){ showToast('❌ بيانات ملف الفرع غير متاحة',true); return; }
+
   const sheets=d.sheets||{};
-  const sheetName=sourceSheetName && Object.values(sheets).some(s=>s.name===sourceSheetName)
-    ? sourceSheetName
-    : (d.activeSheet && Object.values(sheets).some(s=>s.name===d.activeSheet)
-      ? d.activeSheet : ((Object.values(sheets)[0]||{}).name||''));
+  const sheetName = sourceSheetName && Object.values(sheets).some(s=>String(s?.name||'')===String(sourceSheetName))
+    ? String(sourceSheetName)
+    : (d.activeSheet && Object.values(sheets).some(s=>String(s?.name||'')===String(d.activeSheet))
+      ? String(d.activeSheet) : String((Object.values(sheets)[0]||{}).name||''));
   if(!sheetName){ showToast('❌ تعذر تحديد الشيت',true); return; }
-  // استخدم المفتاح الفعلي المخزن في Firebase حسب اسم الشيت؛ لا تفترض أن المفتاح مولد بنفس الطريقة القديمة.
-  const sheetKey=Object.keys(sheets).find(k=>String((sheets[k]||{}).name||'')===String(sheetName)) || safeBranchSheetKey(sheetName);
-  const sheetObj=sheets[sheetKey];
-  if(!sheetObj || !Array.isArray(sheetObj.rows) || !sheetObj.rows[rowIndex]){
+
+  const sheetKey=Object.keys(sheets).find(k=>String((sheets[k]||{}).name||'')===sheetName);
+  const sheetObj=sheetKey ? sheets[sheetKey] : null;
+  if(!sheetKey || !sheetObj || !Array.isArray(sheetObj.rows) || !sheetObj.rows[rowIndex]){
     console.error('Excel save: sheet/row not found',{branchId,rowIndex,colIndex,sheetName,sheetKey,availableSheets:Object.keys(sheets)});
     showToast('❌ تعذر تحديد الصف المطلوب حفظه',true); return;
   }
+
   const oldValue=sheetObj.rows[rowIndex][colIndex]??'';
   const cleanValue=value==null?'':String(value);
   const input=document.querySelector(`#branchExcel_${CSS.escape(branchId)} input[data-row="${rowIndex}"][data-col="${colIndex}"]`);
   if(input){ input.dataset.saveState='saving'; input.style.borderColor='#f59e0b'; input.title='جاري الحفظ...'; }
   showToast('⏳ جاري حفظ التعديل...');
 
-  // حدّث الذاكرة المحلية فورًا، ثم احفظ الخلية نفسها مباشرة.
-  sheetObj.rows[rowIndex][colIndex]=cleanValue;
-  // احفظ ملف الفرع بالكامل بدل الكتابة في مسار الخلية فقط.
-  // بعض Firebase Rules تسمح بالكتابة على branch_excel/<branchId>
-  // ولا تسمح بكتابة مباشرة على المسارات الفرعية؛ لذلك الكتابة الكاملة
-  // تضمن أن التعديل يبقى محفوظًا بعد إعادة تحميل الصفحة.
-  const branchPath=`branch_excel/${branchId}`;
-  const branchRef=rtdb.ref(branchPath);
-  const payloadToSave=JSON.parse(JSON.stringify(d));
-  branchRef.set(payloadToSave).then(()=>{
-    // سجل التدقيق بشكل مستقل؛ فشل سجل التدقيق لا يفشل حفظ الخلية.
-    const auditKey=rtdb.ref(`branch_excel_audit/${branchId}`).push().key;
-    const audit={
-      userId:currentUser?.id||'', userName:currentUser?.name||'', role:currentUser?.role||'',
-      action:'edit_cell', sheet:sheetName, row:rowIndex+1, column:excelColLetter(colIndex),
-      header:String((sheetObj.rows[0]||[])[colIndex]||''), oldValue:String(oldValue),
-      newValue:cleanValue, at:Date.now()
-    };
-    return rtdb.ref(`branch_excel_audit/${branchId}/${auditKey}`).set(audit).catch(e=>{
-      console.warn('Excel audit save failed (cell was saved):',e);
-    });
-  }).then(()=>{
-    if(input){
-      input.value=cleanValue;
-      input.dataset.saveState='saved'; input.style.borderColor='#16a34a'; input.title='تم الحفظ';
-      setTimeout(()=>{ if(input) input.style.borderColor=''; },1500);
-    }
+  // حفظ الخلية مباشرة في Firebase. هذا يمنع إعادة بناء ملف الشيت كاملًا أو الكتابة فوق تعديلات أخرى.
+  const cellPath=`branch_excel/${branchId}/sheets/${sheetKey}/rows/${rowIndex}/${colIndex}`;
+  const cellRef=rtdb.ref(cellPath);
+  const auditKey=rtdb.ref(`branch_excel_audit/${branchId}`).push().key;
+  const audit={
+    userId:currentUser?.id||'', userName:currentUser?.name||'', role:currentUser?.role||'',
+    action:'edit_cell', sheet:sheetName, row:rowIndex+1, column:excelColLetter(colIndex),
+    header:String((sheetObj.rows[0]||[])[colIndex]||''), oldValue:String(oldValue),
+    newValue:cleanValue, at:Date.now()
+  };
+
+  cellRef.set(cleanValue).then(()=>{
+    // حدث الذاكرة المحلية فقط بعد نجاح Firebase.
+    sheetObj.rows[rowIndex][colIndex]=cleanValue;
+    if(input){ input.value=cleanValue; input.dataset.saveState='saved'; input.style.borderColor='#16a34a'; input.title='تم الحفظ'; }
     showToast('✅ تم الحفظ بنجاح');
+    // الـ Audit اختياري ولا يمنع نجاح الحفظ.
+    return rtdb.ref(`branch_excel_audit/${branchId}/${auditKey}`).set(audit).catch(e=>console.warn('Excel audit save failed:',e));
   }).catch(err=>{
-    console.error('Branch Excel cell save error:',err, {path:branchPath});
-    sheetObj.rows[rowIndex][colIndex]=oldValue;
+    console.error('Branch Excel cell save error:',err,{path:cellPath,code:err?.code,message:err?.message});
     if(input){ input.value=String(oldValue); input.dataset.saveState='error'; input.style.borderColor='#dc2626'; input.title='فشل الحفظ'; }
     const msg=err && (err.code==='PERMISSION_DENIED' || /permission/i.test(String(err.message||'')))
-      ? '❌ Firebase رفض الحفظ: لا توجد صلاحية كتابة لهذا المسار.'
+      ? '❌ Firebase رفض الحفظ: راجع صلاحيات الكتابة على branch_excel.'
       : `❌ لم يتم الحفظ: ${String(err?.message||err||'خطأ غير معروف')}`;
     showToast(msg,true);
   });
 }
-function openBranchExcelUpload(branchId){
-  if(!currentUser || currentUser.role!=='admin'){ showToast('⛔ رفع ملفات Excel للأدمن فقط',true); return; }
-  if(!getExcelBranches().some(b=>b.id===branchId)){ showToast('⛔ Excel متاح لفروع الأبلكيشن فقط',true); return; }
-  const input=document.getElementById('branchExcelFile_'+branchId);
-  if(input){ input.value=''; input.click(); return; }
-  showTab('branchExcel_'+branchId);
-  setTimeout(()=>{
-    const retry=document.getElementById('branchExcelFile_'+branchId);
-    if(retry){ retry.value=''; retry.click(); }
-    else { showToast('❌ تعذر تجهيز زر رفع Excel لهذا الفرع',true); }
-  },150);
-}
-// رفع من خانة "الفروع": ملف جديد خالص ويستبدل الملف/الأيام السابقة لهذا الفرع.
+
 function handleBranchExcelUpload(branchId,file){
   if(!currentUser || currentUser.role!=='admin'){showToast('⛔ رفع ملفات Excel للأدمن فقط',true);return;}
   if(!getExcelBranches().some(b=>b.id===branchId)){showToast('⛔ الفرع غير موجود',true);return;}
