@@ -2553,9 +2553,14 @@ function saveBranchExcelCell(branchId,rowIndex,colIndex,value,sourceSheetName){
 
   // حدّث الذاكرة المحلية فورًا، ثم احفظ الخلية نفسها مباشرة.
   sheetObj.rows[rowIndex][colIndex]=cleanValue;
-  const cellPath=`branch_excel/${branchId}/sheets/${sheetKey}/rows/${rowIndex}/${colIndex}`;
-  const cellRef=rtdb.ref(cellPath);
-  cellRef.set(cleanValue).then(()=>{
+  // احفظ ملف الفرع بالكامل بدل الكتابة في مسار الخلية فقط.
+  // بعض Firebase Rules تسمح بالكتابة على branch_excel/<branchId>
+  // ولا تسمح بكتابة مباشرة على المسارات الفرعية؛ لذلك الكتابة الكاملة
+  // تضمن أن التعديل يبقى محفوظًا بعد إعادة تحميل الصفحة.
+  const branchPath=`branch_excel/${branchId}`;
+  const branchRef=rtdb.ref(branchPath);
+  const payloadToSave=JSON.parse(JSON.stringify(d));
+  branchRef.set(payloadToSave).then(()=>{
     // سجل التدقيق بشكل مستقل؛ فشل سجل التدقيق لا يفشل حفظ الخلية.
     const auditKey=rtdb.ref(`branch_excel_audit/${branchId}`).push().key;
     const audit={
@@ -2575,7 +2580,7 @@ function saveBranchExcelCell(branchId,rowIndex,colIndex,value,sourceSheetName){
     }
     showToast('✅ تم الحفظ بنجاح');
   }).catch(err=>{
-    console.error('Branch Excel cell save error:',err, {path:cellPath});
+    console.error('Branch Excel cell save error:',err, {path:branchPath});
     sheetObj.rows[rowIndex][colIndex]=oldValue;
     if(input){ input.value=String(oldValue); input.dataset.saveState='error'; input.style.borderColor='#dc2626'; input.title='فشل الحفظ'; }
     const msg=err && (err.code==='PERMISSION_DENIED' || /permission/i.test(String(err.message||'')))
