@@ -3396,14 +3396,27 @@ function handleElMujibMessageKey(e){
   if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendElMujibMessage();}
 }
 
-async function sendElMujibMessage(){
-  if(!elmujibSelectedContact?.phone){showToast('❌ اختر رسالة واردة أولاً',true);return;}
-  const input=document.getElementById('elmujibMessageText');
-  const message=(input?.value||'').trim();
-  if(!message){showToast('❌ اكتب الرد أولاً',true);return;}
-  const btn=document.querySelector('#elmujibComposer button');
-  if(btn) btn.disabled=true;
-  setElMujibStatus('جاري إرسال الرد إلى '+elmujibSelectedContact.phone+'…');
+async function sendElMujibMessage(phoneNumber, messageBody) {
+    if (!phoneNumber || !messageBody) return;
+
+    try {
+        const response = await fetch("https://elmujib-webhook-bridge.wellsobour.workers.dev", {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'send_message',
+                phoneNumber: phoneNumber,
+                messageBody: messageBody
+            })
+        });
+
+        const result = await response.json();
+        console.log("✅ نتيجة الإرسال من السيرفر:", result);
+        return result;
+    } catch (err) {
+        console.error("❌ خطأ أثناء الإرسال للـ Worker:", err);
+    }
+}
   try{
     // الإرسال بيعدي من خلال الـ Worker (بيحمل التوكن السري ويبعت للمجيب،
     // وبيسجل نسخة الرسالة الصادرة في Firebase بنفسه).
