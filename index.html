@@ -5364,19 +5364,73 @@ window.addEventListener('DOMContentLoaded', () => {
   setupIdleWatcher();
 });
 </script>
-fetch('https://elmujib-webhook-bridge.wellsobour.workers.dev', {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json'
-  },
-  body: JSON.stringify({
-    action: 'send_message', // أو action: 'save_order'
-    phoneNumber: '201288816200',
-    messageBody: 'اختبار تجريبي'
-  })
-})
-.then(res => res.json())
-.then(data => console.log('النتيجة:', data))
-.catch(err => console.error('خطأ:', err));
+// 1. دالة الاستماع المحسّنة (تستمع للمسارين بذكاء وبدون تكرار)
+function initChatListener() {
+    if (typeof firebase === 'undefined' || !firebase.apps.length) return;
+    
+    const db = firebase.database();
+
+    // دالة مدمجة لدمج ومعالجة البيانات من أي مسار
+    const handleData = (snapshot) => {
+        const data = snapshot.val();
+        if (data) {
+            renderChatList(data);
+            if (currentSelectedPhone) {
+                loadMessagesForPhone(currentSelectedPhone, data);
+            }
+        }
+    };
+
+    // الاستماع للمسارين بشكل مستقل لضمان التقاط أي رسالة فوراً
+    db.ref('incoming_messages').on('value', handleData);
+    db.ref('messages').on('value', handleData);
+    db.ref('webhooks').on('value', handleData); // أضفنا مسار الـ webhooks تحسباً
+}
+
+// 2. دالة عرض القائمة (تتعامل مع جميع أشكال البيانات الواردة من المجيب/الواتساب)
+function renderChatList(allMessages) {
+    const chatListEl = document.getElementById('chatList');
+    if (!chatListEl) return;
+
+    if (!allMessages) {
+        chatListEl.innerHTML = '<div style="padding:20px; text-align:center; color:#94a3b8; font-size:13px;">لا توجد محادثات واردة</div>';
+        return;
+    }
+
+    const chats = {};
+
+    // مرونة في قراءة البيانات سواء كانت Object أو Array
+    Object.keys(allMessages).forEach(key => {
+        const item = allMessages[key];
+        if (!item) return;
+
+        // استخراج رقم الهاتف مهما كان اسم الحقل في السيرفر
+        const phone = item.phone || item.phoneNumber || item.from || item.wa_id || item.sender || 'عميل غير معروف';
+        
+        if (!chats[phone]) chats[phone] = [];
+        chats[phone].push(item);
+    });
+
+    chatListEl.innerHTML = '';
+
+    // عرض القائمة
+    Object.keys(chats).forEach(phone => {
+        const msgList = chats[phone];
+        const lastMsg = msgList[msgList.length - 1];
+        
+        // استخراج النص مهما كان مسمى الحقل
+        const msgText = lastMsg.message || lastMsg.messageBody || lastMsg.text || lastMsg.body || 'رسالة جديدة';
+        
+        const div = document.createElement('div');
+        div.style.cssText = `padding: 12px 16px; border-bottom: 1px solid #f1f5f9; cursor: pointer; transition: 0.2s; ${currentSelectedPhone === phone ? 'background: #eff6ff;' : ''}`;
+        
+        div.onclick = () => selectChat(phone, allMessages);
+        div.innerHTML = `
+            <div style="font-weight:700; color:#1e293b; font-size:14px; direction: ltr; text-align: right;">${phone}</div>
+            <div style="font-size:12px; color:#64748b; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:2px;">${msgText}</div>
+        `;
+        chatListEl.appendChild(div);
+    });
+}
 </body>
 </html>
