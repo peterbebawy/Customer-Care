@@ -390,6 +390,28 @@ table th{background:#f8fafc!important;color:#475467!important;font-weight:700!im
 .elmujib-empty{text-align:center;color:#94a3b8;padding:25px 10px;font-size:13px}
 @media(max-width:800px){.elmujib-messages-grid{grid-template-columns:1fr}.elmujib-contacts-panel{border-left:0;border-bottom:1px solid #e2e8f0}.elmujib-contacts-list{max-height:260px}}
 
+
+/* ===== WhatsApp Inbox Integration ===== */
+.messages-wrap { max-width: 1440px; margin: 0 auto; }
+.messages-panel { padding: 18px; }
+.messages-toolbar { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:14px; }
+.messages-toolbar-title { display:flex; align-items:center; gap:10px; font-weight:800; color:#172033; }
+.messages-toolbar-title p { margin:3px 0 0; color:#98a2b3; font-size:11px; font-weight:500; }
+.messages-icon { width:38px; height:38px; border-radius:11px; display:grid; place-items:center; background:#f5efd8; }
+.messages-toolbar-actions { display:flex; gap:8px; }
+.messages-body { background:#fff; border:1px solid #e2e8f0; border-radius:14px; overflow:hidden; }
+#inboxContactList { flex:0 0 280px; background:#f8fafc; }
+#inboxThread { min-width:0; }
+.inbox-contact-row { transition:background .15s ease; }
+.inbox-contact-row:hover { background:#f1f5f9 !important; }
+.messages-frame { width:100%; height:72vh; min-height:520px; border:0; margin-top:14px; border-radius:12px; }
+@media(max-width:800px){
+  .messages-toolbar { align-items:flex-start; flex-direction:column; }
+  .messages-toolbar-actions, .messages-toolbar-actions .btn { width:100%; }
+  .messages-body { flex-direction:column; }
+  #inboxContactList { flex:0 0 auto; width:100% !important; max-height:260px; border-inline-end:0 !important; border-bottom:1px solid #e2e8f0; }
+}
+
 </style>
 <base target="_blank">
 <style>
@@ -772,61 +794,41 @@ table tbody tr:hover{
   </section>
 
   <section id="messages" class="messages-wrap hidden">
-    <div class="card messages-panel" style="padding:0;overflow:hidden;">
-      <div class="messages-toolbar">
-        <div class="messages-toolbar-title">
-          <div class="messages-icon">💬</div>
-          <div>
-            <div>الرسائل</div>
-            <p class="messages-note">El Mujib WhatsApp API — بدون تسجيل دخول إضافي</p>
-          </div>
-        </div>
-        <div class="messages-toolbar-actions">
-          <button type="button" class="btn btn-secondary" onclick="loadElMujibContacts()">🔄 تحديث العملاء</button>
-          <button type="button" class="btn btn-secondary" onclick="openElMujibConsole()">↗ فتح El Mujib</button>
-          <button type="button" class="btn btn-secondary" onclick="loadElMujibContacts()">🧪 اختبار API</button>
+  <div class="card messages-panel">
+    <div class="messages-toolbar">
+      <div class="messages-toolbar-title">
+        <div class="messages-icon">💬</div>
+        <div>
+          <div>الرسائل</div>
+          <p class="messages-note">واتساب — يصل مباشرة عبر Webhook</p>
         </div>
       </div>
-
-      <div id="elmujibApiStatus" style="margin:14px 18px 0;padding:10px 12px;border-radius:12px;background:#f1f5f9;color:#475569;font-size:13px;">
-        جاهز للاتصال بـ El Mujib API…
-      </div>
-
-      <div class="elmujib-messages-grid">
-        <aside class="elmujib-contacts-panel">
-          <div class="elmujib-panel-head">
-            <strong>جهات الاتصال</strong>
-            <span id="elmujibContactCount">0</span>
-          </div>
-          <input id="elmujibContactSearch" class="input" placeholder="ابحث بالاسم أو رقم الهاتف..." autocomplete="off" oninput="filterElMujibContacts()">
-          <div id="elmujibContactsList" class="elmujib-contacts-list">
-            <div class="elmujib-empty">اضغط «تحديث العملاء» لعرض جهات الاتصال.</div>
-          </div>
-        </aside>
-
-        <main class="elmujib-chat-panel">
-          <div class="elmujib-chat-head">
-            <div>
-              <strong id="elmujibSelectedName">اختر جهة اتصال</strong>
-              <span id="elmujibSelectedPhone"></span>
-            </div>
-          </div>
-          <div id="elmujibChatEmpty" class="elmujib-chat-empty">
-            <div style="font-size:42px;">💬</div>
-            <h3>رسائل WhatsApp</h3>
-            <p>اختر جهة اتصال من القائمة لإرسال رسالة.</p>
-          </div>
-          <div id="elmujibComposer" class="elmujib-composer hidden">
-            <textarea id="elmujibMessageText" class="input" rows="4" placeholder="اكتب الرسالة..." onkeydown="handleElMujibMessageKey(event)"></textarea>
-            <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:10px;">
-              <small style="color:#64748b;">Enter للإرسال — Shift+Enter لسطر جديد</small>
-              <button type="button" class="btn btn-primary" onclick="sendElMujibMessage()">📤 إرسال</button>
-            </div>
-          </div>
-        </main>
+      <div class="messages-toolbar-actions">
+        <button type="button" class="btn btn-secondary" onclick="toggleMessagesFrame()">🔗 فتح Vendor Console</button>
       </div>
     </div>
-  </section>
+
+    <div class="messages-body" style="display:flex; gap:14px; min-height:520px;">
+      <!-- قائمة المحادثات -->
+      <div id="inboxContactList" style="width:280px; overflow-y:auto; border-inline-end:1px solid #e2e8f0;"></div>
+      <!-- الرسائل بتاعة العميل المختار -->
+      <div id="inboxThread" style="flex:1; overflow-y:auto; padding:0 10px;">
+        <div style="color:#94a3b8; text-align:center; margin-top:40px;">اختر محادثة من القائمة</div>
+      </div>
+    </div>
+
+    <!-- الـ iframe القديم لسه موجود، مخفي افتراضيًا، تقدر تفتحه وقت الحاجة -->
+    <iframe
+      id="messagesFrame"
+      class="messages-frame hidden"
+      src="https://elmujib.com/vendor-console"
+      title="Elmujib Vendor Console"
+      loading="lazy"
+      allow="clipboard-read; clipboard-write"
+      referrerpolicy="strict-origin-when-cross-origin">
+    </iframe>
+  </div>
+</section>
 
   <div id="newOrder" class="card hidden">
     <h2 style="margin-top:0;color:#1e293b;">تسجيل أوردر جديد</h2>
@@ -5344,6 +5346,85 @@ window.addEventListener('DOMContentLoaded', () => {
   setupDropZone('productDropZone', handleProductFile);
   setupDropZone('customerDropZone', handleCustomerFile);
   setupIdleWatcher();
+});
+
+
+/* ===== WhatsApp Inbox Integration JS ===== */
+let inboxSelectedPhone = null;
+
+function initWhatsAppInbox() {
+  rtdb.ref('whatsapp_inbox_index').on('value', (snap) => {
+    const data = snap.val() || {};
+    renderInboxContactList(data);
+  });
+}
+
+function renderInboxContactList(data) {
+  const list = document.getElementById('inboxContactList');
+  if (!list) return;
+
+  const entries = Object.entries(data).sort(
+    (a, b) => (b[1].lastMessageAt || 0) - (a[1].lastMessageAt || 0)
+  );
+
+  list.innerHTML = entries.map(([phone, info]) => `
+    <div class="inbox-contact-row" style="padding:10px;cursor:pointer;border-bottom:1px solid #f1f5f9;${phone === inboxSelectedPhone ? 'background:#f0f9ff;' : ''}"
+         onclick="openInboxThread('${phone}')">
+      <div style="font-weight:600;color:#1e293b;">${info.contactName || phone}</div>
+      <div style="font-size:12px;color:#64748b;">${phone}</div>
+      <div style="font-size:13px;color:#475569;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${info.lastMessage || ''}</div>
+    </div>
+  `).join('') || '<div style="padding:16px;color:#94a3b8;">لا توجد رسائل بعد</div>';
+}
+
+function openInboxThread(phone) {
+  inboxSelectedPhone = phone;
+
+  // mark as read
+  rtdb.ref('whatsapp_inbox_index/' + phone + '/unread').set(false);
+
+  rtdb.ref('whatsapp_messages/' + phone)
+    .orderByChild('receivedAt')
+    .on('value', (snap) => {
+      const msgs = snap.val() || {};
+      const sorted = Object.values(msgs).sort((a, b) => (a.receivedAt || 0) - (b.receivedAt || 0));
+
+      const thread = document.getElementById('inboxThread');
+      thread.innerHTML = sorted.map((m) => `
+        <div style="margin:8px 0;padding:10px 14px;border-radius:12px;max-width:70%;
+                    ${m.direction === 'inbound' ? 'background:#f1f5f9;margin-inline-end:auto;' : 'background:#dcfce7;margin-inline-start:auto;'}">
+          <div>${escapeHtml(m.body || '')}</div>
+          <div style="font-size:11px;color:#94a3b8;margin-top:4px;">${new Date(m.receivedAt).toLocaleString('ar-EG')}</div>
+        </div>
+      `).join('');
+      thread.scrollTop = thread.scrollHeight;
+    });
+}
+
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+function toggleMessagesFrame() {
+  const frame = document.getElementById('messagesFrame');
+  frame.classList.toggle('hidden');
+  if (!frame.getAttribute('src')) frame.src = 'https://elmujib.com/vendor-console';
+}
+
+// استدعِ initWhatsAppInbox() في نفس المكان اللي بتستدعي فيه باقي init functions
+// عند تحميل الصفحة (بعد تسجيل الدخول)، مثلاً جنب استدعاء بيانات الفروع أو العملاء.
+
+
+document.addEventListener('DOMContentLoaded', function () {
+  try {
+    if (typeof rtdb !== 'undefined' && typeof initWhatsAppInbox === 'function') {
+      initWhatsAppInbox();
+    }
+  } catch (e) {
+    console.warn('WhatsApp Inbox init skipped:', e);
+  }
 });
 </script>
 
