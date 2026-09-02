@@ -5458,18 +5458,18 @@ function renderChatList(allMessages) {
     </div>
 </div>
   <!-- ضع هذا الكود في آخر ملف index.html قبل وسم </body> مباشرة -->
-  <script>
+ <script>
 const WORKER_URL = "https://elmujib-webhook-bridge.wellsobour.workers.dev";
 let currentSelectedPhone = "";
 let globalAllMessages = {};
 
-// دالة تنظيف أرقام الهواتف
+// تنظيف وتوحيد شكل أرقام الهواتف
 function sanitizePhone(phone) {
     if (!phone) return '';
     return String(phone).replace(/\D/g, '');
 }
 
-// 1. التشغيل والاستماع الفوري
+// 1. الاستماع الحي والمباشر لجميع المسارات المحتملة في Firebase
 function startFirebaseListener() {
     if (typeof firebase === 'undefined' || !firebase.apps.length) {
         setTimeout(startFirebaseListener, 300);
@@ -5478,16 +5478,34 @@ function startFirebaseListener() {
 
     const db = firebase.database();
 
+    // دالة المزامنة الموحدة
+    const syncData = () => {
+        renderChatList(globalAllMessages);
+    };
+
+    // الاستماع لمسار الرسائل المرسلة التجريبية
     db.ref('incoming_messages').on('value', (snapshot) => {
         const data = snapshot.val() || {};
-        console.log("📥 البيانات المسحوبة من Firebase:", data);
-        globalAllMessages = data;
-        
-        renderChatList(globalAllMessages);
+        globalAllMessages = { ...globalAllMessages, ...data };
+        syncData();
+    });
+
+    // الاستماع لمسار رسائل الواتساب/المجيب الواردة
+    db.ref('messages').on('value', (snapshot) => {
+        const data = snapshot.val() || {};
+        globalAllMessages = { ...globalAllMessages, ...data };
+        syncData();
+    });
+
+    // الاستماع لمسار الـ Webhooks إن وجد
+    db.ref('webhooks').on('value', (snapshot) => {
+        const data = snapshot.val() || {};
+        globalAllMessages = { ...globalAllMessages, ...data };
+        syncData();
     });
 }
 
-// 2. دالة عرض قائمة المحادثات (تستخرج أي رقم هاتف متوفر)
+// 2. تجميع القوائم وعرضها
 function renderChatList(allMessages) {
     const chatListEl = document.getElementById('chatList');
     if (!chatListEl) return;
@@ -5501,9 +5519,9 @@ function renderChatList(allMessages) {
 
     Object.keys(allMessages).forEach(key => {
         const item = allMessages[key];
-        if (!item) return;
+        if (!item || typeof item !== 'object') return;
 
-        // قراءة الرقم من كافة الحقول المحتملة
+        // دعم كل تسميات أرقام الهواتف القادمة من المجيب أو الواتساب
         const rawPhone = item.phone || item.phoneNumber || item.from || item.wa_id || item.sender || item.to || 'عميل غير معروف';
         const cleanPhone = sanitizePhone(rawPhone) || rawPhone;
 
@@ -5513,7 +5531,6 @@ function renderChatList(allMessages) {
 
     chatListEl.innerHTML = '';
 
-    // تحديد أول محادثة تلقائياً إذا لم توجد محادثة محددة
     const phoneList = Object.keys(chats);
     if (phoneList.length > 0 && !currentSelectedPhone) {
         currentSelectedPhone = phoneList[0];
@@ -5522,7 +5539,9 @@ function renderChatList(allMessages) {
     phoneList.forEach(cleanPhone => {
         const msgList = chats[cleanPhone];
         const lastMsg = msgList[msgList.length - 1];
-        const msgText = lastMsg.message || lastMsg.messageBody || lastMsg.text || lastMsg.body || 'رسالة جديد';
+        
+        // دعم كل أشكال نصوص الرسائل القادمة من المجيب
+        const msgText = lastMsg.message || lastMsg.messageBody || lastMsg.text || lastMsg.body || (lastMsg.text && lastMsg.text.body) || 'رسالة جديدة';
         const isSelected = currentSelectedPhone === cleanPhone;
 
         const div = document.createElement('div');
@@ -5536,12 +5555,12 @@ function renderChatList(allMessages) {
         chatListEl.appendChild(div);
     });
 
-    if (currentSelectedPhone) {
-        loadMessagesForPhone(currentSelectedPhone, chats[currentSelectedPhone] || []);
+    if (currentSelectedPhone && chats[currentSelectedPhone]) {
+        loadMessagesForPhone(currentSelectedPhone, chats[currentSelectedPhone]);
     }
 }
 
-// 3. دالة اختيار المحادثة
+// 3. اختيار محادثة
 function selectChat(phone) {
     currentSelectedPhone = phone;
     const headerEl = document.getElementById('activeChatHeader');
@@ -5553,7 +5572,7 @@ function selectChat(phone) {
     renderChatList(globalAllMessages);
 }
 
-// 4. عرض الرسائل للمحادثة المختارة
+// 4. عرض الفقاعات للمحادثة المحددة
 function loadMessagesForPhone(phone, messagesArray) {
     const chatMessagesEl = document.getElementById('chatMessages');
     if (!chatMessagesEl) return;
@@ -5561,8 +5580,12 @@ function loadMessagesForPhone(phone, messagesArray) {
     chatMessagesEl.innerHTML = '';
 
     messagesArray.forEach(item => {
-        const msgText = item.message || item.messageBody || item.text || item.body || '';
-        const isSentByUs = item.type === 'sent' || item.action === 'send_message';
+        // استخراج النص بجميع الصور الواردة من الواتساب
+        const msgText = item.message || item.messageBody || item.text || item.body || (item.text && item.text.body) || '';
+        if (!msgText) return;
+
+        // تحديد اتجاه الفقاعة (صادرة أم واردة من العميل)
+        const isSentByUs = item.type === 'sent' || item.action === 'send_message' || item.direction === 'outbound';
 
         const bubble = document.createElement('div');
         bubble.style.cssText = `max-width: 75%; padding: 8px 14px; border-radius: 12px; font-size: 13px; line-height: 1.4; margin-bottom: 8px; ${
@@ -5578,7 +5601,7 @@ function loadMessagesForPhone(phone, messagesArray) {
     chatMessagesEl.scrollTop = chatMessagesEl.scrollHeight;
 }
 
-// 5. دالة الإرسال المباشر
+// 5. دالة إرسال الرسائل وتخزينها
 async function sendDirectTest() {
     const phoneInput = document.getElementById('testPhone');
     const msgInput = document.getElementById('testMsg');
@@ -5616,7 +5639,7 @@ async function sendDirectTest() {
     }
 }
 
-// البدء عند فتح الصفحة
+// بدء التوصيل فور تحمّيل الصفحة
 startFirebaseListener();
 </script>
 // 1. الإعدادات والمتغيرات الرئيسية
