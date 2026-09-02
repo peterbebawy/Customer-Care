@@ -5432,36 +5432,35 @@ function renderChatList(allMessages) {
         chatListEl.appendChild(div);
     });
 }
-  </script>
-  <!-- قسم الشات الأساسي -->
-
-   <div id="chatSection" style="margin: 20px; background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08);">
+<!-- قسم الشات الأساسي -->
+<div id="chatSection" style="margin: 20px; background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); font-family: sans-serif;">
     <h3 style="margin-top: 0; color: #1e293b;">مركز محادثات الواتساب</h3>
-    <div style="display: flex; gap: 15px; height: 450px; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;">
+    
+    <div style="display: flex; gap: 15px; height: 480px; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;">
         
-        <!-- قائمة المحادثات على اليمين -->
-        <div style="width: 260px; background: #f8fafc; border-left: 1px solid #e2e8f0; display: flex; flex-direction: column;">
-            <div style="padding: 10px; font-weight: bold; background: #e2e8f0; color: #334155;">المحادثات</div>
+        <!-- قائمة المحادثات (اليمين) -->
+        <div style="width: 280px; background: #f8fafc; border-left: 1px solid #e2e8f0; display: flex; flex-direction: column;">
+            <div style="padding: 12px; font-weight: bold; background: #f1f5f9; color: #334155; border-bottom: 1px solid #e2e8f0;">المحادثات</div>
             <div id="chatList" style="flex: 1; overflow-y: auto;"></div>
         </div>
 
-        <!-- منطقة الرسائل على اليسار -->
+        <!-- منطقة الرسائل (اليسار) -->
         <div style="flex: 1; display: flex; flex-direction: column; background: #ffffff;">
-            <div id="activeChatHeader" style="padding: 10px; background: #f1f5f9; font-weight: bold; border-bottom: 1px solid #e2e8f0;">اختر محادثة</div>
+            <div id="activeChatHeader" style="padding: 12px; background: #f1f5f9; font-weight: bold; color: #1e293b; border-bottom: 1px solid #e2e8f0;">اختر محادثة</div>
             <div id="chatMessages" style="flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px;"></div>
             
-            <div style="padding: 10px; display: flex; gap: 8px; border-top: 1px solid #e2e8f0;">
-                <input type="text" id="testMsg" placeholder="اكتب رسالتك..." style="flex: 1; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 6px;">
-                <input type="hidden" id="testPhone" value="201000000000">
-                <button onclick="sendDirectTest()" style="background: #2563eb; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: bold;">إرسال</button>
+            <!-- حقل الإرسال -->
+            <div style="padding: 10px; display: flex; gap: 8px; border-top: 1px solid #e2e8f0; background: #fafafa;">
+                <input type="text" id="testPhone" placeholder="رقم الهاتف..." style="width: 130px; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 6px; outline: none; font-size: 13px;">
+                <input type="text" id="testMsg" placeholder="اكتب رسالتك هنا..." style="flex: 1; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 6px; outline: none; font-size: 13px;">
+                <button onclick="sendDirectTest()" style="background: #2563eb; color: #fff; border: none; padding: 8px 18px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 13px;">إرسال</button>
             </div>
         </div>
 
     </div>
 </div>
-  <!-- ضع هذا الكود في آخر ملف index.html قبل وسم </body> مباشرة -->
-<!-- احذف النص العشوائي وضغط هذا الكود بدلاً منه في آخر الملف قبل إغلاق </body> -->
 
+<script>
 const WORKER_URL = "https://elmujib-webhook-bridge.wellsobour.workers.dev";
 let currentSelectedPhone = "";
 let globalAllMessages = {};
@@ -5611,8 +5610,8 @@ async function sendDirectTest() {
     }
 }
 
-// تشغيل المستمع فوراً
 startFirebaseListener();
+</script>
 </script>
 
 
