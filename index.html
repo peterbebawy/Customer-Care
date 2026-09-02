@@ -5458,143 +5458,186 @@ function renderChatList(allMessages) {
     </div>
 </div>
   <!-- ضع هذا الكود في آخر ملف index.html قبل وسم </body> مباشرة -->
-    <script>
-        // 1. إعدادات الرابط والمتغيرات
-        const WORKER_URL = "https://elmujib-webhook-bridge.wellsobour.workers.dev";
-        let currentSelectedPhone = "201000000000";
-        let globalAllMessages = {};
+   <script>
+// 1. الإعدادات والرابط الأساسي
+const WORKER_URL = "https://elmujib-webhook-bridge.wellsobour.workers.dev";
+let currentSelectedPhone = "201000000000";
+let globalAllMessages = {};
 
-        // 2. دالة الاستماع التلقائي في Firebase
-        function initChatListener() {
-            if (typeof firebase === 'undefined' || !firebase.apps.length) return;
+// دالة لتنظيف وتوحيد أرقام الهواتف
+function sanitizePhone(phone) {
+    if (!phone) return '';
+    return String(phone).replace(/\D/g, '');
+}
+
+// 2. دالة تشغيل الاستماع المباشر من Firebase (تشغيل فورى وقوي)
+function startFirebaseListener() {
+    if (typeof firebase === 'undefined' || !firebase.apps.length) {
+        console.warn("⚠️ جاري إعادة محاولة التوصيل بـ Firebase...");
+        setTimeout(startFirebaseListener, 500); // إعطاء مهلة إضافية لـ Firebase للتحميل
+        return;
+    }
+
+    const db = firebase.database();
+    console.log("⚡ تم التوصيل بـ Firebase واستماع الرسائل يعمل الآن...");
+
+    // قراءة أوتوماتيكية واستماع حي لأي تحديث جديد
+    db.ref('incoming_messages').on('value', (snapshot) => {
+        const data = snapshot.val() || {};
+        console.log("📥 رسائل Firebase المحدثة:", data);
+        globalAllMessages = data;
+        
+        // تحديث الواجهة فوراً
+        renderChatList(globalAllMessages);
+        
+        // إذا لم يكن هناك رقم محدد، اختر أول رقم موجود بالقائمة تلقائياً
+        const phoneKeys = Object.keys(data);
+        if (phoneKeys.length > 0 && !currentSelectedPhone) {
+            const firstItem = data[phoneKeys[0]];
+            currentSelectedPhone = sanitizePhone(firstItem.phone || firstItem.phoneNumber || firstItem.from || firstItem.wa_id);
+        }
+
+        if (currentSelectedPhone) {
+            loadMessagesForPhone(currentSelectedPhone, globalAllMessages);
+        }
+    });
+}
+
+// 3. عرض قائمة المحادثات الجانبية
+function renderChatList(allMessages) {
+    const chatListEl = document.getElementById('chatList');
+    if (!chatListEl) return;
+
+    if (!allMessages || Object.keys(allMessages).length === 0) {
+        chatListEl.innerHTML = '<div style="padding:15px; text-align:center; color:#94a3b8; font-size:13px;">لا توجد محادثات حتى الآن</div>';
+        return;
+    }
+
+    const chats = {};
+    Object.keys(allMessages).forEach(key => {
+        const item = allMessages[key];
+        if (!item) return;
+        
+        const rawPhone = item.phone || item.phoneNumber || item.from || item.wa_id || item.sender || 'عميل غير معروف';
+        const cleanPhone = sanitizePhone(rawPhone) || rawPhone;
+        
+        if (!chats[cleanPhone]) chats[cleanPhone] = [];
+        chats[cleanPhone].push(item);
+    });
+
+    chatListEl.innerHTML = '';
+
+    Object.keys(chats).forEach(cleanPhone => {
+        const msgList = chats[cleanPhone];
+        const lastMsg = msgList[msgList.length - 1];
+        const msgText = lastMsg.message || lastMsg.messageBody || lastMsg.text || lastMsg.body || 'رسالة جديدة';
+        const isSelected = sanitizePhone(currentSelectedPhone) === cleanPhone;
+
+        const div = document.createElement('div');
+        div.style.cssText = `padding: 12px; border-bottom: 1px solid #e2e8f0; cursor: pointer; transition: 0.2s; ${isSelected ? 'background: #e0f2fe; border-right: 4px solid #2563eb;' : ''}`;
+        
+        div.onclick = () => selectChat(cleanPhone, allMessages);
+        div.innerHTML = `
+            <div style="font-weight:bold; color:#1e293b; font-size:13px; direction: ltr; text-align: right;">${cleanPhone}</div>
+            <div style="font-size:11px; color:#64748b; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${msgText}</div>
+        `;
+        chatListEl.appendChild(div);
+    });
+}
+
+// 4. اختيار رقم محادثة
+function selectChat(phone, allMessages) {
+    currentSelectedPhone = sanitizePhone(phone);
+    const headerEl = document.getElementById('activeChatHeader');
+    const phoneInput = document.getElementById('testPhone');
+    
+    if (headerEl) headerEl.innerText = `محادثة مع: ${currentSelectedPhone}`;
+    if (phoneInput) phoneInput.value = currentSelectedPhone;
+
+    renderChatList(allMessages || globalAllMessages);
+    loadMessagesForPhone(currentSelectedPhone, allMessages || globalAllMessages);
+}
+
+// 5. عرض فقاعات الرسائل
+function loadMessagesForPhone(phone, allMessages) {
+    const chatMessagesEl = document.getElementById('chatMessages');
+    if (!chatMessagesEl) return;
+    
+    chatMessagesEl.innerHTML = '';
+    if (!allMessages) return;
+
+    const targetCleanPhone = sanitizePhone(phone);
+
+    Object.keys(allMessages).forEach(key => {
+        const item = allMessages[key];
+        if (!item) return;
+
+        const itemPhone = sanitizePhone(item.phone || item.phoneNumber || item.from || item.wa_id || '');
+        
+        if (itemPhone === targetCleanPhone) {
+            const msgText = item.message || item.messageBody || item.text || item.body || '';
+            const isSentByUs = item.type === 'sent' || item.action === 'send_message';
             
-            const db = firebase.database();
-
-            const handleData = (snapshot) => {
-                const data = snapshot.val();
-                if (data) {
-                    globalAllMessages = { ...globalAllMessages, ...data };
-                    renderChatList(globalAllMessages);
-                    if (currentSelectedPhone) {
-                        loadMessagesForPhone(currentSelectedPhone, globalAllMessages);
-                    }
-                }
-            };
-
-            db.ref('incoming_messages').on('value', handleData);
-            db.ref('messages').on('value', handleData);
-        }
-
-        // 3. عرض قائمة المحادثات الجانبية
-        function renderChatList(allMessages) {
-            const chatListEl = document.getElementById('chatList');
-            if (!chatListEl) return;
-
-            if (!allMessages) {
-                chatListEl.innerHTML = '<div style="padding:15px; text-align:center; color:#94a3b8; font-size:13px;">لا توجد محادثات</div>';
-                return;
-            }
-
-            const chats = {};
-            Object.keys(allMessages).forEach(key => {
-                const item = allMessages[key];
-                if (!item) return;
-                const phone = String(item.phone || item.phoneNumber || item.from || item.wa_id || item.sender || 'عميل غير معروف').trim();
-                if (!chats[phone]) chats[phone] = [];
-                chats[phone].push(item);
-            });
-
-            chatListEl.innerHTML = '';
-
-            Object.keys(chats).forEach(phone => {
-                const msgList = chats[phone];
-                const lastMsg = msgList[msgList.length - 1];
-                const msgText = lastMsg.message || lastMsg.messageBody || lastMsg.text || lastMsg.body || 'رسالة جديدة';
-                
-                const div = document.createElement('div');
-                div.style.cssText = `padding: 12px; border-bottom: 1px solid #e2e8f0; cursor: pointer; transition: 0.2s; ${currentSelectedPhone === phone ? 'background: #e0f2fe;' : ''}`;
-                
-                div.onclick = () => selectChat(phone, allMessages);
-                div.innerHTML = `
-                    <div style="font-weight:bold; color:#1e293b; font-size:13px; direction: ltr; text-align: right;">${phone}</div>
-                    <div style="font-size:11px; color:#64748b; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${msgText}</div>
-                `;
-                chatListEl.appendChild(div);
-            });
-        }
-
-        // 4. اختيار محادثة
-        function selectChat(phone, allMessages) {
-            currentSelectedPhone = String(phone).trim();
-            const headerEl = document.getElementById('activeChatHeader');
-            const phoneInput = document.getElementById('testPhone');
+            const bubble = document.createElement('div');
+            bubble.style.cssText = `max-width: 75%; padding: 8px 14px; border-radius: 12px; font-size: 13px; line-height: 1.4; margin-bottom: 8px; ${
+                isSentByUs 
+                ? 'background: #2563eb; color: #fff; align-self: flex-end; border-bottom-left-radius: 2px;' 
+                : 'background: #f1f5f9; border: 1px solid #cbd5e1; align-self: flex-start; color: #0f172a; border-bottom-right-radius: 2px;'
+            }`;
             
-            if (headerEl) headerEl.innerText = `محادثة مع: ${currentSelectedPhone}`;
-            if (phoneInput) phoneInput.value = currentSelectedPhone;
-
-            renderChatList(allMessages);
-            loadMessagesForPhone(currentSelectedPhone, allMessages);
+            bubble.innerText = msgText;
+            chatMessagesEl.appendChild(bubble);
         }
+    });
 
-        // 5. عرض الفقاعات والرسائل (المحدثة لقراءة الرقم بدقة)
-        function loadMessagesForPhone(phone, allMessages) {
-            const chatMessagesEl = document.getElementById('chatMessages');
-            if (!chatMessagesEl) return;
-            chatMessagesEl.innerHTML = '';
+    chatMessagesEl.scrollTop = chatMessagesEl.scrollHeight;
+}
 
-            if (!allMessages) return;
+// 6. دالة الإرسال الفوري
+async function sendDirectTest() {
+    const phoneInput = document.getElementById('testPhone');
+    const msgInput = document.getElementById('testMsg');
+    
+    const rawPhone = phoneInput ? phoneInput.value.trim() : currentSelectedPhone;
+    const phone = sanitizePhone(rawPhone);
+    const msg = msgInput ? msgInput.value.trim() : '';
 
-            const targetPhone = String(phone).trim();
+    if (!msg) return;
 
-            Object.keys(allMessages).forEach(key => {
-                const item = allMessages[key];
-                if (!item) return;
+    msgInput.value = '';
 
-                const itemPhone = String(item.phone || item.phoneNumber || item.from || item.wa_id || '').trim();
-                
-                if (itemPhone === targetPhone) {
-                    const msgText = item.message || item.messageBody || item.text || item.body || '';
-                    const isSentByUs = item.type === 'sent' || item.action === 'send_message';
-                    
-                    const bubble = document.createElement('div');
-                    bubble.style.cssText = `max-width: 75%; padding: 8px 14px; border-radius: 12px; font-size: 13px; line-height: 1.4; margin-bottom: 6px; ${
-                        isSentByUs 
-                        ? 'background: #2563eb; color: #fff; align-self: flex-end; border-bottom-left-radius: 2px;' 
-                        : 'background: #f1f5f9; border: 1px solid #cbd5e1; align-self: flex-start; color: #0f172a; border-bottom-right-radius: 2px;'
-                    }`;
-                    
-                    bubble.innerText = msgText;
-                    chatMessagesEl.appendChild(bubble);
-                }
-            });
+    // أ) الحفظ المباشر في Firebase
+    if (typeof firebase !== 'undefined' && firebase.apps.length) {
+        const db = firebase.database();
+        await db.ref('incoming_messages').push({
+            phone: phone,
+            message: msg,
+            type: 'sent',
+            timestamp: Date.now()
+        });
+    }
 
-            chatMessagesEl.scrollTop = chatMessagesEl.scrollHeight;
-        }
+    // ب) الإرسال للـ Worker
+    try {
+        const response = await fetch(WORKER_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'send_message',
+                phoneNumber: phone,
+                messageBody: msg
+            })
+        });
+        const result = await response.json();
+        console.log("رد السيرفر:", result);
+    } catch (err) {
+        console.error("❌ خطأ في الإرسال:", err);
+    }
+}
 
-        // 6. دالة إرسال الرسالة
-        async function sendDirectTest() {
-            const phoneInput = document.getElementById('testPhone');
-            const msgInput = document.getElementById('testMsg');
-            
-            const phone = phoneInput ? phoneInput.value.trim() : currentSelectedPhone;
-            const msg = msgInput ? msgInput.value.trim() : '';
-
-            if (!msg) return;
-
-            msgInput.value = '';
-
-            // حفظ في Firebase
-            if (typeof firebase !== 'undefined' && firebase.apps.length) {
-                const db = firebase.database();
-                await db.ref('incoming_messages').push({
-                    phone: phone,
-                    message: msg,
-                    type: 'sent',
-                    timestamp: Date.now()
-                });
-            }
-
-      <script>
+// البدء الفوري عند تحميل الصفحة
+startFirebaseListener();
+</script>
 // 1. الإعدادات والمتغيرات الرئيسية
 const WORKER_URL = "https://elmujib-webhook-bridge.wellsobour.workers.dev";
 let currentSelectedPhone = "201000000000";
