@@ -1524,7 +1524,8 @@ function getDefaultSectionsForRole(role) {
 // صلاحيات العمليات الحساسة: يمكن فتحها/غلقها لكل مستخدم من إدارة المستخدمين.
 function hasPermission(permissionKey) {
   if (!currentUser) return false;
-  if (section === 'messages') return true;
+  // الرسائل قسم مستقل؛ لا تستخدم متغير section غير المعرّف هنا.
+  if (permissionKey === 'messages') return true;
   if (currentUser.role === 'admin') return true;
   const sections = currentUser.sections || getDefaultSectionsForRole(currentUser.role);
   if (Object.prototype.hasOwnProperty.call(sections, permissionKey)) return sections[permissionKey] === true;
