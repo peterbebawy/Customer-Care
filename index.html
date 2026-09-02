@@ -3275,29 +3275,31 @@ function handleBranchExcelUpload(branchId,file){
         activeSheet:ordered.length ? (sheets[ordered[0]]||{}).name : '',
         sheets
       };
-      const currentData=branchExcelData[branchId];
-      const archiveOldFile=currentData && currentData.sheets && Object.keys(currentData.sheets).length
-        ? (() => {
-            const archiveRef=rtdb.ref('branch_excel_archive/'+branchId).push();
-            return archiveRef.set({
-              fileName:currentData.fileName||'Excel',
-              archivedAt:Date.now(),
-              archivedBy:currentUser.name||'',
-              originalUploadedAt:currentData.uploadedAt||null,
-              originalUploadedBy:currentData.uploadedBy||'',
-              sheets:currentData.sheets
-            });
-          })()
-        : Promise.resolve();
-      archiveOldFile.then(()=>rtdb.ref('branch_excel/'+branchId).set(payload))
-        .then(()=>{
+      // اقرأ الملف الحالي مباشرة من قاعدة البيانات قبل الرفع، حتى لو الـ listener لم يكن حمّل البيانات بعد.
+      rtdb.ref('branch_excel/'+branchId).once('value').then(snap=>{
+        const currentData=snap.val() || branchExcelData[branchId] || null;
+        const hasOldFile=!!(currentData && currentData.sheets && Object.keys(currentData.sheets).length);
+        const archiveOldFile=hasOldFile
+          ? (() => {
+              const archiveRef=rtdb.ref('branch_excel_archive/'+branchId).push();
+              return archiveRef.set({
+                fileName:currentData.fileName||'Excel',
+                archivedAt:Date.now(),
+                archivedBy:currentUser.name||'',
+                originalUploadedAt:currentData.uploadedAt||null,
+                originalUploadedBy:currentData.uploadedBy||'',
+                sheets:currentData.sheets
+              });
+            })()
+          : Promise.resolve();
+        return archiveOldFile.then(()=>rtdb.ref('branch_excel/'+branchId).set(payload)).then(()=>{
           branchExcelData[branchId]=payload;
           renderBranchExcelSections();
           if(currentTab!=='branchExcel_'+branchId) showTab('branchExcel_'+branchId);
           renderBranchExcelSection(branchId);
-          showToast(currentData ? '✅ تم أرشفة الملف القديم ورفع الملف الجديد' : '✅ تم رفع ملف جديد بالكامل للفرع');
-        })
-        .catch(err=>{console.error(err);showToast('❌ تعذر حفظ/أرشفة ملف Excel',true);});
+          showToast(hasOldFile ? '✅ تم أرشفة الملف القديم ورفع الملف الجديد' : '✅ تم رفع ملف جديد بالكامل للفرع');
+        });
+      }).catch(err=>{console.error(err);showToast('❌ تعذر حفظ/أرشفة ملف Excel',true);});
     }catch(err){console.error(err);showToast('❌ ملف Excel غير صالح',true);}
   };
   reader.readAsArrayBuffer(file);
