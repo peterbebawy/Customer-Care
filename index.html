@@ -1039,6 +1039,30 @@ td[style*="max-width"]{
   word-break: break-word;
   overflow-wrap: anywhere;
 }
+
+/* ===== Branch Excel Archive ===== */
+.branch-excel-archive{margin-top:16px;border:1px solid #e4e7ec;border-radius:16px;background:#fff;overflow:hidden}
+.branch-excel-archive-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:14px 16px;background:linear-gradient(135deg,#faf7ed,#fff);border-bottom:1px solid #eadfbf}
+.branch-excel-archive-title{font-size:16px;font-weight:900;color:#172033}
+.branch-excel-archive-sub{font-size:11px;color:#667085;margin-top:3px}
+.branch-excel-archive-content{padding:14px 16px}
+.branch-excel-archive-list{display:grid;gap:8px;max-height:360px;overflow:auto}
+.branch-excel-archive-item{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px;border:1px solid #e7ebf2;border-radius:12px;background:#f9fbfd}
+.branch-excel-archive-item:hover{border-color:#c9a227;background:#fff}
+.branch-excel-archive-meta{min-width:0}
+.branch-excel-archive-name{font-weight:800;color:#253047;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.branch-excel-archive-info{font-size:11px;color:#8a95a5;margin-top:4px}
+.branch-excel-archive-actions{display:flex;gap:6px;flex-wrap:wrap;flex-shrink:0}
+.branch-excel-archive-empty{text-align:center;padding:24px;color:#98a2b3}
+.branch-excel-archive-modal{position:fixed;inset:0;background:rgba(15,23,42,.55);z-index:2100;display:flex;align-items:center;justify-content:center;padding:18px}
+.branch-excel-archive-modal.hidden{display:none}
+.branch-excel-archive-modal-card{background:#fff;width:min(1400px,96vw);height:min(88vh,900px);border-radius:18px;box-shadow:0 25px 80px rgba(15,23,42,.28);display:flex;flex-direction:column;overflow:hidden}
+.branch-excel-archive-modal-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 18px;border-bottom:1px solid #e7ebf2;background:#f8fafc}
+.branch-excel-archive-modal-body{padding:14px 18px;overflow:auto;flex:1}
+.branch-excel-archive-review-table{width:max-content;min-width:100%;border-collapse:separate;border-spacing:0;font-size:13px}
+.branch-excel-archive-review-table th,.branch-excel-archive-review-table td{padding:8px 10px;border-left:1px solid #e2e8f0;border-bottom:1px solid #e2e8f0;vertical-align:top;white-space:normal;word-break:break-word;max-width:420px}
+.branch-excel-archive-review-table th{position:sticky;top:0;background:#f1f5f9;z-index:2;font-weight:800}
+@media(max-width:700px){.branch-excel-archive-item{align-items:flex-start;flex-direction:column}.branch-excel-archive-actions{width:100%}.branch-excel-archive-modal{padding:8px}.branch-excel-archive-modal-card{width:100%;height:94vh}}
 </style>
 </head>
 <body>
@@ -1425,6 +1449,8 @@ td[style*="max-width"]{
 
   <div id="branchExcelSections" class="hidden"></div>
 
+  <div id="branchExcelArchivePage" class="hidden"></div>
+
 <div id="users" class="hidden">
     <div class="card">
       <h2 style="margin-top:0;color:#1e293b;">إدارة المستخدمين</h2>
@@ -1757,6 +1783,9 @@ let usersData = [], ordersData = [], appOrdersData = [], branchesData = [], prod
 let archivedShortagesData = [], archivedCCShortagesData = [], shortageRestoreRequestsData = [];
 let branchExcelData = {}; // {branchId: {fileName,uploadedAt,uploadedBy,sheets:{sheetKey:{name,rows:[]}}}}
 let branchExcelListeners = {};
+let branchExcelArchiveData = {};
+let branchExcelArchiveListeners = {};
+let branchExcelArchiveReview = {};
 let branchPhoneReviewData = {}; // {branchId:{fileName,uploadedAt,uploadedBy,customers:[{name,phone,normalizedPhone}]}}
 let currentTab = localStorage.getItem('cc_current_tab') || 'dashboardHome';
 let pendingRestoreTab = null;
@@ -1773,7 +1802,7 @@ let quickProductContext = 'order', quickCustomerContext = 'order';
 const ROLES = { admin: 'أدمن', manager: 'مانجر', employee: 'Call Center', appuser: 'مستخدم أبلكيشن', branch: 'Branch' };
 const STATUS_LABELS = { pending: 'في الانتظار', completed: 'تم', outdelivery: 'Out of Delivery', cancelled: 'ملغي' };
 const STATUS_CLASSES = { pending: 'status-pending', completed: 'status-completed', outdelivery: 'status-outdelivery', cancelled: 'status-cancelled' };
-const ALL_SECTION_KEYS = ['newOrder','myOrders','allOrders','allAppOrders','doneOrders','cancelOrders','shortages','shortagesReport','callcenterShortages','ccShortagesReport','archive','shortagesArchive','users','branches','apps','products','customers','branchExcelSections','editOrders','editShortages','editStatus'];
+const ALL_SECTION_KEYS = ['newOrder','myOrders','allOrders','allAppOrders','doneOrders','cancelOrders','shortages','shortagesReport','callcenterShortages','ccShortagesReport','archive','shortagesArchive','users','branches','apps','products','customers','branchExcelSections','branchExcelArchivePage','editOrders','editShortages','editStatus'];
 function branchExcelSectionKey(branchId){ return 'branchExcel_' + branchId; }
 function hasBranchExcelPermission(branchId){
   if(!currentUser) return false;
@@ -1846,7 +1875,7 @@ function hasPermission(permissionKey) {
 }
 
 function hideAllAppTabsOnStartup(){
-  const tabs=['dashboardHome','newOrder','myOrders','allOrders','allAppOrders','doneOrders','cancelOrders','shortages','shortagesReport','callcenterShortages','ccShortagesReport','archive','shortagesArchive','users','branches','apps','products','customers','branchExcelSections'];
+  const tabs=['dashboardHome','newOrder','myOrders','allOrders','allAppOrders','doneOrders','cancelOrders','shortages','shortagesReport','callcenterShortages','ccShortagesReport','archive','shortagesArchive','users','branches','apps','products','customers','branchExcelSections','branchExcelArchivePage'];
   tabs.forEach(t=>{ const el=document.getElementById(t); if(el) el.classList.add('hidden'); const btn=document.getElementById('tab-'+t); if(btn) btn.classList.remove('active'); });
 }
 
@@ -2109,7 +2138,7 @@ function enterDashboard(user, silent) {
   // عند Refresh داخل نفس جلسة المتصفح: نستعيد نفس الشاشة بالضبط.
   const isBranchUser = user.role === 'branch';
   const storedTabRaw = (hashTab || localStorage.getItem('cc_current_tab') || currentTab || 'dashboardHome');
-  const allowedTabs = new Set(['dashboardHome','newOrder','myOrders','allOrders','allAppOrders','doneOrders','cancelOrders','shortages','shortagesReport','callcenterShortages','ccShortagesReport','archive','shortagesArchive','users','branches','apps','products','customers','branchExcelSections']);
+  const allowedTabs = new Set(['dashboardHome','newOrder','myOrders','allOrders','allAppOrders','doneOrders','cancelOrders','shortages','shortagesReport','callcenterShortages','ccShortagesReport','archive','shortagesArchive','users','branches','apps','products','customers','branchExcelSections','branchExcelArchivePage']);
   const storedTab = allowedTabs.has(storedTabRaw) || /^branchExcel_[^/]+$/.test(storedTabRaw) ? storedTabRaw : 'dashboardHome';
   const shouldStartHome = !activeSession || !silent;
   const savedTab = shouldStartHome ? 'dashboardHome' : storedTab;
@@ -2610,6 +2639,13 @@ function setupBranchExcelListeners(){
       if(currentTab==='branchExcel_'+b.id) renderBranchExcelSection(b.id);
       if(currentUser?.role==='branch' && currentUser.branchId===b.id && currentTab==='dashboardHome') renderDashboardHome();
     }, err=>console.error('Branch Excel '+b.id+':',err));
+    if(!branchExcelArchiveListeners[b.id]){
+      branchExcelArchiveListeners[b.id]=true;
+      rtdb.ref('branch_excel_archive/'+b.id).on('value',snap=>{
+        branchExcelArchiveData[b.id]=snap.val()||{};
+        if(currentTab==='branchExcel_'+b.id) renderBranchExcelSection(b.id);
+      }, err=>console.error('Branch Excel Archive '+b.id+':',err));
+    }
   });
   renderBranchExcelSections();
 }
@@ -2828,6 +2864,109 @@ function listenBranchPhoneReview(branchId){
     if(currentTab==='branchExcel_'+branchId) renderBranchExcelSection(branchId);
   });
 }
+
+function getBranchExcelArchiveList(branchId){
+  return Object.entries(branchExcelArchiveData[branchId]||{})
+    .map(([id,v])=>({id,...(v||{})}))
+    .sort((a,b)=>(b.archivedAt||0)-(a.archivedAt||0));
+}
+function renderBranchExcelArchiveItems(branchId,list){
+  if(!list.length) return '<div class="branch-excel-archive-empty">📭 لا توجد ملفات في الأرشيف.</div>';
+  return list.map(item=>{
+    const sheets=Object.keys(item.sheets||{}).length;
+    const rows=Object.values(item.sheets||{}).reduce((n,sh)=>n+Math.max(0,(sh.rows||[]).length-1),0);
+    return `<div class="branch-excel-archive-item">
+      <div class="branch-excel-archive-meta">
+        <div class="branch-excel-archive-name">📦 ${escapeHtml(item.fileName||'Excel')}</div>
+        <div class="branch-excel-archive-info">🕒 ${item.archivedAt?new Date(item.archivedAt).toLocaleString('ar-EG'):'-'} | 👤 ${escapeHtml(item.archivedBy||'-')} | 📄 ${sheets} شيت | 📊 ${rows} صف</div>
+      </div>
+      <div class="branch-excel-archive-actions">
+        <button type="button" class="btn btn-primary btn-sm" onclick="openBranchExcelArchive('${branchId}','${item.id}')">👁️ Review</button>
+        <button type="button" class="btn btn-success btn-sm" onclick="exportBranchExcelArchive('${branchId}','${item.id}')">📥 Excel</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+function filterBranchExcelArchiveList(branchId,q){
+  const box=document.getElementById('branchExcelArchiveList_'+branchId); if(!box)return;
+  const term=normalizeExcelText(q||'');
+  const list=getBranchExcelArchiveList(branchId).filter(item=>{
+    if(!term)return true;
+    if(normalizeExcelText([item.fileName,item.archivedBy,item.originalUploadedBy].join(' ')).includes(term))return true;
+    return Object.values(item.sheets||{}).some(sh=>(sh.rows||[]).some(r=>normalizeExcelText((r||[]).map(v=>String(v??'')).join(' ')).includes(term)));
+  });
+  box.innerHTML=renderBranchExcelArchiveItems(branchId,list);
+}
+function renderBranchExcelArchiveBox(branchId){
+  if(!currentUser || currentUser.role!=='admin') return '';
+  const list=getBranchExcelArchiveList(branchId);
+  return `<div class="branch-excel-archive" style="margin-top:18px"><div class="branch-excel-archive-head"><div><div class="branch-excel-archive-title">🗄️ أرشيف ملفات Excel</div><div class="branch-excel-archive-sub">الأرشيف متاح للأدمن فقط، ويتم فتحه في صفحة مستقلة للبحث والمراجعة.</div></div><span class="badge badge-purple">${list.length} ملف</span></div><div class="branch-excel-archive-content" style="display:flex;justify-content:center"><button type="button" class="btn btn-primary" style="min-width:220px;font-size:15px;padding:12px 20px" onclick="openBranchExcelArchivePage()">🗄️ فتح الأرشيف</button></div></div>`;
+}
+function openBranchExcelArchivePage(){
+  if(!currentUser || currentUser.role!=='admin'){showToast('⛔ الأرشيف متاح للأدمن فقط',true);return;}
+  showTab('branchExcelArchivePage'); renderBranchExcelArchivePage();
+}
+function renderBranchExcelArchivePage(query=''){
+  const el=document.getElementById('branchExcelArchivePage'); if(!el || !currentUser || currentUser.role!=='admin') return;
+  const term=normalizeExcelText(query||''), branches=getExcelBranches(); let totalFiles=0,totalSheets=0,totalRows=0;
+  const cards=branches.map(b=>{ const all=getBranchExcelArchiveList(b.id); const list=all.filter(item=>{ if(!term)return true; if(normalizeExcelText([b.name,item.fileName,item.archivedBy,item.originalUploadedBy].join(' ')).includes(term))return true; return Object.values(item.sheets||{}).some(sh=>(sh.rows||[]).some(r=>normalizeExcelText((r||[]).map(v=>String(v??'')).join(' ')).includes(term))); }); totalFiles+=all.length; totalSheets+=all.reduce((n,item)=>n+Object.keys(item.sheets||{}).length,0); totalRows+=all.reduce((n,item)=>n+Object.values(item.sheets||{}).reduce((m,sh)=>m+Math.max(0,(sh.rows||[]).length-1),0),0); if(term&&!list.length)return ''; return `<div class="card" style="margin-bottom:16px"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px"><h3 style="margin:0">🏢 ${escapeHtml(b.name||'فرع')}</h3><span class="badge badge-purple">${all.length} ملف مؤرشف</span></div>${renderBranchExcelArchiveItems(b.id,list)}</div>`; }).join('');
+  el.innerHTML=`<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap"><div><h2 style="margin:0;color:#1e293b">🗄️ أرشيف متابعة الفروع Excel</h2><div style="margin-top:5px;color:#667085;font-size:13px">الأرشيف الكامل لكل ملفات الفروع القديمة — الأدمن فقط.</div></div><button type="button" class="btn btn-secondary" onclick="showTab('branchExcelSections')">↩️ الرجوع لمتابعة الفروع</button></div><div class="stats" style="margin-top:16px"><div class="stat-card"><div class="stat-value">${totalFiles}</div><div class="stat-label">ملفات</div></div><div class="stat-card"><div class="stat-value">${totalSheets}</div><div class="stat-label">شيت</div></div><div class="stat-card"><div class="stat-value">${totalRows}</div><div class="stat-label">صف بيانات</div></div></div><div class="search-bar" style="margin-top:16px"><input id="branchExcelArchiveGlobalSearch" type="text" class="input" style="margin-bottom:0" placeholder="🔍 ابحث في كل الأرشيف: الفرع، اسم الملف، الشيت، أو أي بيانات داخل الشيتات..." value="${escapeHtml(query||'')}" oninput="renderBranchExcelArchivePage(this.value)"></div><div style="margin-top:16px">${cards||'<div class="branch-excel-archive-empty">📭 لا توجد نتائج في الأرشيف.</div>'}</div></div>`;
+}
+
+function openBranchExcelArchive(branchId,archiveId){
+  if(!currentUser || currentUser.role!=='admin'){showToast('⛔ الأرشيف متاح للأدمن فقط',true);return;}
+  if(!hasBranchExcelPermission(branchId))return;
+  if(!document.getElementById('branchExcelArchiveModal')){const m=document.createElement('div');m.id='branchExcelArchiveModal';m.className='branch-excel-archive-modal hidden';m.onclick=function(e){if(e.target===this)closeBranchExcelArchive()};document.body.appendChild(m);}
+  const item=(branchExcelArchiveData[branchId]||{})[archiveId]; if(!item)return;
+  const keys=sortBranchExcelSheetKeys(item);
+  branchExcelArchiveReview[branchId]={archiveId,activeSheet:keys.length?(item.sheets[keys[0]]||{}).name:'',query:''};
+  renderBranchExcelArchiveModal(branchId);
+}
+function closeBranchExcelArchive(){
+  const m=document.getElementById('branchExcelArchiveModal'); if(m)m.classList.add('hidden');
+}
+function setBranchExcelArchiveSheet(branchId,name){
+  const st=branchExcelArchiveReview[branchId]||{}; st.activeSheet=name; branchExcelArchiveReview[branchId]=st; renderBranchExcelArchiveModal(branchId);
+}
+function setBranchExcelArchiveQuery(branchId,q){
+  const st=branchExcelArchiveReview[branchId]||{}; st.query=q; branchExcelArchiveReview[branchId]=st; renderBranchExcelArchiveModal(branchId);
+}
+function renderBranchExcelArchiveModal(branchId){
+  const m=document.getElementById('branchExcelArchiveModal'); if(!m)return;
+  const st=branchExcelArchiveReview[branchId]||{}, item=(branchExcelArchiveData[branchId]||{})[st.archiveId];
+  if(!item){closeBranchExcelArchive();return;}
+  const keys=sortBranchExcelSheetKeys(item);
+  const name=st.activeSheet&&keys.some(k=>(item.sheets[k]||{}).name===st.activeSheet)?st.activeSheet:((item.sheets[keys[0]]||{}).name||'');
+  const key=keys.find(k=>(item.sheets[k]||{}).name===name)||keys[0], sh=item.sheets[key]||{}, rows=sh.rows||[], maxCols=Math.max(1,...rows.map(r=>r.length||0));
+  const term=normalizeExcelText(st.query||''), shown=term?rows.filter(r=>normalizeExcelText((r||[]).map(v=>String(v??'')).join(' ')).includes(term)):rows;
+  const header=rows[0]||[];
+  const heads=Array.from({length:maxCols},(_,i)=>`<th>${escapeHtml(excelColLetter(i)+(String(header[i]??'').trim()?` — ${header[i]}`:''))}</th>`).join('');
+  const body=shown.length?shown.map(r=>`<tr>${Array.from({length:maxCols},(_,i)=>`<td>${escapeHtml(r[i]??'')}</td>`).join('')}</tr>`).join(''):`<tr><td colspan="${maxCols}" style="text-align:center;padding:30px;color:#98a2b3">لا توجد نتائج.</td></tr>`;
+  m.classList.remove('hidden');
+  m.innerHTML=`<div class="branch-excel-archive-modal-card">
+    <div class="branch-excel-archive-modal-head"><div><strong>🗄️ Review الأرشيف</strong><div style="font-size:11px;color:#667085;margin-top:3px">${escapeHtml(item.fileName||'Excel')} — ${item.archivedAt?new Date(item.archivedAt).toLocaleString('ar-EG'):'-'}</div></div><button type="button" class="btn btn-secondary btn-sm" onclick="closeBranchExcelArchive()">✖ إغلاق</button></div>
+    <div class="branch-excel-archive-modal-body">
+      <div class="branch-excel-toolbar">
+        <label class="label" style="margin:0">Sheet</label>
+        <select class="input" style="max-width:320px;margin:0" onchange="setBranchExcelArchiveSheet('${branchId}',this.value)">${keys.map(k=>{const n=(item.sheets[k]||{}).name||k;return `<option value="${escapeHtml(n)}" ${n===name?'selected':''}>${escapeHtml(n)}</option>`}).join('')}</select>
+        <input class="input" style="max-width:420px;margin:0" placeholder="🔍 بحث داخل الشيت" value="${escapeHtml(st.query||'')}" oninput="setBranchExcelArchiveQuery('${branchId}',this.value)">
+        <button type="button" class="btn btn-success btn-sm" onclick="exportBranchExcelArchive('${branchId}','${st.archiveId}')">📥 سحب الملف</button>
+      </div>
+      <div style="font-size:11px;color:#667085;margin-bottom:10px">الأرشيف للمراجعة فقط ولا يتأثر بتعديلات الملف الحالي.</div>
+      <div class="branch-excel-table-wrap" style="max-height:65vh"><table class="branch-excel-archive-review-table"><thead><tr>${heads}</tr></thead><tbody>${body}</tbody></table></div>
+    </div></div>`;
+}
+function exportBranchExcelArchive(branchId,archiveId){
+  if(!currentUser || currentUser.role!=='admin'){showToast('⛔ الأرشيف متاح للأدمن فقط',true);return;}
+  if(typeof XLSX==='undefined'){showToast('❌ مكتبة Excel لم يتم تحميلها',true);return;}
+  if(!hasBranchExcelPermission(branchId))return;
+  const item=(branchExcelArchiveData[branchId]||{})[archiveId]; if(!item||!item.sheets){showToast('❌ ملف الأرشيف غير متاح',true);return;}
+  const wb=XLSX.utils.book_new(),used=new Set(); let count=0;
+  sortBranchExcelSheetKeys(item).forEach((key,idx)=>{const sh=item.sheets[key]||{};if(!Array.isArray(sh.rows))return;let n=sanitizeBranchExcelSheetName(sh.name||`Sheet${idx+1}`),base=n,i=2;while(used.has(n))n=(base.slice(0,28)+'_'+i++).slice(0,31);used.add(n);XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(sh.rows),n);count++;});
+  const base=String(item.fileName||'Excel').replace(/\.[^.]+$/,'').replace(/[\\/:*?"<>|]/g,'_');
+  XLSX.writeFile(wb,`${base}_Archive.xlsx`); showToast(`✅ تم سحب ${count} شيت من الأرشيف`);
+}
+
 function renderBranchExcelSection(branchId){
   listenBranchPhoneReview(branchId);
   const branch=getExcelBranches().find(b=>b.id===branchId);
@@ -2905,6 +3044,7 @@ function renderBranchExcelSection(branchId){
         <tbody id="branchExcelBody_${branchId}">${rows.map((r,ri)=>branchExcelRowHtml(branchId,ri,r,maxCols,priorityCols)).join('')}</tbody>
       </table>
     </div>
+    ${renderBranchExcelArchiveBox(branchId)}
   </div>`;
   const selectedCols=getBranchExcelSelectedColumns(branchId,priorityCols,maxCols);
   el.querySelectorAll('[data-branch-excel-col]').forEach(c=>c.checked=selectedCols.includes(Number(c.dataset.branchExcelCol)));
@@ -3135,15 +3275,29 @@ function handleBranchExcelUpload(branchId,file){
         activeSheet:ordered.length ? (sheets[ordered[0]]||{}).name : '',
         sheets
       };
-      rtdb.ref('branch_excel/'+branchId).set(payload)
+      const currentData=branchExcelData[branchId];
+      const archiveOldFile=currentData && currentData.sheets && Object.keys(currentData.sheets).length
+        ? (() => {
+            const archiveRef=rtdb.ref('branch_excel_archive/'+branchId).push();
+            return archiveRef.set({
+              fileName:currentData.fileName||'Excel',
+              archivedAt:Date.now(),
+              archivedBy:currentUser.name||'',
+              originalUploadedAt:currentData.uploadedAt||null,
+              originalUploadedBy:currentData.uploadedBy||'',
+              sheets:currentData.sheets
+            });
+          })()
+        : Promise.resolve();
+      archiveOldFile.then(()=>rtdb.ref('branch_excel/'+branchId).set(payload))
         .then(()=>{
           branchExcelData[branchId]=payload;
           renderBranchExcelSections();
           if(currentTab!=='branchExcel_'+branchId) showTab('branchExcel_'+branchId);
           renderBranchExcelSection(branchId);
-          showToast('✅ تم رفع ملف جديد بالكامل للفرع');
+          showToast(currentData ? '✅ تم أرشفة الملف القديم ورفع الملف الجديد' : '✅ تم رفع ملف جديد بالكامل للفرع');
         })
-        .catch(err=>{console.error(err);showToast('❌ تعذر حفظ ملف Excel',true);});
+        .catch(err=>{console.error(err);showToast('❌ تعذر حفظ/أرشفة ملف Excel',true);});
     }catch(err){console.error(err);showToast('❌ ملف Excel غير صالح',true);}
   };
   reader.readAsArrayBuffer(file);
@@ -3638,6 +3792,7 @@ function renderDashboardHome(){
   if(st) st.innerHTML=`<div class="status-row"><span class="status-label"><i class="status-dot" style="--dot:#f59e0b"></i>في الانتظار</span><b class="status-num">${pending}</b></div><div class="status-row"><span class="status-label"><i class="status-dot" style="--dot:#2563eb"></i>قيد التوصيل</span><b class="status-num">${out}</b></div><div class="status-row"><span class="status-label"><i class="status-dot" style="--dot:#16a34a"></i>تم التنفيذ</span><b class="status-num">${done}</b></div><div class="status-row"><span class="status-label"><i class="status-dot" style="--dot:#dc2626"></i>ملغي</span><b class="status-num">${cancelled}</b></div><div class="status-row"><span class="status-label"><i class="status-dot" style="--dot:#7c3aed"></i>أوردرات اليوم</span><b class="status-num">${todayOrders}</b></div>`;
 }
 function hasSectionPermission(section) {
+  if(section==='branchExcelArchivePage') return !!currentUser && currentUser.role==='admin';
   if (!currentUser) return false;
   if (currentUser.role === 'admin') return true;
   const sections = currentUser.sections || getDefaultSectionsForRole(currentUser.role);
@@ -3682,7 +3837,7 @@ function showTab(tab) {
         localStorage.setItem('cc_current_tab', tab);
         history.replaceState(null, '', '#' + encodeURIComponent(tab));
       } catch(e) {}
-      ['dashboardHome','newOrder','myOrders','allOrders','allAppOrders','doneOrders','cancelOrders','shortages','shortagesReport','callcenterShortages','ccShortagesReport','archive','shortagesArchive','users','branches','apps','products','customers','branchExcelSections'].forEach(t => {
+      ['dashboardHome','newOrder','myOrders','allOrders','allAppOrders','doneOrders','cancelOrders','shortages','shortagesReport','callcenterShortages','ccShortagesReport','archive','shortagesArchive','users','branches','apps','products','customers','branchExcelSections','branchExcelArchivePage'].forEach(t => {
         const el=document.getElementById(t); if(el) el.classList.add('hidden');
         const btn=document.getElementById('tab-'+t); if(btn) btn.classList.remove('active');
       });
@@ -3709,7 +3864,7 @@ function showTab(tab) {
   if (window.location.hash !== '#' + encodeURIComponent(currentTab)) {
     history.replaceState(null, '', '#' + encodeURIComponent(currentTab));
   }
-  ['dashboardHome','newOrder','myOrders','allOrders','allAppOrders','doneOrders','cancelOrders','shortages','shortagesReport','callcenterShortages','ccShortagesReport','archive','shortagesArchive','users','branches','apps','products','customers','branchExcelSections'].forEach(t => {
+  ['dashboardHome','newOrder','myOrders','allOrders','allAppOrders','doneOrders','cancelOrders','shortages','shortagesReport','callcenterShortages','ccShortagesReport','archive','shortagesArchive','users','branches','apps','products','customers','branchExcelSections','branchExcelArchivePage'].forEach(t => {
     const el = document.getElementById(t); 
     const btn = document.getElementById('tab-'+t);
     if(el) el.classList.add('hidden'); 
