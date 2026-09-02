@@ -2883,6 +2883,7 @@ function renderBranchExcelArchiveItems(branchId,list){
       <div class="branch-excel-archive-actions">
         <button type="button" class="btn btn-primary btn-sm" onclick="openBranchExcelArchive('${branchId}','${item.id}')">👁️ Review</button>
         <button type="button" class="btn btn-success btn-sm" onclick="exportBranchExcelArchive('${branchId}','${item.id}')">📥 Excel</button>
+        <button type="button" class="btn btn-danger btn-sm" onclick="deleteBranchExcelArchive('${branchId}','${item.id}')">🗑️ حذف</button>
       </div>
     </div>`;
   }).join('');
@@ -2956,6 +2957,46 @@ function renderBranchExcelArchiveModal(branchId){
       <div class="branch-excel-table-wrap" style="max-height:65vh"><table class="branch-excel-archive-review-table"><thead><tr>${heads}</tr></thead><tbody>${body}</tbody></table></div>
     </div></div>`;
 }
+function deleteBranchExcelArchive(branchId,archiveId){
+  if(!currentUser || currentUser.role!=='admin'){
+    showToast('⛔ حذف ملفات الأرشيف متاح للأدمن فقط',true);
+    return;
+  }
+  if(!hasBranchExcelPermission(branchId)) return;
+
+  const item=(branchExcelArchiveData[branchId]||{})[archiveId];
+  if(!item){
+    showToast('❌ ملف الأرشيف غير موجود',true);
+    return;
+  }
+
+  const fileName=String(item.fileName||'ملف Excel');
+  if(!confirm(`⚠️ هل أنت متأكد من حذف الملف من أرشيف متابعة الفروع نهائياً؟\n\n${fileName}\n\nلا يمكن التراجع عن هذا الحذف.`)) return;
+
+  rtdb.ref('branch_excel_archive/'+branchId+'/'+archiveId).remove()
+    .then(()=>{
+      if(branchExcelArchiveData[branchId]){
+        delete branchExcelArchiveData[branchId][archiveId];
+      }
+      const st=branchExcelArchiveReview[branchId];
+      if(st && st.archiveId===archiveId){
+        delete branchExcelArchiveReview[branchId];
+        closeBranchExcelArchive();
+      }
+      if(currentTab==='branchExcelArchivePage'){
+        const search=document.getElementById('branchExcelArchiveGlobalSearch');
+        renderBranchExcelArchivePage(search ? search.value : '');
+      }else{
+        renderBranchExcelSection(branchId);
+      }
+      showToast('🗑️ تم حذف ملف Excel من الأرشيف نهائياً');
+    })
+    .catch(err=>{
+      console.error('Delete Branch Excel Archive:',err);
+      showToast('❌ تعذر حذف ملف Excel من الأرشيف',true);
+    });
+}
+
 function exportBranchExcelArchive(branchId,archiveId){
   if(!currentUser || currentUser.role!=='admin'){showToast('⛔ الأرشيف متاح للأدمن فقط',true);return;}
   if(typeof XLSX==='undefined'){showToast('❌ مكتبة Excel لم يتم تحميلها',true);return;}
