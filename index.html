@@ -3280,23 +3280,14 @@ window.addEventListener('beforeunload',()=>{ try { localStorage.setItem('cc_curr
 
 // El Mujib + Firebase WhatsApp inbox integration.
 // Only active/incoming conversations stored by the webhook are shown.
-const ELMUJIB_API_BASE = "https://elmujib.com/api";
-const ELMUJIB_VENDOR_UID = "5048e944-754c-40fe-bdaa-e0dbb2811907";
-const ELMUJIB_API_TOKEN = ""; // Secret token is kept in Cloudflare Worker, not in this public HTML.
-const ELMUJIB_SEND_URL = `${ELMUJIB_API_BASE}/${ELMUJIB_VENDOR_UID}/contact/send-message`;
+// الإرسال بيعدي من خلال الـ Cloudflare Worker (مش مباشرة من هنا) عشان التوكن
+// يفضل مخفي (Secret) جوه الـ Worker، ومايظهرش أبدًا في كود الموقع العام.
+const ELMUJIB_SEND_URL = "https://elmujib-webhook-bridge.wellsobour.workers.dev/send";
 
 let elmujibSelectedContact = null;
 let elmujibInboxStarted = false;
 let elmujibInboxRef = null;
 let elmujibThreadRef = null;
-
-function elmujibHeaders(){
-  return {
-    'Authorization': 'Bearer ' + ELMUJIB_API_TOKEN,
-    'Content-Type': 'application/json',
-    'Accept': 'application/json'
-  };
-}
 function setElMujibStatus(text, ok=false){
   const el=document.getElementById('elmujibApiStatus');
   if(!el) return;
@@ -3406,7 +3397,6 @@ function handleElMujibMessageKey(e){
 }
 
 async function sendElMujibMessage(){
-  if(!ELMUJIB_API_TOKEN){ showToast('⚠️ توكن المجيب غير موجود في الواجهة؛ اضبط الإرسال عبر Cloudflare Worker.',true); setElMujibStatus('⚠️ الإرسال يحتاج Cloudflare Worker لحماية التوكن.',false); return; }
   if(!elmujibSelectedContact?.phone){showToast('❌ اختر رسالة واردة أولاً',true);return;}
   const input=document.getElementById('elmujibMessageText');
   const message=(input?.value||'').trim();
@@ -3415,28 +3405,16 @@ async function sendElMujibMessage(){
   if(btn) btn.disabled=true;
   setElMujibStatus('جاري إرسال الرد إلى '+elmujibSelectedContact.phone+'…');
   try{
+    // الإرسال بيعدي من خلال الـ Worker (بيحمل التوكن السري ويبعت للمجيب،
+    // وبيسجل نسخة الرسالة الصادرة في Firebase بنفسه).
     const res=await fetch(ELMUJIB_SEND_URL,{
       method:'POST',
-      headers:elmujibHeaders(),
-      body:JSON.stringify({phone_number:elmujibSelectedContact.phone,message_body:message})
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({phone:elmujibSelectedContact.phone,message:message})
     });
     const text=await res.text();
     let data={}; try{data=text?JSON.parse(text):{};}catch(_){ }
-    if(!res.ok) throw new Error((data&&data.message)||text||('HTTP '+res.status));
-    const now=Date.now();
-    const key=String(now)+'_'+Math.random().toString(36).slice(2,8);
-    const path='whatsapp_messages/'+safeId(elmujibSelectedContact.phone)+'/'+key;
-    await rtdb.ref(path).set({
-      direction:'outbound',
-      body:message,
-      phone:elmujibSelectedContact.phone,
-      sentAt:now,
-      receivedAt:now,
-      createdAt:now
-    });
-    await rtdb.ref('whatsapp_inbox_index/'+safeId(elmujibSelectedContact.phone)).update({
-      lastMessage:message,lastMessageAt:now,unread:false
-    }).catch(()=>{});
+    if(!res.ok) throw new Error((data&&(data.error||data.message))||text||('HTTP '+res.status));
     if(input) input.value='';
     setElMujibStatus('تم إرسال الرد للعميل '+elmujibSelectedContact.phone+' ✓',true);
     showToast('✅ تم إرسال الرد');
