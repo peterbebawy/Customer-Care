@@ -804,7 +804,14 @@ table tbody tr:hover{
         </div>
       </div>
       <div class="messages-toolbar-actions">
-        <button type="button" class="btn btn-secondary" onclick="toggleMessagesFrame()">🔗 فتح Vendor Console</button>
+<a id="vendorConsoleFallback" href="https://elmujib.com/vendor-console" target="_blank"
+   rel="noopener noreferrer"
+   style="display:inline-flex;align-items:center;padding:10px 14px;border-radius:10px;
+          background:#f1f5f9;color:#334155;text-decoration:none;font-weight:700;font-size:13px;">
+  ↗️ فتح Vendor Console في تبويب جديد
+</a>
+
+        <button type="button" class="btn btn-secondary" onclick="toggleMessagesFrame(); return false;">🔗 فتح Vendor Console</button>
       </div>
     </div>
 
@@ -5408,9 +5415,12 @@ function escapeHtml(str) {
 }
 
 function toggleMessagesFrame() {
-  const frame = document.getElementById('messagesFrame');
-  frame.classList.toggle('hidden');
-  if (!frame.getAttribute('src')) frame.src = 'https://elmujib.com/vendor-console';
+  const url = 'https://elmujib.com/vendor-console';
+  try {
+    window.open(url, '_blank', 'noopener,noreferrer');
+  } catch (e) {
+    window.location.href = url;
+  }
 }
 
 // استدعِ initWhatsAppInbox() في نفس المكان اللي بتستدعي فيه باقي init functions
