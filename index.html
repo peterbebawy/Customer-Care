@@ -3280,9 +3280,11 @@ window.addEventListener('beforeunload',()=>{ try { localStorage.setItem('cc_curr
 // El Mujib API integration. The Dr. Wells login controls access to this section.
 // The API token is kept here for this internal deployment; for a public deployment
 // move it to a backend/proxy so it is not exposed to browser users.
-const ELMUJIB_API_BASE = 'https://api.elmujib.com/api';
-const ELMUJIB_VENDOR_UID = 'caa2fd4a-9576-11f1-82eb-560005d58962';
-const ELMUJIB_API_TOKEN = 'U2ecgVXIyRS35RMNDzrbMtf0X4wVLsJAJWSA4IwuZZaYjNJQSaEQ73KvaZuirVx5';
+const INSTANCE_ID = "5048e944-754c-40fe-bdaa-e0dbb2811907";
+const TOKEN = "U2ecgVXIyRS35RMNDzrbMtf0X4wVLsJAJWSA4IwuZZaYjNJQSaEQ73KvaZuirVx5";
+
+// الرابط الصحيح للربط والإرسال
+const sendApiUrl = `https://elmujib.com/api/${INSTANCE_ID}/contact/send-message?token=${TOKEN}`;
 let elmujibContacts = [];
 let elmujibSelectedContact = null;
 let elmujibContactsLoaded = false;
@@ -3343,14 +3345,34 @@ async function loadElMujibContacts(){
     }
   }
 
-  console.error('El Mujib contacts error:',lastError);
-  if(list) list.innerHTML=
-    '<div class="elmujib-empty">❌ تعذر تحميل جهات الاتصال.'+
-    '<br><small>'+escapeHtml(lastError)+'</small>'+
-    '<br><small style="direction:ltr;display:inline-block;margin-top:8px;">'+
-    escapeHtml(elmujibEndpoint('/contacts'))+
-    '</small></div>';
-  setElMujibStatus('❌ فشل الاتصال بـ El Mujib API: '+lastError,false);
+ // 1. بيانات الحساب المباشرة الخاصة بك
+const INSTANCE_ID = "5048e944-754c-40fe-bdaa-e0dbb2811907";
+const TOKEN = "U2ecgVXIyRS35RMNDzrbMtf0X4wVLsJAJWSA4IwuZZaYjNJQSaEQ73KvaZuirVx5";
+
+// 2. دالة إرسال الرد للعميل اللي بيكلمك فقط
+async function sendMessageToCustomer(customerPhone, messageText) {
+    const url = `https://elmujib.com/api/${INSTANCE_ID}/contact/send-message?token=${TOKEN}`;
+
+    try {
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({
+                phone: customerPhone, // رقم العميل المرسل فقط
+                message: messageText,
+                type: 'text'
+            })
+        });
+
+        const data = await response.json();
+        console.log("تم إرسال الرد للعميل بنجاح:", data);
+        return data;
+    } catch (error) {
+        console.error("خطأ في إرسال الرد:", error);
+    }
 }
 
 function normalizeElMujibContact(c){
