@@ -374,6 +374,13 @@ table th{background:#f8fafc!important;color:#475467!important;font-weight:700!im
 .elmujib-contacts-panel{border-left:1px solid #e2e8f0;padding:16px;background:#f8fafc;display:flex;flex-direction:column;min-height:0;overflow:hidden}
 .elmujib-panel-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;color:#1e293b;flex:0 0 auto}
 .elmujib-panel-head span{background:#e2e8f0;border-radius:999px;padding:3px 9px;font-size:12px}
+.elmujib-filter-tabs{display:flex;gap:6px;flex:0 0 auto;margin-bottom:2px}
+.elmujib-filter-tab{flex:1;border:1px solid #e2e8f0;background:#fff;color:#64748b;font-weight:700;font-size:12.5px;padding:8px 6px;border-radius:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:.15s}
+.elmujib-filter-tab:hover{background:#f1f5f9}
+.elmujib-filter-tab.active{background:#2563eb;border-color:#2563eb;color:#fff}
+.elmujib-filter-count{background:rgba(100,116,139,.15);color:#475569;border-radius:999px;padding:1px 7px;font-size:11px}
+.elmujib-filter-tab.active .elmujib-filter-count{background:rgba(255,255,255,.25);color:#fff}
+.elmujib-contact.is-done{opacity:.72}
 .elmujib-contacts-list{margin-top:12px;display:flex;flex-direction:column;gap:7px;flex:1 1 auto;min-height:0;overflow-y:auto}
 .elmujib-contact{width:100%;text-align:right;border:1px solid #e2e8f0;background:#fff;border-radius:12px;padding:11px;cursor:pointer;transition:.15s;position:relative}
 .elmujib-contact:hover,.elmujib-contact.active{border-color:#94a3b8;background:#f1f5f9}
@@ -388,7 +395,7 @@ table th{background:#f8fafc!important;color:#475467!important;font-weight:700!im
 .elmujib-chat-empty{flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;color:#64748b;text-align:center;padding:40px}
 .elmujib-chat-empty h3{color:#334155;margin:12px 0 4px}
 .elmujib-composer{margin-top:auto;flex:0 0 auto;padding:16px;border-top:1px solid #e2e8f0;background:#f8fafc}
-.elmujib-composer textarea{resize:vertical;min-height:90px}
+.elmujib-composer textarea{resize:vertical;min-height:150px}
 .elmujib-empty{text-align:center;color:#94a3b8;padding:25px 10px;font-size:13px}
 .elmujib-mic-btn{width:44px;height:44px;border-radius:12px;border:none;background:#e5e7eb;color:#374151;font-size:18px;cursor:pointer;flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;transition:.15s}
 .elmujib-mic-btn:hover{background:#d1d5db}
@@ -791,6 +798,7 @@ table tbody tr:hover{
           </div>
         </div>
         <div class="messages-toolbar-actions">
+          <button type="button" id="elmujibMyOnlineBtn" class="btn btn-secondary" onclick="toggleElmujibMyOnline()">⚪ أوفلاين</button>
           <button type="button" class="btn btn-secondary" onclick="initWhatsAppInbox(true)">🔄 تحديث</button>
           <button type="button" class="btn btn-secondary" onclick="openElMujibConsole()">↗ فتح المجيب</button>
         </div>
@@ -803,8 +811,12 @@ table tbody tr:hover{
       <div class="elmujib-messages-grid">
         <aside class="elmujib-contacts-panel">
           <div class="elmujib-panel-head">
-            <strong>المحادثات الواردة</strong>
+            <strong>المحادثات</strong>
             <span id="elmujibContactCount">0</span>
+          </div>
+          <div class="elmujib-filter-tabs">
+            <button type="button" id="elmujibFilterActiveBtn" class="elmujib-filter-tab active" onclick="setElmujibListFilter('active')">الرسائل الحديثة <span id="elmujibActiveCount" class="elmujib-filter-count">0</span></button>
+            <button type="button" id="elmujibFilterDoneBtn" class="elmujib-filter-tab" onclick="setElmujibListFilter('done')">✅ تم <span id="elmujibDoneCount" class="elmujib-filter-count">0</span></button>
           </div>
           <div id="elmujibContactsList" class="elmujib-contacts-list">
             <div class="elmujib-empty">لا توجد رسائل واردة حاليًا.</div>
@@ -817,6 +829,11 @@ table tbody tr:hover{
               <strong id="elmujibSelectedName">اختر رسالة واردة</strong>
               <span id="elmujibSelectedPhone"></span>
             </div>
+            <div id="elmujibChatHeadActions" style="margin-right:auto;display:none;gap:8px;align-items:center;">
+              <span id="elmujibDoneStatusBadge" class="badge badge-green hidden">✅ منتهية</span>
+              <button type="button" id="elmujibMarkDoneBtn" class="btn btn-success btn-sm" onclick="markElmujibDone()">✅ تم</button>
+              <button type="button" id="elmujibMarkUndoneBtn" class="btn btn-secondary btn-sm hidden" onclick="markElmujibUndone()">↩️ رجوع للحديثة</button>
+            </div>
           </div>
           <div id="elmujibChatThread" style="flex:1;overflow:auto;padding:16px 20px;min-height:360px;">
             <div id="elmujibChatEmpty" class="elmujib-chat-empty">
@@ -826,7 +843,7 @@ table tbody tr:hover{
             </div>
           </div>
           <div id="elmujibComposer" class="elmujib-composer hidden">
-            <textarea id="elmujibMessageText" class="input" rows="3" placeholder="اكتب الرد للعميل…" onkeydown="handleElMujibMessageKey(event)"></textarea>
+            <textarea id="elmujibMessageText" class="input" rows="7" placeholder="اكتب الرد للعميل…" onkeydown="handleElMujibMessageKey(event)"></textarea>
             <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:10px;">
               <small id="elmujibComposerHint" style="color:#64748b;">Enter للإرسال — Shift+Enter لسطر جديد</small>
               <div style="display:flex;align-items:center;gap:8px;">
@@ -1150,6 +1167,7 @@ table tbody tr:hover{
         </div>
         <label class="label">الأقسام المتاحة لهذا المستخدم (تحديد يدوي)</label>
         <div class="radio-group" id="userSectionsBox">
+          <label class="radio-item"><input type="checkbox" class="userSectionChk" value="messages"> 💬 الرسائل (واتساب)</label>
           <label class="radio-item"><input type="checkbox" class="userSectionChk" value="newOrder"> ➕ تسجيل أوردر جديد</label>
           <label class="radio-item"><input type="checkbox" class="userSectionChk" value="myOrders"> 📋 أوردراتي (كول سنتر)</label>
           <label class="radio-item"><input type="checkbox" class="userSectionChk" value="allOrders"> 📊 كل أوردرات الكول سنتر</label>
@@ -1472,7 +1490,7 @@ let quickProductContext = 'order', quickCustomerContext = 'order';
 const ROLES = { admin: 'أدمن', manager: 'مانجر', employee: 'Call Center', appuser: 'مستخدم أبلكيشن', branch: 'Branch' };
 const STATUS_LABELS = { pending: 'في الانتظار', completed: 'تم', outdelivery: 'Out of Delivery', cancelled: 'ملغي' };
 const STATUS_CLASSES = { pending: 'status-pending', completed: 'status-completed', outdelivery: 'status-outdelivery', cancelled: 'status-cancelled' };
-const ALL_SECTION_KEYS = ['newOrder','myOrders','allOrders','allAppOrders','doneOrders','cancelOrders','shortages','shortagesReport','callcenterShortages','ccShortagesReport','archive','shortagesArchive','users','branches','apps','products','customers','branchExcelSections','editOrders','editShortages','editStatus'];
+const ALL_SECTION_KEYS = ['messages','newOrder','myOrders','allOrders','allAppOrders','doneOrders','cancelOrders','shortages','shortagesReport','callcenterShortages','ccShortagesReport','archive','shortagesArchive','users','branches','apps','products','customers','branchExcelSections','editOrders','editShortages','editStatus'];
 function branchExcelSectionKey(branchId){ return 'branchExcel_' + branchId; }
 function hasBranchExcelPermission(branchId){
   if(!currentUser) return false;
@@ -1536,8 +1554,6 @@ function getDefaultSectionsForRole(role) {
 // صلاحيات العمليات الحساسة: يمكن فتحها/غلقها لكل مستخدم من إدارة المستخدمين.
 function hasPermission(permissionKey) {
   if (!currentUser) return false;
-  // الرسائل قسم مستقل؛ لا تستخدم متغير section غير المعرّف هنا.
-  if (permissionKey === 'messages') return true;
   if (currentUser.role === 'admin') return true;
   const sections = currentUser.sections || getDefaultSectionsForRole(currentUser.role);
   if (Object.prototype.hasOwnProperty.call(sections, permissionKey)) return sections[permissionKey] === true;
@@ -1556,6 +1572,9 @@ function initApp() {
   rtdb.ref('users').on('value', snapshot => {
     usersData = [];
     snapshot.forEach(child => { usersData.push({ id: child.key, ...child.val() }); });
+    computeElmujibOnlineIds();
+    updateElmujibMyOnlineToggleUI();
+    runElmujibAssignmentEngine();
     const loading = document.getElementById('loginLoading');
     const form = document.getElementById('loginForm');
     if (loading) loading.classList.add('hidden');
@@ -1870,6 +1889,10 @@ document.addEventListener('click', (e) => {
 });
 
 function doLogout() {
+  if (currentUser?.id && typeof rtdb!=='undefined' && rtdb) {
+    rtdb.ref('users/'+currentUser.id).onDisconnect().cancel();
+    rtdb.ref('users/'+currentUser.id).update({isOnline:false}).catch(()=>{});
+  }
   currentUser = null;
   try {
     localStorage.removeItem('currentUserId');
@@ -1894,6 +1917,9 @@ let idleTimer = null;
 function resetIdleTimer() {
   if (!currentUser) return;
   if (idleTimer) clearTimeout(idleTimer);
+  // طول ما المستخدم فاتح قسم الرسائل، السيستم يفضل مسنك مع المجيب طول الوقت ومايعملش تسجيل خروج تلقائي،
+  // عشان أي رسالة واتساب جديدة تفضل توصل وتظهر حتى لو الموظف قاعد مايكش الماوس فترة.
+  if (currentTab === 'messages') return;
   idleTimer = setTimeout(() => {
     if (currentUser) {
       showToast('⏱️ تم تسجيل الخروج تلقائياً بسبب عدم الاستخدام لمدة 10 دقائق', true);
@@ -1942,7 +1968,7 @@ function renderUsers() {
       <div style="display:flex;align-items:center;">
         <div class="user-avatar">${(u.name || '?').charAt(0).toUpperCase()}</div>
         <div>
-          <div style="font-weight:700;color:#1e293b;">${u.name || ''}</div>
+          <div style="font-weight:700;color:#1e293b;">${u.name || ''} ${elmujibUserCanReceiveChats(u)?`<span class="badge ${u.isOnline?'badge-green':'badge-gray'}" style="margin-right:6px;">${u.isOnline?'🟢 أونلاين':'⚪ أوفلاين'}</span>`:''}</div>
           <span class="role-badge role-${u.role || 'employee'}">${ROLES[u.role] || u.role || '-'}</span>
         </div>
       </div>
@@ -2859,10 +2885,12 @@ function setupNavByRole() {
   const nav = document.getElementById('mainNav');
   nav.innerHTML = '';
   nav.innerHTML += `<button class="nav-btn active" onclick="showTab('dashboardHome')" id="tab-dashboardHome">🏠 الرئيسية</button>`;
-  nav.innerHTML += `<button class="nav-btn" onclick="showTab('messages')" id="tab-messages">💬 الرسائل <span class="nav-count hidden" id="navcount-messages"></span></button>`;
-
   const role = currentUser.role;
   const sections = { ...getDefaultSectionsForRole(role), ...(currentUser.sections || {}) };
+  if (role === 'admin' || sections.messages) {
+    nav.innerHTML += `<button class="nav-btn" onclick="showTab('messages')" id="tab-messages">💬 الرسائل <span class="nav-count hidden" id="navcount-messages"></span></button>`;
+  }
+
 
   // العمليات: كل قسم يظهر فقط إذا كانت صلاحيته مفعلة للمستخدم
   let opsHtml = '';
@@ -3328,6 +3356,72 @@ function isVoiceMessage(m){
   return type==='audio' || type==='voice' || type==='ptt' || !!messageAudioSrc(m);
 }
 
+let elmujibInboxDataCache = {}; // آخر نسخة من صندوق الرسائل، بنستخدمها لإعادة الترتيب عند تبديل الفلتر من غير ما نستنى Firebase
+// ===== حضور اليوزرز (أونلاين/أوفلاين) وتوزيع الشاتات عليهم =====
+let elmujibOnlineUserIds = new Set();
+
+// يوزر عنده صلاحية استقبال شاتات لو أدمن أو مفعّل له قسم الرسائل
+function elmujibUserCanReceiveChats(u){
+  return !!u && (u.role==='admin' || (u.sections && u.sections.messages===true));
+}
+
+function computeElmujibOnlineIds(){
+  elmujibOnlineUserIds = new Set(
+    (usersData||[]).filter(u => u.isOnline && elmujibUserCanReceiveChats(u)).map(u => u.id)
+  );
+}
+
+function toggleElmujibMyOnline(){
+  if(!currentUser?.id || typeof rtdb==='undefined' || !rtdb) return;
+  const me = usersData.find(u => u.id === currentUser.id) || currentUser;
+  const newState = !me.isOnline;
+  rtdb.ref('users/'+currentUser.id).update({isOnline:newState, onlineChangedAt: firebase.database.ServerValue.TIMESTAMP})
+    .then(()=>{
+      showToast(newState ? '🟢 أنت أونلاين — هتستقبل شاتات جديدة' : '⚪ أنت أوفلاين — شاتاتك المفتوحة هتتوزع على حد أونلاين');
+    })
+    .catch(err=>{ console.error('Toggle online error:',err); showToast('❌ حصل خطأ في تحديث الحالة',true); });
+}
+
+function updateElmujibMyOnlineToggleUI(){
+  const btn=document.getElementById('elmujibMyOnlineBtn');
+  if(!currentUser || typeof rtdb==='undefined' || !rtdb) return;
+  const me = usersData.find(u => u.id === currentUser.id) || currentUser;
+  const isOnline = !!me.isOnline;
+  // نتأكد إن onDisconnect متظبط دايماً حسب آخر حالة معروفة (يغطي حالة الريفريش وهو أونلاين من قبل)
+  if(isOnline) rtdb.ref('users/'+currentUser.id).onDisconnect().update({isOnline:false});
+  else rtdb.ref('users/'+currentUser.id).onDisconnect().cancel();
+  if(!btn) return;
+  btn.textContent = isOnline ? '🟢 أونلاين' : '⚪ أوفلاين';
+  btn.classList.toggle('btn-success', isOnline);
+  btn.classList.toggle('btn-secondary', !isOnline);
+}
+
+// بيدور على أي محادثة نشطة (مش تم) مش متعينة لحد أونلاين، وبيوزعها راندم على واحد من الأونلاين حالياً.
+// بيشتغل بـ transaction عشان لو أكتر من متصفح مفتوح في نفس اللحظة ما يحصلش تعيين مزدوج لنفس الشات.
+function runElmujibAssignmentEngine(){
+  if(typeof rtdb==='undefined' || !rtdb) return;
+  if(!elmujibOnlineUserIds.size) return; // محدش أونلاين دلوقتي، منقدرش نوزع
+  Object.entries(elmujibInboxDataCache||{}).forEach(([phone, info])=>{
+    if(!info || info.done) return;
+    const assignedTo = info.assignedTo;
+    if(assignedTo && elmujibOnlineUserIds.has(assignedTo)) return; // متعينة لحد أونلاين، مفيش داعي نغير
+    const ref = rtdb.ref('whatsapp_inbox_index/'+safeId(phone)+'/assignedTo');
+    ref.transaction(current=>{
+      if(current && elmujibOnlineUserIds.has(current)) return current; // حصل تعيين قبلنا في نفس اللحظة
+      const pool = Array.from(elmujibOnlineUserIds);
+      if(!pool.length) return current;
+      return pool[Math.floor(Math.random()*pool.length)];
+    }, (error, committed, snap)=>{
+      if(error){ console.error('Assignment transaction error:',error); return; }
+      if(committed && snap){
+        const newId = snap.val();
+        const u = (usersData||[]).find(x=>x.id===newId);
+        rtdb.ref('whatsapp_inbox_index/'+safeId(phone)+'/assignedToName').set(u?.name||'').catch(()=>{});
+      }
+    });
+  });
+}
+
 function initWhatsAppInbox(force=false){
   if(typeof rtdb==='undefined' || !rtdb) {
     setElMujibStatus('❌ Firebase Realtime Database غير متاح');
@@ -3339,12 +3433,38 @@ function initWhatsAppInbox(force=false){
   elmujibInboxRef=rtdb.ref('whatsapp_inbox_index');
   elmujibInboxRef.on('value', snap=>{
     const data=snap.val()||{};
+    autoReviveDoneOnNewMessage(data);
+    elmujibInboxDataCache=data;
     renderElMujibInbox(data);
+    runElmujibAssignmentEngine();
     setElMujibStatus(Object.keys(data).length ? 'متصل ✓ — يتم عرض الرسائل الواردة من الـ Webhook' : 'متصل ✓ — في انتظار رسالة واردة من المجيب…', true);
   }, err=>{
     console.error('Firebase inbox error:',err);
     setElMujibStatus('❌ تعذر قراءة صندوق الرسائل: '+(err.message||err));
   });
+}
+
+// لو محادثة اتحطلها "تم" وبعدين العميل بعت رسالة جديدة (وصلت بعد وقت التم)، نرجعها تلقائي للرسائل الحديثة
+function autoReviveDoneOnNewMessage(data){
+  if(typeof rtdb==='undefined' || !rtdb) return;
+  const updates={};
+  Object.entries(data).forEach(([phone,info])=>{
+    if(!info) return;
+    const doneAt=Number(info.doneAt||0);
+    const lastAt=Number(info.lastMessageAt||0);
+    if(info.done && doneAt && lastAt>doneAt){
+      updates['whatsapp_inbox_index/'+safeId(phone)+'/done']=false;
+    }
+  });
+  if(Object.keys(updates).length) rtdb.ref().update(updates).catch(err=>console.error('Auto-revive error:',err));
+}
+
+let elmujibListFilter='active'; // 'active' = الرسائل الحديثة | 'done' = تم
+function setElmujibListFilter(filter){
+  elmujibListFilter=filter;
+  document.getElementById('elmujibFilterActiveBtn')?.classList.toggle('active', filter==='active');
+  document.getElementById('elmujibFilterDoneBtn')?.classList.toggle('active', filter==='done');
+  renderElMujibInbox(elmujibInboxDataCache);
 }
 
 let elmujibMessageCounts = {}; // phone -> عدد الرسائل في المحادثة
@@ -3353,7 +3473,7 @@ let elmujibCountListeners = {}; // phone -> مرجع Firebase مربوط بال�
 function updateMessagesNavBadge(entries){
   const navBadge=document.getElementById('navcount-messages');
   if(!navBadge) return;
-  const unreadCount=entries.filter(x=>x.info.unread).length;
+  const unreadCount=entries.filter(x=>x.info.unread && !x.info.done).length;
   navBadge.textContent=String(unreadCount);
   navBadge.classList.toggle('hidden', unreadCount===0);
 }
@@ -3384,13 +3504,26 @@ function renderElMujibInbox(data){
   const list=document.getElementById('elmujibContactsList');
   const count=document.getElementById('elmujibContactCount');
   if(!list) return;
-  const entries=Object.entries(data).map(([phone,info])=>({phone,info:info||{}}))
+  const allEntries=Object.entries(data).map(([phone,info])=>({phone,info:info||{}}))
     .filter(x=>x.phone)
     .sort((a,b)=>Number(b.info.lastMessageAt||0)-Number(a.info.lastMessageAt||0));
+
+  // كل يوزر (غير الأدمن) بيشوف بس الشاتات المتوزعة عليه هو؛ الأدمن بيشوف الكل مع اسم المسؤول عن كل شات
+  const isAdmin = currentUser?.role==='admin';
+  const scopeEntries = isAdmin ? allEntries : allEntries.filter(x=>x.info.assignedTo===currentUser?.id);
+  updateMessagesNavBadge(scopeEntries);
+
+  const activeEntries=scopeEntries.filter(x=>!x.info.done);
+  const doneEntries=scopeEntries.filter(x=>x.info.done);
+  const activeCountEl=document.getElementById('elmujibActiveCount');
+  const doneCountEl=document.getElementById('elmujibDoneCount');
+  if(activeCountEl) activeCountEl.textContent=String(activeEntries.length);
+  if(doneCountEl) doneCountEl.textContent=String(doneEntries.length);
+
+  const entries = elmujibListFilter==='done' ? doneEntries : activeEntries;
   if(count) count.textContent=entries.length;
-  updateMessagesNavBadge(entries);
   if(!entries.length){
-    list.innerHTML='<div class="elmujib-empty">لا توجد رسائل واردة حاليًا.</div>';
+    list.innerHTML=`<div class="elmujib-empty">${elmujibListFilter==='done'?'لا توجد محادثات منتهية.':'لا توجد رسائل واردة حاليًا.'}</div>`;
     updateElmujibTotalCount();
     return;
   }
@@ -3399,14 +3532,17 @@ function renderElMujibInbox(data){
     attachElmujibCountListener(phone);
     const name=escapeHtml(x.info.contactName||x.info.name||phone);
     const last=escapeHtml(x.info.lastMessage||'رسالة واردة');
-    const isUnread=!!x.info.unread;
+    const isUnread=!!x.info.unread && !x.info.done;
+    const isDone=!!x.info.done;
     const selected=elmujibSelectedContact && elmujibSelectedContact.phone===phone;
     const msgCount=elmujibMessageCounts[phone]||0;
-    return `<button type="button" class="elmujib-contact ${selected?'active':''} ${isUnread?'unread':''}" data-phone="${escapeAttr(phone)}" onclick="selectElMujibInbox('${escapeAttr(phone)}')">`+
+    const assignedLabel = isAdmin && x.info.assignedToName ? `<span class="badge badge-cyan" style="margin-top:5px;">👤 ${escapeHtml(x.info.assignedToName)}</span>` : '';
+    return `<button type="button" class="elmujib-contact ${selected?'active':''} ${isUnread?'unread':''} ${isDone?'is-done':''}" data-phone="${escapeAttr(phone)}" onclick="selectElMujibInbox('${escapeAttr(phone)}')">`+
       `<span class="elmujib-contact-count">${msgCount}</span>`+
-      `<span class="elmujib-contact-name">${name}${isUnread?' • جديدة':''}</span>`+
+      `<span class="elmujib-contact-name">${name}${isUnread?' • جديدة':''}${isDone?' ✅':''}</span>`+
       `<span class="elmujib-contact-phone">${escapeHtml(phone)}</span>`+
       `<span style="display:block;margin-top:5px;font-size:12px;color:#64748b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${last}</span>`+
+      assignedLabel+
       `</button>`;
   }).join('');
   updateElmujibTotalCount();
@@ -3417,7 +3553,6 @@ function selectElMujibInbox(phone){
   if(!phone) return;
   const indexSnap=rtdb.ref('whatsapp_inbox_index/'+safeId(phone));
   indexSnap.update({unread:false}).catch(()=>{});
-  const dataCache={};
   elmujibSelectedContact={phone};
   const idx=rtdb.ref('whatsapp_inbox_index');
   idx.once('value').then(s=>{
@@ -3428,10 +3563,45 @@ function selectElMujibInbox(phone){
     if(p) p.textContent=phone;
     document.getElementById('elmujibChatEmpty')?.classList.add('hidden');
     document.getElementById('elmujibComposer')?.classList.remove('hidden');
+    updateElmujibDoneActionsUI(!!info.done);
     loadElMujibThread(phone);
     renderElMujibInbox(s.val()||{});
     document.getElementById('elmujibMessageText')?.focus();
   });
+}
+
+function updateElmujibDoneActionsUI(isDone){
+  const wrap=document.getElementById('elmujibChatHeadActions');
+  const doneBadge=document.getElementById('elmujibDoneStatusBadge');
+  const doneBtn=document.getElementById('elmujibMarkDoneBtn');
+  const undoneBtn=document.getElementById('elmujibMarkUndoneBtn');
+  if(wrap) wrap.style.display='flex';
+  if(doneBadge) doneBadge.classList.toggle('hidden', !isDone);
+  if(doneBtn) doneBtn.classList.toggle('hidden', isDone);
+  if(undoneBtn) undoneBtn.classList.toggle('hidden', !isDone);
+}
+
+// تحديد المحادثة الحالية كـ "تم" — بتتنقل لتبويب "تم"، ولو العميل بعت تاني بترجع تلقائي للرسائل الحديثة
+function markElmujibDone(){
+  if(!elmujibSelectedContact?.phone) return;
+  const phone=elmujibSelectedContact.phone;
+  rtdb.ref('whatsapp_inbox_index/'+safeId(phone)).update({
+    done:true,
+    doneAt: firebase.database.ServerValue.TIMESTAMP,
+    doneBy: currentUser?.name || ''
+  }).then(()=>{
+    updateElmujibDoneActionsUI(true);
+    showToast('✅ تم إغلاق المحادثة، وهترجع تلقائي لو العميل بعت رسالة جديدة');
+  }).catch(err=>{ console.error('Mark done error:',err); showToast('❌ حصل خطأ أثناء تحديد المحادثة كـ "تم"',true); });
+}
+
+function markElmujibUndone(){
+  if(!elmujibSelectedContact?.phone) return;
+  const phone=elmujibSelectedContact.phone;
+  rtdb.ref('whatsapp_inbox_index/'+safeId(phone)).update({done:false}).then(()=>{
+    updateElmujibDoneActionsUI(false);
+    showToast('↩️ تم إرجاع المحادثة للرسائل الحديثة');
+  }).catch(err=>{ console.error('Mark undone error:',err); showToast('❌ حصل خطأ أثناء إرجاع المحادثة',true); });
 }
 
 function loadElMujibThread(phone){
