@@ -5364,6 +5364,19 @@ window.addEventListener('DOMContentLoaded', () => {
   setupIdleWatcher();
 });
 </script>
-
+fetch('https://elmujib-webhook-bridge.wellsobour.workers.dev', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    action: 'send_message', // أو action: 'save_order'
+    phoneNumber: '201288816200',
+    messageBody: 'اختبار تجريبي'
+  })
+})
+.then(res => res.json())
+.then(data => console.log('النتيجة:', data))
+.catch(err => console.error('خطأ:', err));
 </body>
 </html>
