@@ -3417,26 +3417,6 @@ async function sendElMujibMessage(phoneNumber, messageBody) {
         console.error("❌ خطأ أثناء الإرسال للـ Worker:", err);
     }
 }
-  try{
-    // الإرسال بيعدي من خلال الـ Worker (بيحمل التوكن السري ويبعت للمجيب،
-    // وبيسجل نسخة الرسالة الصادرة في Firebase بنفسه).
-    const res=await fetch(ELMUJIB_SEND_URL,{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({phone:elmujibSelectedContact.phone,message:message})
-    });
-    const text=await res.text();
-    let data={}; try{data=text?JSON.parse(text):{};}catch(_){ }
-    if(!res.ok) throw new Error((data&&(data.error||data.message))||text||('HTTP '+res.status));
-    if(input) input.value='';
-    setElMujibStatus('تم إرسال الرد للعميل '+elmujibSelectedContact.phone+' ✓',true);
-    showToast('✅ تم إرسال الرد');
-  }catch(err){
-    console.error('El Mujib send error:',err);
-    setElMujibStatus('❌ فشل إرسال الرد: '+(err.message||err));
-    showToast('❌ فشل إرسال الرد: '+(err.message||err),true);
-  }finally{if(btn) btn.disabled=false;}
-}
 function openElMujibConsole(){ window.open('https://elmujib.com/vendor-console','_blank','noopener'); }
 function escapeHtml(v){return String(v??'').replace(/[&<>'"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));}
 function escapeAttr(v){return escapeHtml(v).replace(/`/g,'&#96;');}
