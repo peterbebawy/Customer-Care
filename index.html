@@ -3396,57 +3396,59 @@ function handleElMujibMessageKey(e){
   if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendElMujibMessage();}
 }
 
-async function sendElMujibMessage(phoneNumber, messageBody) {
-    if (!phoneNumber || !messageBody) return;
+async function sendDirectTest() {
+    const phoneInput = document.getElementById('testPhone');
+    const msgInput = document.getElementById('testMsg');
 
+    const rawPhone = phoneInput ? phoneInput.value.trim() : currentSelectedPhone;
+    const phone = sanitizePhone(rawPhone) || currentSelectedPhone;
+    const msg = msgInput ? msgInput.value.trim() : '';
+
+    // إذا كان الحقل فارغاً أو لا يوجد رقم محدد لا تفعل شيئاً
+    if (!msg || !phone) return;
+
+    // 1. مسح حقل الإدخال فوراً
+    msgInput.value = '';
+
+    // 2. إظهار الرسالة في الشات فوراً (UI Update)
+    const chatMessagesEl = document.getElementById('chatMessages');
+    if (chatMessagesEl) {
+        const bubble = document.createElement('div');
+        bubble.style.cssText = `max-width: 75%; padding: 8px 14px; border-radius: 12px; font-size: 13px; line-height: 1.4; margin-bottom: 8px; background: #2563eb; color: #fff; align-self: flex-end; border-bottom-left-radius: 2px;`;
+        bubble.innerText = msg;
+        chatMessagesEl.appendChild(bubble);
+        chatMessagesEl.scrollTop = chatMessagesEl.scrollHeight;
+    }
+
+    // 3. حفظ الرسالة في Firebase Realtime Database
+    if (typeof firebase !== 'undefined' && firebase.apps.length) {
+        try {
+            await firebase.database().ref('incoming_messages').push({
+                phone: phone,
+                message: msg,
+                type: 'sent',
+                timestamp: Date.now()
+            });
+        } catch (e) {
+            console.error("❌ خطأ حفظ Firebase:", e);
+        }
+    }
+
+    // 4. إرسال الرسالة عبر Cloudflare Worker
     try {
-        const response = await fetch("https://elmujib-webhook-bridge.wellsobour.workers.dev", {
+        await fetch(WORKER_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 action: 'send_message',
-                phoneNumber: phoneNumber,
-                messageBody: messageBody
+                phoneNumber: phone,
+                messageBody: msg
             })
         });
-
-        const result = await response.json();
-        console.log("✅ نتيجة الإرسال من السيرفر:", result);
-        return result;
     } catch (err) {
-        console.error("❌ خطأ أثناء الإرسال للـ Worker:", err);
+        console.error("❌ خطأ إرسال السيرفر:", err);
     }
 }
-function openElMujibConsole(){ window.open('https://elmujib.com/vendor-console','_blank','noopener'); }
-function escapeHtml(v){return String(v??'').replace(/[&<>'"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));}
-function escapeAttr(v){return escapeHtml(v).replace(/`/g,'&#96;');}
-
-function showTab(tab) {
-  saveCurrentTabScroll();
-  const isBranchExcelHome = tab === 'branchExcelSections';
-  // الرئيسية متاحة دائماً بعد تسجيل الدخول. صفحة Excel تجمع الفروع داخلها.
-  const branchTabMatch = /^branchExcel_(.+)$/.exec(tab);
-  if (isBranchExcelHome) {
-    if (!hasSectionPermission('branchExcelSections')) {
-      showToast('⛔ ليس لديك صلاحية لمتابعة Excel الفروع', true);
-      tab='dashboardHome';
-    }
-  }
-  if (branchTabMatch) {
-    const branchReady = (branchesData || []).some(b => b.id === branchTabMatch[1]);
-    if (!branchReady) {
-      // أثناء انتظار تحميل الفروع: لا تترك أي قسم ظاهر (خصوصاً تسجيل أوردر).
-      // نحتفظ بالصفحة المطلوبة ونكمل فتحها فور وصول بيانات الفروع.
-      pendingRestoreTab = tab;
-      currentTab = tab;
-      try {
-        localStorage.setItem('cc_current_tab', tab);
-        history.replaceState(null, '', '#' + encodeURIComponent(tab));
-      } catch(e) {}
-      ['dashboardHome','messages','newOrder','myOrders','allOrders','allAppOrders','doneOrders','cancelOrders','shortages','shortagesReport','callcenterShortages','ccShortagesReport','archive','shortagesArchive','users','branches','apps','products','customers','branchExcelSections'].forEach(t => {
-        const el=document.getElementById(t); if(el) el.classList.add('hidden');
-        const btn=document.getElementById('tab-'+t); if(btn) btn.classList.remove('active');
-      });
       const excelWrap=document.getElementById('branchExcelSections');
       if(excelWrap) excelWrap.classList.remove('hidden');
       return;
