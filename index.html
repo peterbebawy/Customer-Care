@@ -777,47 +777,47 @@ table tbody tr:hover{
         <div class="messages-toolbar-title">
           <div class="messages-icon">💬</div>
           <div>
-            <div>الرسائل</div>
-            <p class="messages-note">El Mujib WhatsApp API — بدون تسجيل دخول إضافي</p>
+            <div>رسائل WhatsApp</div>
+            <p class="messages-note">المجيب — الرسائل الواردة فقط، بدون تحميل قائمة العملاء</p>
           </div>
         </div>
         <div class="messages-toolbar-actions">
-          <button type="button" class="btn btn-secondary" onclick="loadElMujibContacts()">🔄 تحديث العملاء</button>
-          <button type="button" class="btn btn-secondary" onclick="openElMujibConsole()">↗ فتح El Mujib</button>
-          <button type="button" class="btn btn-secondary" onclick="loadElMujibContacts()">🧪 اختبار API</button>
+          <button type="button" class="btn btn-secondary" onclick="initWhatsAppInbox(true)">🔄 تحديث</button>
+          <button type="button" class="btn btn-secondary" onclick="openElMujibConsole()">↗ فتح المجيب</button>
         </div>
       </div>
 
       <div id="elmujibApiStatus" style="margin:14px 18px 0;padding:10px 12px;border-radius:12px;background:#f1f5f9;color:#475569;font-size:13px;">
-        جاهز للاتصال بـ El Mujib API…
+        في انتظار رسالة واردة من المجيب…
       </div>
 
       <div class="elmujib-messages-grid">
         <aside class="elmujib-contacts-panel">
           <div class="elmujib-panel-head">
-            <strong>جهات الاتصال</strong>
+            <strong>المحادثات الواردة</strong>
             <span id="elmujibContactCount">0</span>
           </div>
-          <input id="elmujibContactSearch" class="input" placeholder="ابحث بالاسم أو رقم الهاتف..." autocomplete="off" oninput="filterElMujibContacts()">
           <div id="elmujibContactsList" class="elmujib-contacts-list">
-            <div class="elmujib-empty">اضغط «تحديث العملاء» لعرض جهات الاتصال.</div>
+            <div class="elmujib-empty">لا توجد رسائل واردة حاليًا.</div>
           </div>
         </aside>
 
         <main class="elmujib-chat-panel">
           <div class="elmujib-chat-head">
             <div>
-              <strong id="elmujibSelectedName">اختر جهة اتصال</strong>
+              <strong id="elmujibSelectedName">اختر رسالة واردة</strong>
               <span id="elmujibSelectedPhone"></span>
             </div>
           </div>
-          <div id="elmujibChatEmpty" class="elmujib-chat-empty">
-            <div style="font-size:42px;">💬</div>
-            <h3>رسائل WhatsApp</h3>
-            <p>اختر جهة اتصال من القائمة لإرسال رسالة.</p>
+          <div id="elmujibChatThread" style="flex:1;overflow:auto;padding:16px 20px;min-height:360px;">
+            <div id="elmujibChatEmpty" class="elmujib-chat-empty">
+              <div style="font-size:42px;">💬</div>
+              <h3>لا توجد محادثة محددة</h3>
+              <p>عند وصول رسالة من عميل ستظهر هنا ويمكنك الرد عليه مباشرة.</p>
+            </div>
           </div>
           <div id="elmujibComposer" class="elmujib-composer hidden">
-            <textarea id="elmujibMessageText" class="input" rows="4" placeholder="اكتب الرسالة..." onkeydown="handleElMujibMessageKey(event)"></textarea>
+            <textarea id="elmujibMessageText" class="input" rows="3" placeholder="اكتب الرد للعميل…" onkeydown="handleElMujibMessageKey(event)"></textarea>
             <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:10px;">
               <small style="color:#64748b;">Enter للإرسال — Shift+Enter لسطر جديد</small>
               <button type="button" class="btn btn-primary" onclick="sendElMujibMessage()">📤 إرسال</button>
@@ -3277,20 +3277,25 @@ window.addEventListener('scroll',()=>{ if(currentUser) saveCurrentTabScroll(); }
 window.addEventListener('beforeunload',()=>{ try { localStorage.setItem('cc_current_tab', currentTab || 'dashboardHome'); localStorage.setItem('cc_scroll_'+(currentTab||'dashboardHome'), String(window.scrollY||window.pageYOffset||0)); if(currentTab) history.replaceState(null,'','#'+encodeURIComponent(currentTab)); } catch(e) {} });
 
 
-// El Mujib API integration. The Dr. Wells login controls access to this section.
-// The API token is kept here for this internal deployment; for a public deployment
-// move it to a backend/proxy so it is not exposed to browser users.
-const ELMUJIB_API_BASE = 'https://api.elmujib.com/api';
-const ELMUJIB_VENDOR_UID = 'caa2fd4a-9576-11f1-82eb-560005d58962';
-const ELMUJIB_API_TOKEN = 'U2ecgVXIyRS35RMNDzrbMtf0X4wVLsJAJWSA4IwuZZaYjNJQSaEQ73KvaZuirVx5';
-let elmujibContacts = [];
+// El Mujib + Firebase WhatsApp inbox integration.
+// Only active/incoming conversations stored by the webhook are shown.
+const ELMUJIB_API_BASE = "https://elmujib.com/api";
+const ELMUJIB_VENDOR_UID = "5048e944-754c-40fe-bdaa-e0dbb2811907";
+const ELMUJIB_API_TOKEN = "U2ecgVXIyRS35RMNDzrbMtf0X4wVLsJAJWSA4IwuZZaYjNJQSaEQ73KvaZuirVx5";
+const ELMUJIB_SEND_URL = `${ELMUJIB_API_BASE}/${ELMUJIB_VENDOR_UID}/contact/send-message`;
+
 let elmujibSelectedContact = null;
-let elmujibContactsLoaded = false;
+let elmujibInboxStarted = false;
+let elmujibInboxRef = null;
+let elmujibThreadRef = null;
 
 function elmujibHeaders(){
-  return { 'Authorization': 'Bearer ' + ELMUJIB_API_TOKEN, 'Content-Type': 'application/json' };
+  return {
+    'Authorization': 'Bearer ' + ELMUJIB_API_TOKEN,
+    'Content-Type': 'application/json',
+    'Accept': 'application/json'
+  };
 }
-function elmujibEndpoint(path){ return ELMUJIB_API_BASE + '/' + ELMUJIB_VENDOR_UID + path; }
 function setElMujibStatus(text, ok=false){
   const el=document.getElementById('elmujibApiStatus');
   if(!el) return;
@@ -3298,138 +3303,149 @@ function setElMujibStatus(text, ok=false){
   el.style.background=ok?'#ecfdf5':'#f1f5f9';
   el.style.color=ok?'#047857':'#475569';
 }
+function normalizePhone(v){ return String(v||'').replace(/[^0-9+]/g,'').trim(); }
+function safeId(v){ return encodeURIComponent(String(v||'').replace(/[.#$\[\]/]/g,'_')); }
+function messageTime(m){ return Number(m?.receivedAt || m?.sentAt || m?.createdAt || m?.timestamp || 0); }
+function messageBody(m){ return String(m?.body ?? m?.message ?? m?.text ?? m?.message_body ?? ''); }
 
-async function loadElMujibContacts(){
-  const list=document.getElementById('elmujibContactsList');
-  if(list) list.innerHTML='<div class="elmujib-empty">جاري تحميل جهات الاتصال…</div>';
-  setElMujibStatus('جاري الاتصال بـ El Mujib…');
-
-  // The supplied Postman collection defines GET /{vendorUid}/contacts.
-  // Some El Mujib deployments expose the same contact resource under /contact,
-  // so try the documented endpoint first and a compatibility fallback second.
-  const candidates=[
-    '/contacts?page=1&page_size=100',
-    '/contact?page=1&page_size=100'
-  ];
-  let lastError='HTTP 404';
-
-  for(const path of candidates){
-    try{
-      const url=elmujibEndpoint(path);
-      const res=await fetch(url,{method:'GET',headers:elmujibHeaders(),cache:'no-store'});
-      const text=await res.text();
-      let data={};
-      try{ data=text?JSON.parse(text):{}; }catch(_){}
-
-      if(!res.ok){
-        lastError=(data&&data.message)||('HTTP '+res.status);
-        if(res.status===404) continue;
-        throw new Error(lastError);
-      }
-
-      const raw=data.contacts || data.data || data.results || [];
-      const arr=Array.isArray(raw)?raw:(raw&&Array.isArray(raw.data)?raw.data:[]);
-
-      if(!Array.isArray(arr)) throw new Error('صيغة بيانات جهات الاتصال غير متوقعة');
-
-      elmujibContacts=arr;
-      elmujibContactsLoaded=true;
-      renderElMujibContacts();
-      setElMujibStatus('متصل بـ El Mujib API ✓ — تم تحميل '+elmujibContacts.length+' جهة اتصال',true);
-      return;
-    }catch(err){
-      lastError=String(err.message||err);
-      if(!String(lastError).includes('404')) break;
-    }
+function initWhatsAppInbox(force=false){
+  if(typeof rtdb==='undefined' || !rtdb) {
+    setElMujibStatus('❌ Firebase Realtime Database غير متاح');
+    return;
   }
-
-  console.error('El Mujib contacts error:',lastError);
-  if(list) list.innerHTML=
-    '<div class="elmujib-empty">❌ تعذر تحميل جهات الاتصال.'+
-    '<br><small>'+escapeHtml(lastError)+'</small>'+
-    '<br><small style="direction:ltr;display:inline-block;margin-top:8px;">'+
-    escapeHtml(elmujibEndpoint('/contacts'))+
-    '</small></div>';
-  setElMujibStatus('❌ فشل الاتصال بـ El Mujib API: '+lastError,false);
+  if(elmujibInboxStarted && !force) return;
+  elmujibInboxStarted=true;
+  if(elmujibInboxRef) elmujibInboxRef.off();
+  elmujibInboxRef=rtdb.ref('whatsapp_inbox_index');
+  elmujibInboxRef.on('value', snap=>{
+    const data=snap.val()||{};
+    renderElMujibInbox(data);
+    setElMujibStatus(Object.keys(data).length ? 'متصل ✓ — يتم عرض الرسائل الواردة من الـ Webhook' : 'متصل ✓ — في انتظار رسالة واردة من المجيب…', true);
+  }, err=>{
+    console.error('Firebase inbox error:',err);
+    setElMujibStatus('❌ تعذر قراءة صندوق الرسائل: '+(err.message||err));
+  });
 }
 
-function normalizeElMujibContact(c){
-  const first=c.first_name||c.firstName||'';
-  const last=c.last_name||c.lastName||'';
-  const name=(c.full_name||c.fullName||((first+' '+last).trim())||c.name||'بدون اسم');
-  const phone=String(c.phone_number||c.phoneNumber||c.phone||'').trim();
-  return {raw:c,name,phone,uid:c.uid||c.id||c.contact_uid||''};
-}
-function renderElMujibContacts(){
+function renderElMujibInbox(data){
   const list=document.getElementById('elmujibContactsList');
   const count=document.getElementById('elmujibContactCount');
   if(!list) return;
-  const q=(document.getElementById('elmujibContactSearch')?.value||'').trim().toLowerCase();
-  const contacts=elmujibContacts.map(normalizeElMujibContact).filter(c=>!q||c.name.toLowerCase().includes(q)||c.phone.toLowerCase().includes(q));
-  if(count) count.textContent=contacts.length;
-  if(!contacts.length){ list.innerHTML='<div class="elmujib-empty">لا توجد نتائج.</div>'; return; }
-  list.innerHTML=contacts.map((c,i)=>{
-    const selected=elmujibSelectedContact && (elmujibSelectedContact.uid&&elmujibSelectedContact.uid===c.uid || elmujibSelectedContact.phone===c.phone);
-    return '<button type="button" class="elmujib-contact '+(selected?'active':'')+'" onclick="selectElMujibContact('+i+')" data-phone="'+escapeAttr(c.phone)+'">'+
-      '<span class="elmujib-contact-name">'+escapeHtml(c.name)+'</span><span class="elmujib-contact-phone">'+escapeHtml(c.phone||'—')+'</span></button>';
+  const entries=Object.entries(data).map(([phone,info])=>({phone,info:info||{}}))
+    .filter(x=>x.phone)
+    .sort((a,b)=>Number(b.info.lastMessageAt||0)-Number(a.info.lastMessageAt||0));
+  if(count) count.textContent=entries.length;
+  if(!entries.length){
+    list.innerHTML='<div class="elmujib-empty">لا توجد رسائل واردة حاليًا.</div>';
+    return;
+  }
+  list.innerHTML=entries.map((x,i)=>{
+    const phone=normalizePhone(x.phone);
+    const name=escapeHtml(x.info.contactName||x.info.name||phone);
+    const last=escapeHtml(x.info.lastMessage||'رسالة واردة');
+    const unread=x.info.unread?' • جديدة':'';
+    const selected=elmujibSelectedContact && elmujibSelectedContact.phone===phone;
+    return `<button type="button" class="elmujib-contact ${selected?'active':''}" data-phone="${escapeAttr(phone)}" onclick="selectElMujibInbox('${escapeAttr(phone)}')">`+
+      `<span class="elmujib-contact-name">${name}</span>`+
+      `<span class="elmujib-contact-phone">${escapeHtml(phone)}${unread}</span>`+
+      `<span style="display:block;margin-top:5px;font-size:12px;color:#64748b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${last}</span>`+
+      `</button>`;
   }).join('');
-  list.querySelectorAll('.elmujib-contact').forEach((btn)=>{
-    btn.addEventListener('click',()=>{
-      const phone=btn.dataset.phone||'';
-      const c=elmujibContacts.map(normalizeElMujibContact).find(x=>x.phone===phone);
-      if(c) selectElMujibContactObject(c);
-    });
+}
+
+function selectElMujibInbox(phone){
+  phone=normalizePhone(phone);
+  if(!phone) return;
+  const indexSnap=rtdb.ref('whatsapp_inbox_index/'+safeId(phone));
+  indexSnap.update({unread:false}).catch(()=>{});
+  const dataCache={};
+  elmujibSelectedContact={phone};
+  const idx=rtdb.ref('whatsapp_inbox_index');
+  idx.once('value').then(s=>{
+    const info=(s.val()||{})[phone] || {};
+    elmujibSelectedContact={phone,name:info.contactName||info.name||phone};
+    const n=document.getElementById('elmujibSelectedName'), p=document.getElementById('elmujibSelectedPhone');
+    if(n) n.textContent=elmujibSelectedContact.name;
+    if(p) p.textContent=phone;
+    document.getElementById('elmujibChatEmpty')?.classList.add('hidden');
+    document.getElementById('elmujibComposer')?.classList.remove('hidden');
+    loadElMujibThread(phone);
+    renderElMujibInbox(s.val()||{});
+    document.getElementById('elmujibMessageText')?.focus();
   });
 }
-function selectElMujibContact(i){
-  const q=(document.getElementById('elmujibContactSearch')?.value||'').trim().toLowerCase();
-  const contacts=elmujibContacts.map(normalizeElMujibContact).filter(c=>!q||c.name.toLowerCase().includes(q)||c.phone.toLowerCase().includes(q));
-  if(contacts[i]) selectElMujibContactObject(contacts[i]);
+
+function loadElMujibThread(phone){
+  if(elmujibThreadRef) elmujibThreadRef.off();
+  elmujibThreadRef=rtdb.ref('whatsapp_messages/'+safeId(phone));
+  elmujibThreadRef.on('value',snap=>{
+    const raw=snap.val()||{};
+    const msgs=Object.values(raw).sort((a,b)=>messageTime(a)-messageTime(b));
+    const thread=document.getElementById('elmujibChatThread');
+    if(!thread) return;
+    if(!msgs.length){
+      thread.innerHTML='<div style="color:#94a3b8;text-align:center;margin-top:50px;">لا توجد رسائل محفوظة لهذه المحادثة.</div>';
+      return;
+    }
+    thread.innerHTML=msgs.map(m=>{
+      const inbound=(m.direction||'inbound')==='inbound';
+      const t=messageTime(m);
+      return `<div style="display:flex;justify-content:${inbound?'flex-start':'flex-end'};margin:8px 0;">`+
+        `<div style="max-width:78%;padding:10px 14px;border-radius:14px;${inbound?'background:#f1f5f9;color:#1e293b;':'background:#dcfce7;color:#14532d;'}">`+
+        `<div style="white-space:pre-wrap;word-break:break-word;">${escapeHtml(messageBody(m))}</div>`+
+        `<div style="font-size:10px;color:#94a3b8;margin-top:5px;">${t?new Date(t).toLocaleString('ar-EG'):''}</div>`+
+        `</div></div>`;
+    }).join('');
+    thread.scrollTop=thread.scrollHeight;
+  },err=>console.error('Firebase thread error:',err));
 }
-function selectElMujibContactObject(c){
-  elmujibSelectedContact=c;
-  const n=document.getElementById('elmujibSelectedName'), p=document.getElementById('elmujibSelectedPhone');
-  if(n) n.textContent=c.name||'جهة اتصال';
-  if(p) p.textContent=c.phone||'';
-  document.getElementById('elmujibChatEmpty')?.classList.add('hidden');
-  document.getElementById('elmujibComposer')?.classList.remove('hidden');
-  renderElMujibContacts();
-  document.getElementById('elmujibMessageText')?.focus();
-}
-function filterElMujibContacts(){ renderElMujibContacts(); }
+
 function handleElMujibMessageKey(e){
   if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendElMujibMessage();}
 }
+
 async function sendElMujibMessage(){
-  if(!elmujibSelectedContact || !elmujibSelectedContact.phone){showToast('❌ جهة الاتصال لا تحتوي على رقم هاتف',true);return;}
+  if(!elmujibSelectedContact?.phone){showToast('❌ اختر رسالة واردة أولاً',true);return;}
   const input=document.getElementById('elmujibMessageText');
   const message=(input?.value||'').trim();
-  if(!message){showToast('❌ اكتب الرسالة أولاً',true);return;}
+  if(!message){showToast('❌ اكتب الرد أولاً',true);return;}
   const btn=document.querySelector('#elmujibComposer button');
   if(btn) btn.disabled=true;
-  setElMujibStatus('جاري إرسال الرسالة…');
+  setElMujibStatus('جاري إرسال الرد إلى '+elmujibSelectedContact.phone+'…');
   try{
-    const res=await fetch(elmujibEndpoint('/contact/send-message'),{
-      method:'POST',headers:elmujibHeaders(),body:JSON.stringify({phone_number:elmujibSelectedContact.phone,message_body:message})
+    const res=await fetch(ELMUJIB_SEND_URL,{
+      method:'POST',
+      headers:elmujibHeaders(),
+      body:JSON.stringify({phone_number:elmujibSelectedContact.phone,message_body:message})
     });
-    const responseText=await res.text();
-    let data={};
-    try{ data=responseText?JSON.parse(responseText):{}; }catch(_){}
-    if(!res.ok){
-      const detail=(data&&data.message)||responseText||('HTTP '+res.status);
-      throw new Error('HTTP '+res.status+' — '+detail);
-    }
+    const text=await res.text();
+    let data={}; try{data=text?JSON.parse(text):{};}catch(_){ }
+    if(!res.ok) throw new Error((data&&data.message)||text||('HTTP '+res.status));
+    const now=Date.now();
+    const key=String(now)+'_'+Math.random().toString(36).slice(2,8);
+    const path='whatsapp_messages/'+safeId(elmujibSelectedContact.phone)+'/'+key;
+    await rtdb.ref(path).set({
+      direction:'outbound',
+      body:message,
+      phone:elmujibSelectedContact.phone,
+      sentAt:now,
+      receivedAt:now,
+      createdAt:now
+    });
+    await rtdb.ref('whatsapp_inbox_index/'+safeId(elmujibSelectedContact.phone)).update({
+      lastMessage:message,lastMessageAt:now,unread:false
+    }).catch(()=>{});
     if(input) input.value='';
-    setElMujibStatus('تم إرسال الرسالة إلى '+elmujibSelectedContact.phone+' ✓',true);
-    showToast('✅ تم إرسال الرسالة');
+    setElMujibStatus('تم إرسال الرد للعميل '+elmujibSelectedContact.phone+' ✓',true);
+    showToast('✅ تم إرسال الرد');
   }catch(err){
     console.error('El Mujib send error:',err);
-    setElMujibStatus('❌ فشل إرسال الرسالة: '+(err.message||err));
-    showToast('❌ فشل إرسال الرسالة: '+(err.message||err),true);
-  }finally{ if(btn) btn.disabled=false; }
+    setElMujibStatus('❌ فشل إرسال الرد: '+(err.message||err));
+    showToast('❌ فشل إرسال الرد: '+(err.message||err),true);
+  }finally{if(btn) btn.disabled=false;}
 }
 function openElMujibConsole(){ window.open('https://elmujib.com/vendor-console','_blank','noopener'); }
-function escapeHtml(v){return String(v??'').replace(/[&<>'"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[m]));}
+function escapeHtml(v){return String(v??'').replace(/[&<>'"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));}
 function escapeAttr(v){return escapeHtml(v).replace(/`/g,'&#96;');}
 
 function showTab(tab) {
@@ -3507,7 +3523,7 @@ function showTab(tab) {
   // تعديل: مسح النموذج عند الذهاب لأوردر جديد
   if(tab==='dashboardHome') renderDashboardHome();
   if(tab==='messages'){
-    if(!elmujibContactsLoaded) loadElMujibContacts();
+    initWhatsAppInbox();
   }
   if(tab==='branchExcelSections') renderBranchExcelSections();
   if(tab==='newOrder') clearNewOrderForm();
