@@ -369,6 +369,27 @@ table th{background:#f8fafc!important;color:#475467!important;font-weight:700!im
 .branch-phone-match td,.branch-phone-match input{background:#fee2e2!important;color:#991b1b!important}
 .branch-phone-match td{border-bottom-color:#fca5a5!important}
 .branch-phone-match-badge{display:inline-block;margin-right:6px;padding:2px 7px;border-radius:999px;background:#dc2626;color:#fff;font-size:10px;font-weight:800}
+
+.elmujib-messages-grid{display:grid;grid-template-columns:330px minmax(0,1fr);min-height:600px;margin-top:14px;border-top:1px solid #e2e8f0}
+.elmujib-contacts-panel{border-left:1px solid #e2e8f0;padding:16px;background:#f8fafc}
+.elmujib-panel-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;color:#1e293b}
+.elmujib-panel-head span{background:#e2e8f0;border-radius:999px;padding:3px 9px;font-size:12px}
+.elmujib-contacts-list{margin-top:12px;display:flex;flex-direction:column;gap:7px;max-height:500px;overflow:auto}
+.elmujib-contact{width:100%;text-align:right;border:1px solid #e2e8f0;background:#fff;border-radius:12px;padding:11px;cursor:pointer;transition:.15s}
+.elmujib-contact:hover,.elmujib-contact.active{border-color:#94a3b8;background:#f1f5f9}
+.elmujib-contact-name{font-weight:700;color:#1e293b;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.elmujib-contact-phone{font-size:12px;color:#64748b;display:block;margin-top:4px;direction:ltr;text-align:right}
+.elmujib-chat-panel{display:flex;flex-direction:column;min-width:0;background:#fff}
+.elmujib-chat-head{padding:16px 20px;border-bottom:1px solid #e2e8f0;min-height:70px;display:flex;align-items:center}
+.elmujib-chat-head strong{display:block;color:#0f172a}
+.elmujib-chat-head span{display:block;font-size:12px;color:#64748b;margin-top:4px;direction:ltr}
+.elmujib-chat-empty{flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;color:#64748b;text-align:center;padding:40px}
+.elmujib-chat-empty h3{color:#334155;margin:12px 0 4px}
+.elmujib-composer{margin-top:auto;padding:16px;border-top:1px solid #e2e8f0;background:#f8fafc}
+.elmujib-composer textarea{resize:vertical;min-height:90px}
+.elmujib-empty{text-align:center;color:#94a3b8;padding:25px 10px;font-size:13px}
+@media(max-width:800px){.elmujib-messages-grid{grid-template-columns:1fr}.elmujib-contacts-panel{border-left:0;border-bottom:1px solid #e2e8f0}.elmujib-contacts-list{max-height:260px}}
+
 </style>
 <base target="_blank">
 <style>
@@ -751,29 +772,59 @@ table tbody tr:hover{
   </section>
 
   <section id="messages" class="messages-wrap hidden">
-    <div class="card messages-panel">
+    <div class="card messages-panel" style="padding:0;overflow:hidden;">
       <div class="messages-toolbar">
         <div class="messages-toolbar-title">
           <div class="messages-icon">💬</div>
           <div>
             <div>الرسائل</div>
-            <p class="messages-note">Elmujib Vendor Console — مدمج داخل Dr. Wells Pharmacy</p>
+            <p class="messages-note">El Mujib WhatsApp API — بدون تسجيل دخول إضافي</p>
           </div>
         </div>
         <div class="messages-toolbar-actions">
-          <button type="button" class="btn btn-secondary" onclick="reloadMessagesFrame()">🔄 تحديث</button>
-          <button type="button" class="btn btn-secondary" onclick="openMessagesFullscreen()">⛶ ملء الشاشة</button>
+          <button type="button" class="btn btn-secondary" onclick="loadElMujibContacts()">🔄 تحديث العملاء</button>
+          <button type="button" class="btn btn-secondary" onclick="openElMujibConsole()">↗ فتح El Mujib</button>
+          <button type="button" class="btn btn-secondary" onclick="loadElMujibContacts()">🧪 اختبار API</button>
         </div>
       </div>
-      <iframe
-        id="messagesFrame"
-        class="messages-frame"
-        src="https://elmujib.com/vendor-console"
-        title="Elmujib Vendor Console"
-        loading="lazy"
-        allow="clipboard-read; clipboard-write"
-        referrerpolicy="strict-origin-when-cross-origin">
-      </iframe>
+
+      <div id="elmujibApiStatus" style="margin:14px 18px 0;padding:10px 12px;border-radius:12px;background:#f1f5f9;color:#475569;font-size:13px;">
+        جاهز للاتصال بـ El Mujib API…
+      </div>
+
+      <div class="elmujib-messages-grid">
+        <aside class="elmujib-contacts-panel">
+          <div class="elmujib-panel-head">
+            <strong>جهات الاتصال</strong>
+            <span id="elmujibContactCount">0</span>
+          </div>
+          <input id="elmujibContactSearch" class="input" placeholder="ابحث بالاسم أو رقم الهاتف..." autocomplete="off" oninput="filterElMujibContacts()">
+          <div id="elmujibContactsList" class="elmujib-contacts-list">
+            <div class="elmujib-empty">اضغط «تحديث العملاء» لعرض جهات الاتصال.</div>
+          </div>
+        </aside>
+
+        <main class="elmujib-chat-panel">
+          <div class="elmujib-chat-head">
+            <div>
+              <strong id="elmujibSelectedName">اختر جهة اتصال</strong>
+              <span id="elmujibSelectedPhone"></span>
+            </div>
+          </div>
+          <div id="elmujibChatEmpty" class="elmujib-chat-empty">
+            <div style="font-size:42px;">💬</div>
+            <h3>رسائل WhatsApp</h3>
+            <p>اختر جهة اتصال من القائمة لإرسال رسالة.</p>
+          </div>
+          <div id="elmujibComposer" class="elmujib-composer hidden">
+            <textarea id="elmujibMessageText" class="input" rows="4" placeholder="اكتب الرسالة..." onkeydown="handleElMujibMessageKey(event)"></textarea>
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:10px;">
+              <small style="color:#64748b;">Enter للإرسال — Shift+Enter لسطر جديد</small>
+              <button type="button" class="btn btn-primary" onclick="sendElMujibMessage()">📤 إرسال</button>
+            </div>
+          </div>
+        </main>
+      </div>
     </div>
   </section>
 
@@ -3226,25 +3277,160 @@ window.addEventListener('scroll',()=>{ if(currentUser) saveCurrentTabScroll(); }
 window.addEventListener('beforeunload',()=>{ try { localStorage.setItem('cc_current_tab', currentTab || 'dashboardHome'); localStorage.setItem('cc_scroll_'+(currentTab||'dashboardHome'), String(window.scrollY||window.pageYOffset||0)); if(currentTab) history.replaceState(null,'','#'+encodeURIComponent(currentTab)); } catch(e) {} });
 
 
-function reloadMessagesFrame(){
-  const frame = document.getElementById('messagesFrame');
-  if(!frame) return;
-  try{
-    frame.contentWindow.location.reload();
-  }catch(e){
-    frame.src = frame.src;
-  }
+// El Mujib API integration. The Dr. Wells login controls access to this section.
+// The API token is kept here for this internal deployment; for a public deployment
+// move it to a backend/proxy so it is not exposed to browser users.
+const ELMUJIB_API_BASE = 'https://api.elmujib.com/api';
+const ELMUJIB_VENDOR_UID = 'caa2fd4a-9576-11f1-82eb-560005d58962';
+const ELMUJIB_API_TOKEN = 'U2ecgVXIyRS35RMNDzrbMtf0X4wVLsJAJWSA4IwuZZaYjNJQSaEQ73KvaZuirVx5';
+let elmujibContacts = [];
+let elmujibSelectedContact = null;
+let elmujibContactsLoaded = false;
+
+function elmujibHeaders(){
+  return { 'Authorization': 'Bearer ' + ELMUJIB_API_TOKEN, 'Content-Type': 'application/json' };
+}
+function elmujibEndpoint(path){ return ELMUJIB_API_BASE + '/' + ELMUJIB_VENDOR_UID + path; }
+function setElMujibStatus(text, ok=false){
+  const el=document.getElementById('elmujibApiStatus');
+  if(!el) return;
+  el.textContent=text;
+  el.style.background=ok?'#ecfdf5':'#f1f5f9';
+  el.style.color=ok?'#047857':'#475569';
 }
 
-function openMessagesFullscreen(){
-  const frame = document.getElementById('messagesFrame');
-  if(!frame) return;
-  if(frame.requestFullscreen){
-    frame.requestFullscreen().catch(()=>{});
-  }else{
-    showToast('ملء الشاشة غير مدعوم في هذا المتصفح', true);
+async function loadElMujibContacts(){
+  const list=document.getElementById('elmujibContactsList');
+  if(list) list.innerHTML='<div class="elmujib-empty">جاري تحميل جهات الاتصال…</div>';
+  setElMujibStatus('جاري الاتصال بـ El Mujib…');
+
+  // The supplied Postman collection defines GET /{vendorUid}/contacts.
+  // Some El Mujib deployments expose the same contact resource under /contact,
+  // so try the documented endpoint first and a compatibility fallback second.
+  const candidates=[
+    '/contacts?page=1&page_size=100',
+    '/contact?page=1&page_size=100'
+  ];
+  let lastError='HTTP 404';
+
+  for(const path of candidates){
+    try{
+      const url=elmujibEndpoint(path);
+      const res=await fetch(url,{method:'GET',headers:elmujibHeaders(),cache:'no-store'});
+      const text=await res.text();
+      let data={};
+      try{ data=text?JSON.parse(text):{}; }catch(_){}
+
+      if(!res.ok){
+        lastError=(data&&data.message)||('HTTP '+res.status);
+        if(res.status===404) continue;
+        throw new Error(lastError);
+      }
+
+      const raw=data.contacts || data.data || data.results || [];
+      const arr=Array.isArray(raw)?raw:(raw&&Array.isArray(raw.data)?raw.data:[]);
+
+      if(!Array.isArray(arr)) throw new Error('صيغة بيانات جهات الاتصال غير متوقعة');
+
+      elmujibContacts=arr;
+      elmujibContactsLoaded=true;
+      renderElMujibContacts();
+      setElMujibStatus('متصل بـ El Mujib API ✓ — تم تحميل '+elmujibContacts.length+' جهة اتصال',true);
+      return;
+    }catch(err){
+      lastError=String(err.message||err);
+      if(!String(lastError).includes('404')) break;
+    }
   }
+
+  console.error('El Mujib contacts error:',lastError);
+  if(list) list.innerHTML=
+    '<div class="elmujib-empty">❌ تعذر تحميل جهات الاتصال.'+
+    '<br><small>'+escapeHtml(lastError)+'</small>'+
+    '<br><small style="direction:ltr;display:inline-block;margin-top:8px;">'+
+    escapeHtml(elmujibEndpoint('/contacts'))+
+    '</small></div>';
+  setElMujibStatus('❌ فشل الاتصال بـ El Mujib API: '+lastError,false);
 }
+
+function normalizeElMujibContact(c){
+  const first=c.first_name||c.firstName||'';
+  const last=c.last_name||c.lastName||'';
+  const name=(c.full_name||c.fullName||((first+' '+last).trim())||c.name||'بدون اسم');
+  const phone=String(c.phone_number||c.phoneNumber||c.phone||'').trim();
+  return {raw:c,name,phone,uid:c.uid||c.id||c.contact_uid||''};
+}
+function renderElMujibContacts(){
+  const list=document.getElementById('elmujibContactsList');
+  const count=document.getElementById('elmujibContactCount');
+  if(!list) return;
+  const q=(document.getElementById('elmujibContactSearch')?.value||'').trim().toLowerCase();
+  const contacts=elmujibContacts.map(normalizeElMujibContact).filter(c=>!q||c.name.toLowerCase().includes(q)||c.phone.toLowerCase().includes(q));
+  if(count) count.textContent=contacts.length;
+  if(!contacts.length){ list.innerHTML='<div class="elmujib-empty">لا توجد نتائج.</div>'; return; }
+  list.innerHTML=contacts.map((c,i)=>{
+    const selected=elmujibSelectedContact && (elmujibSelectedContact.uid&&elmujibSelectedContact.uid===c.uid || elmujibSelectedContact.phone===c.phone);
+    return '<button type="button" class="elmujib-contact '+(selected?'active':'')+'" onclick="selectElMujibContact('+i+')" data-phone="'+escapeAttr(c.phone)+'">'+
+      '<span class="elmujib-contact-name">'+escapeHtml(c.name)+'</span><span class="elmujib-contact-phone">'+escapeHtml(c.phone||'—')+'</span></button>';
+  }).join('');
+  list.querySelectorAll('.elmujib-contact').forEach((btn)=>{
+    btn.addEventListener('click',()=>{
+      const phone=btn.dataset.phone||'';
+      const c=elmujibContacts.map(normalizeElMujibContact).find(x=>x.phone===phone);
+      if(c) selectElMujibContactObject(c);
+    });
+  });
+}
+function selectElMujibContact(i){
+  const q=(document.getElementById('elmujibContactSearch')?.value||'').trim().toLowerCase();
+  const contacts=elmujibContacts.map(normalizeElMujibContact).filter(c=>!q||c.name.toLowerCase().includes(q)||c.phone.toLowerCase().includes(q));
+  if(contacts[i]) selectElMujibContactObject(contacts[i]);
+}
+function selectElMujibContactObject(c){
+  elmujibSelectedContact=c;
+  const n=document.getElementById('elmujibSelectedName'), p=document.getElementById('elmujibSelectedPhone');
+  if(n) n.textContent=c.name||'جهة اتصال';
+  if(p) p.textContent=c.phone||'';
+  document.getElementById('elmujibChatEmpty')?.classList.add('hidden');
+  document.getElementById('elmujibComposer')?.classList.remove('hidden');
+  renderElMujibContacts();
+  document.getElementById('elmujibMessageText')?.focus();
+}
+function filterElMujibContacts(){ renderElMujibContacts(); }
+function handleElMujibMessageKey(e){
+  if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendElMujibMessage();}
+}
+async function sendElMujibMessage(){
+  if(!elmujibSelectedContact || !elmujibSelectedContact.phone){showToast('❌ جهة الاتصال لا تحتوي على رقم هاتف',true);return;}
+  const input=document.getElementById('elmujibMessageText');
+  const message=(input?.value||'').trim();
+  if(!message){showToast('❌ اكتب الرسالة أولاً',true);return;}
+  const btn=document.querySelector('#elmujibComposer button');
+  if(btn) btn.disabled=true;
+  setElMujibStatus('جاري إرسال الرسالة…');
+  try{
+    const res=await fetch(elmujibEndpoint('/contact/send-message'),{
+      method:'POST',headers:elmujibHeaders(),body:JSON.stringify({phone_number:elmujibSelectedContact.phone,message_body:message})
+    });
+    const responseText=await res.text();
+    let data={};
+    try{ data=responseText?JSON.parse(responseText):{}; }catch(_){}
+    if(!res.ok){
+      const detail=(data&&data.message)||responseText||('HTTP '+res.status);
+      throw new Error('HTTP '+res.status+' — '+detail);
+    }
+    if(input) input.value='';
+    setElMujibStatus('تم إرسال الرسالة إلى '+elmujibSelectedContact.phone+' ✓',true);
+    showToast('✅ تم إرسال الرسالة');
+  }catch(err){
+    console.error('El Mujib send error:',err);
+    setElMujibStatus('❌ فشل إرسال الرسالة: '+(err.message||err));
+    showToast('❌ فشل إرسال الرسالة: '+(err.message||err),true);
+  }finally{ if(btn) btn.disabled=false; }
+}
+function openElMujibConsole(){ window.open('https://elmujib.com/vendor-console','_blank','noopener'); }
+function escapeHtml(v){return String(v??'').replace(/[&<>'"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[m]));}
+function escapeAttr(v){return escapeHtml(v).replace(/`/g,'&#96;');}
 
 function showTab(tab) {
   saveCurrentTabScroll();
@@ -3321,8 +3507,7 @@ function showTab(tab) {
   // تعديل: مسح النموذج عند الذهاب لأوردر جديد
   if(tab==='dashboardHome') renderDashboardHome();
   if(tab==='messages'){
-    const frame = document.getElementById('messagesFrame');
-    if(frame && !frame.getAttribute('src')) frame.src = 'https://elmujib.com/vendor-console';
+    if(!elmujibContactsLoaded) loadElMujibContacts();
   }
   if(tab==='branchExcelSections') renderBranchExcelSections();
   if(tab==='newOrder') clearNewOrderForm();
