@@ -784,6 +784,7 @@ table tbody tr:hover{
         <div class="messages-toolbar-actions">
           <button type="button" class="btn btn-secondary" onclick="loadElMujibContacts()">🔄 تحديث العملاء</button>
           <button type="button" class="btn btn-secondary" onclick="openElMujibConsole()">↗ فتح El Mujib</button>
+          <button type="button" class="btn btn-secondary" onclick="loadElMujibContacts()">🧪 اختبار API</button>
         </div>
       </div>
 
@@ -3302,20 +3303,54 @@ async function loadElMujibContacts(){
   const list=document.getElementById('elmujibContactsList');
   if(list) list.innerHTML='<div class="elmujib-empty">جاري تحميل جهات الاتصال…</div>';
   setElMujibStatus('جاري الاتصال بـ El Mujib…');
-  try{
-    const res=await fetch(elmujibEndpoint('/contacts?page_size=100'),{headers:elmujibHeaders()});
-    const data=await res.json().catch(()=>({}));
-    if(!res.ok) throw new Error((data&&data.message)||('HTTP '+res.status));
-    const raw=data.contacts || data.data || data.results || [];
-    elmujibContacts=Array.isArray(raw)?raw:(raw&&Array.isArray(raw.data)?raw.data:[]);
-    elmujibContactsLoaded=true;
-    renderElMujibContacts();
-    setElMujibStatus('متصل بـ El Mujib API ✓ — تم تحميل '+elmujibContacts.length+' جهة اتصال',true);
-  }catch(err){
-    console.error('El Mujib contacts error:',err);
-    if(list) list.innerHTML='<div class="elmujib-empty">❌ تعذر تحميل جهات الاتصال.<br><small>'+escapeHtml(String(err.message||err))+'</small></div>';
-    setElMujibStatus('❌ فشل الاتصال بـ El Mujib API: '+(err.message||err),false);
+
+  // The supplied Postman collection defines GET /{vendorUid}/contacts.
+  // Some El Mujib deployments expose the same contact resource under /contact,
+  // so try the documented endpoint first and a compatibility fallback second.
+  const candidates=[
+    '/contacts?page=1&page_size=100',
+    '/contact?page=1&page_size=100'
+  ];
+  let lastError='HTTP 404';
+
+  for(const path of candidates){
+    try{
+      const url=elmujibEndpoint(path);
+      const res=await fetch(url,{method:'GET',headers:elmujibHeaders(),cache:'no-store'});
+      const text=await res.text();
+      let data={};
+      try{ data=text?JSON.parse(text):{}; }catch(_){}
+
+      if(!res.ok){
+        lastError=(data&&data.message)||('HTTP '+res.status);
+        if(res.status===404) continue;
+        throw new Error(lastError);
+      }
+
+      const raw=data.contacts || data.data || data.results || [];
+      const arr=Array.isArray(raw)?raw:(raw&&Array.isArray(raw.data)?raw.data:[]);
+
+      if(!Array.isArray(arr)) throw new Error('صيغة بيانات جهات الاتصال غير متوقعة');
+
+      elmujibContacts=arr;
+      elmujibContactsLoaded=true;
+      renderElMujibContacts();
+      setElMujibStatus('متصل بـ El Mujib API ✓ — تم تحميل '+elmujibContacts.length+' جهة اتصال',true);
+      return;
+    }catch(err){
+      lastError=String(err.message||err);
+      if(!String(lastError).includes('404')) break;
+    }
   }
+
+  console.error('El Mujib contacts error:',lastError);
+  if(list) list.innerHTML=
+    '<div class="elmujib-empty">❌ تعذر تحميل جهات الاتصال.'+
+    '<br><small>'+escapeHtml(lastError)+'</small>'+
+    '<br><small style="direction:ltr;display:inline-block;margin-top:8px;">'+
+    escapeHtml(elmujibEndpoint('/contacts'))+
+    '</small></div>';
+  setElMujibStatus('❌ فشل الاتصال بـ El Mujib API: '+lastError,false);
 }
 
 function normalizeElMujibContact(c){
@@ -3377,8 +3412,13 @@ async function sendElMujibMessage(){
     const res=await fetch(elmujibEndpoint('/contact/send-message'),{
       method:'POST',headers:elmujibHeaders(),body:JSON.stringify({phone_number:elmujibSelectedContact.phone,message_body:message})
     });
-    const data=await res.json().catch(()=>({}));
-    if(!res.ok) throw new Error((data&&data.message)||('HTTP '+res.status));
+    const responseText=await res.text();
+    let data={};
+    try{ data=responseText?JSON.parse(responseText):{}; }catch(_){}
+    if(!res.ok){
+      const detail=(data&&data.message)||responseText||('HTTP '+res.status);
+      throw new Error('HTTP '+res.status+' — '+detail);
+    }
     if(input) input.value='';
     setElMujibStatus('تم إرسال الرسالة إلى '+elmujibSelectedContact.phone+' ✓',true);
     showToast('✅ تم إرسال الرسالة');
