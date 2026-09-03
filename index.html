@@ -407,8 +407,23 @@ table th{background:#f8fafc!important;color:#475467!important;font-weight:700!im
 .elmujib-mic-btn.recording{background:#dc2626;color:#fff;animation:elmujib-pulse 1.1s infinite}
 @keyframes elmujib-pulse{0%{box-shadow:0 0 0 0 rgba(220,38,38,.5)}70%{box-shadow:0 0 0 10px rgba(220,38,38,0)}100%{box-shadow:0 0 0 0 rgba(220,38,38,0)}}
 .elmujib-rec-indicator{font-size:12.5px;color:#dc2626;font-weight:700;display:flex;align-items:center;gap:6px}
-.elmujib-voice-bubble{display:flex;align-items:center;gap:8px;min-width:200px}
-.elmujib-voice-bubble audio{height:34px;max-width:220px}
+.elmujib-voice-bubble{display:flex;align-items:center;gap:8px;min-width:220px}
+.elmujib-voice-play{width:38px;height:38px;border:0;border-radius:50%;background:#fff;color:#0f172a;display:inline-grid;place-items:center;cursor:pointer;font-size:17px;box-shadow:0 1px 4px rgba(15,23,42,.14);flex:none}
+.elmujib-voice-play.playing{background:#2563eb;color:#fff}
+.elmujib-voice-wave{height:4px;flex:1;min-width:110px;border-radius:999px;background:linear-gradient(90deg,#94a3b8 0 55%,#cbd5e1 55% 100%);opacity:.9}
+.elmujib-sender-tag{font-size:10.5px;font-weight:850;margin-bottom:4px;opacity:.88}
+.elmujib-composer-tools{display:flex;align-items:center;gap:6px;position:relative}
+.elmujib-tool-btn{width:40px;height:40px;border:1px solid #e2e8f0;border-radius:11px;background:#fff;display:inline-grid;place-items:center;cursor:pointer;font-size:18px;color:#334155}
+.elmujib-tool-btn:hover{background:#f8fafc}
+.elmujib-popover{position:absolute;bottom:48px;right:0;z-index:40;background:#fff;border:1px solid #e2e8f0;border-radius:14px;box-shadow:0 12px 32px rgba(15,23,42,.16);padding:8px;min-width:250px;max-width:330px}
+.elmujib-popover.hidden{display:none}
+.elmujib-emoji-grid{display:grid;grid-template-columns:repeat(8,1fr);gap:3px}
+.elmujib-emoji-btn{border:0;background:transparent;border-radius:8px;padding:6px;cursor:pointer;font-size:19px}
+.elmujib-emoji-btn:hover{background:#f1f5f9}
+.elmujib-slash-list{display:flex;flex-direction:column;gap:4px;max-height:260px;overflow:auto}
+.elmujib-slash-item{border:0;background:#fff;text-align:right;border-radius:9px;padding:8px 10px;cursor:pointer;color:#1e293b}
+.elmujib-slash-item:hover,.elmujib-slash-item.active{background:#eff6ff;color:#1d4ed8}
+.elmujib-slash-item b{display:block;font-size:12px}.elmujib-slash-item span{display:block;font-size:11px;color:#64748b;margin-top:2px}
 
 .elmujib-availability-switch{display:inline-flex;align-items:center;gap:9px;border:1px solid #dbe3ef;background:#fff;border-radius:999px;padding:5px 10px 5px 7px;font-weight:800;color:#475569;cursor:pointer;user-select:none}
 .elmujib-availability-switch .track{width:46px;height:26px;border-radius:999px;background:#cbd5e1;position:relative;transition:.18s;box-shadow:inset 0 0 0 1px rgba(15,23,42,.05)}
@@ -893,7 +908,13 @@ table tbody tr:hover{
           </div>
           <div id="elmujibComposer" class="elmujib-composer hidden">
             <div class="elmujib-composer-row">
-              <textarea id="elmujibMessageText" class="input" rows="1" placeholder="اكتب رسالة…" onkeydown="handleElMujibMessageKey(event)"></textarea>
+              <textarea id="elmujibMessageText" class="input" rows="1" placeholder="اكتب رسالة… أو / للردود السريعة" oninput="handleElMujibComposerInput()" onkeydown="handleElMujibMessageKey(event)"></textarea>
+              <div class="elmujib-composer-tools">
+                <button type="button" class="elmujib-tool-btn" onclick="toggleElMujibEmojiPicker(event)" title="إيموجي">😊</button>
+                <button type="button" class="elmujib-tool-btn" onclick="toggleElMujibSlashMenu(event)" title="ردود سريعة /">/</button>
+                <div id="elmujibEmojiPopover" class="elmujib-popover hidden"></div>
+                <div id="elmujibSlashPopover" class="elmujib-popover hidden"></div>
+              </div>
               <button type="button" id="elmujibMicBtn" class="elmujib-mic-btn" onclick="toggleElMujibRecording()" title="تسجيل رسالة صوتية">🎤</button>
               <button type="button" class="btn btn-primary" onclick="sendElMujibMessage()">📤 إرسال</button>
             </div>
@@ -3686,7 +3707,9 @@ function renderElMujibInbox(data){
     const isDone=!!x.info.done;
     const selected=elmujibSelectedContact && elmujibSelectedContact.phone===phone;
     const msgCount=elmujibMessageCounts[phone]||0;
-    const assignedLabel = isAdmin && x.info.assignedToName ? `<span class="badge badge-cyan" style="margin-top:5px;">👤 ${escapeHtml(x.info.assignedToName)}</span>` : '';
+    const assignedUser=(usersData||[]).find(u=>u.id===x.info.assignedTo);
+    const assignedName=x.info.assignedToName || assignedUser?.name || '';
+    const assignedLabel = isAdmin ? `<span class="badge badge-cyan" style="margin-top:5px;">👤 ${escapeHtml(assignedName||'غير موزع')}</span>` : '';
     return `<button type="button" class="elmujib-contact ${selected?'active':''} ${isUnread?'unread':''} ${isDone?'is-done':''}" data-phone="${escapeAttr(phone)}" onclick="selectElMujibInbox('${escapeAttr(phone)}')">`+
       `<span class="elmujib-contact-count">${msgCount}</span>`+
       `<span class="elmujib-contact-name">${name}${isUnread?' • جديدة':''}${isDone?' ✅':''}</span>`+
@@ -3774,12 +3797,15 @@ function loadElMujibThread(phone){
       const isBot=!inbound && /bot|auto|elmujib|مجيب/i.test(String(m.direction||m.sender||''));
       const t=messageTime(m);
       const bubbleColor=inbound?'background:#f1f5f9;color:#1e293b;':(isBot?'background:#dbeafe;color:#1e3a8a;':'background:#dcfce7;color:#14532d;');
-      const senderTag=isBot?'<div style="font-size:10px;font-weight:800;color:#2563eb;margin-bottom:3px;">🤖 رد آلي (المجيب)</div>':'';
+      const employeeName = String(m.sentByName||m.senderName||m.userName||m.agentName||m.sentBy||m.sender||'').trim();
+      const senderLabel = inbound ? '👤 العميل' : (isBot ? '🤖 رد آلي (المجيب)' : ('👨‍💼 '+(employeeName || elmujibInboxDataCache[phone]?.assignedToName || currentUser?.name || 'موظف')));
+      const senderTag=`<div class="elmujib-sender-tag">${escapeHtml(senderLabel)}</div>`;
       let bodyHtml;
       if(isVoiceMessage(m)){
         const src=messageAudioSrc(m);
+        const aid='voice_'+Math.random().toString(36).slice(2);
         bodyHtml = src
-          ? `<div class="elmujib-voice-bubble"><audio controls preload="none" src="${escapeAttr(src)}"></audio></div>`
+          ? `<div class="elmujib-voice-bubble"><button type="button" class="elmujib-voice-play" onclick="toggleElMujibVoicePlayback('${aid}',this)" title="تشغيل الرسالة الصوتية">🔊</button><div class="elmujib-voice-wave"></div><audio id="${aid}" preload="none" src="${escapeAttr(src)}" onended="resetElMujibVoiceButton(this)"></audio></div>`
           : `<div style="white-space:pre-wrap;word-break:break-word;">🎤 رسالة صوتية (تعذر تحميل الملف)</div>`;
       } else {
         bodyHtml = `<div style="white-space:pre-wrap;word-break:break-word;">${escapeHtml(messageBody(m))}</div>`;
@@ -3793,6 +3819,55 @@ function loadElMujibThread(phone){
     thread.scrollTop=thread.scrollHeight;
   },err=>console.error('Firebase thread error:',err));
 }
+
+const ELMUJIB_EMOJIS=['😀','😂','😍','😊','👍','🙏','❤️','🔥','✅','👌','🎉','🌹','💊','📞','📍','⏰','💬','🤝','✨','😄','😉','🥰','👏','💙','🟢','⚠️','❗','📦','🚚','💰','🧾','🩺'];
+const ELMUJIB_QUICK_REPLIES=[
+  {cmd:'/اهلا',label:'ترحيب',text:'أهلاً بحضرتك، تحت أمرك. إزاي نقدر نساعدك؟'},
+  {cmd:'/انتظر',label:'طلب انتظار',text:'لحظة من فضلك، جاري مراجعة طلب حضرتك.'},
+  {cmd:'/تواصل',label:'طلب تواصل',text:'تمام، سيتم التواصل مع حضرتك في أقرب وقت.'},
+  {cmd:'/عنوان',label:'طلب العنوان',text:'ممكن تبعتلنا العنوان بالتفصيل من فضلك؟'},
+  {cmd:'/رقم',label:'طلب رقم الهاتف',text:'ممكن رقم موبايل للتواصل من فضلك؟'},
+  {cmd:'/شكرا',label:'شكر',text:'شكراً لتواصلك مع Dr. Wells Pharmacy 🌹'}
+];
+function closeElMujibComposerPopovers(){
+  document.getElementById('elmujibEmojiPopover')?.classList.add('hidden');
+  document.getElementById('elmujibSlashPopover')?.classList.add('hidden');
+}
+function toggleElMujibEmojiPicker(e){
+  e?.stopPropagation?.();
+  const box=document.getElementById('elmujibEmojiPopover'); if(!box)return;
+  document.getElementById('elmujibSlashPopover')?.classList.add('hidden');
+  if(!box.dataset.ready){box.innerHTML='<div class="elmujib-emoji-grid">'+ELMUJIB_EMOJIS.map(x=>`<button type="button" class="elmujib-emoji-btn" onclick="insertElMujibEmoji('${x}')">${x}</button>`).join('')+'</div>';box.dataset.ready='1';}
+  box.classList.toggle('hidden');
+}
+function insertElMujibEmoji(emoji){
+  const input=document.getElementById('elmujibMessageText'); if(!input)return;
+  const start=input.selectionStart??input.value.length,end=input.selectionEnd??start;
+  input.value=input.value.slice(0,start)+emoji+input.value.slice(end); input.focus(); input.selectionStart=input.selectionEnd=start+emoji.length;
+  document.getElementById('elmujibEmojiPopover')?.classList.add('hidden');
+}
+function renderElMujibSlashMenu(query=''){
+  const box=document.getElementById('elmujibSlashPopover'); if(!box)return;
+  const q=String(query||'').trim().toLowerCase();
+  const rows=ELMUJIB_QUICK_REPLIES.filter(x=>!q||x.cmd.toLowerCase().includes(q)||x.label.includes(q)||x.text.includes(q));
+  box.innerHTML='<div class="elmujib-slash-list">'+(rows.length?rows.map(x=>`<button type="button" class="elmujib-slash-item" onclick="applyElMujibQuickReply('${escapeAttr(x.cmd)}')"><b>${escapeHtml(x.cmd)} — ${escapeHtml(x.label)}</b><span>${escapeHtml(x.text)}</span></button>`).join(''):'<div style="padding:10px;color:#94a3b8;font-size:12px;">لا توجد نتيجة</div>')+'</div>';
+  box.classList.remove('hidden');
+}
+function toggleElMujibSlashMenu(e){e?.stopPropagation?.();document.getElementById('elmujibEmojiPopover')?.classList.add('hidden');const box=document.getElementById('elmujibSlashPopover');if(!box)return;if(box.classList.contains('hidden'))renderElMujibSlashMenu('');else box.classList.add('hidden');}
+function applyElMujibQuickReply(cmd){const row=ELMUJIB_QUICK_REPLIES.find(x=>x.cmd===cmd);const input=document.getElementById('elmujibMessageText');if(!row||!input)return;input.value=row.text;closeElMujibComposerPopovers();input.focus();}
+function handleElMujibComposerInput(){
+  const input=document.getElementById('elmujibMessageText'); if(!input)return;
+  const v=input.value;
+  if(v.startsWith('/')) renderElMujibSlashMenu(v); else document.getElementById('elmujibSlashPopover')?.classList.add('hidden');
+}
+function toggleElMujibVoicePlayback(audioId,btn){
+  const audio=document.getElementById(audioId); if(!audio)return;
+  document.querySelectorAll('.elmujib-voice-bubble audio').forEach(a=>{if(a!==audio&&!a.paused){a.pause();a.currentTime=0;resetElMujibVoiceButton(a);}});
+  if(audio.paused){audio.play().then(()=>{btn.classList.add('playing');btn.textContent='⏸';btn.title='إيقاف مؤقت';}).catch(()=>showToast('❌ تعذر تشغيل الرسالة الصوتية',true));}
+  else{audio.pause();btn.classList.remove('playing');btn.textContent='🔊';btn.title='تشغيل الرسالة الصوتية';}
+}
+function resetElMujibVoiceButton(audio){const btn=audio?.parentElement?.querySelector('.elmujib-voice-play');if(btn){btn.classList.remove('playing');btn.textContent='🔊';btn.title='تشغيل الرسالة الصوتية';}}
+document.addEventListener('click',e=>{if(!e.target.closest('.elmujib-composer-tools'))closeElMujibComposerPopovers();});
 
 function handleElMujibMessageKey(e){
   if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendElMujibMessage();}
@@ -3812,7 +3887,7 @@ async function sendElMujibMessage(){
     const res=await fetch(ELMUJIB_SEND_URL,{
       method:'POST',
       headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({phone:elmujibSelectedContact.phone,message:message})
+      body:JSON.stringify({phone:elmujibSelectedContact.phone,message:message,sentBy:currentUser?.id||'',sentByName:currentUser?.name||''})
     });
     const text=await res.text();
     let data={}; try{data=text?JSON.parse(text):{};}catch(_){ }
@@ -3892,7 +3967,9 @@ async function sendElMujibVoice(blob){
         type: 'audio',
         message: '🎤 رسالة صوتية',
         audioBase64: base64,
-        mimeType: blob.type || 'audio/webm'
+        mimeType: blob.type || 'audio/webm',
+        sentBy: currentUser?.id || '',
+        sentByName: currentUser?.name || ''
       })
     });
     const text=await res.text();
