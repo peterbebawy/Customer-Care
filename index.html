@@ -3503,19 +3503,24 @@ function elmujibMediaProxyUrl(src){
 function messageAudioSrc(m){
   if(!m) return '';
   const nested=m.media||m.audio||m.voice||{};
-  const direct = m.audioUrl || m.voiceUrl || m.mediaUrl || m.media_url || m.audio_url || m.url || m.link || nested.url || nested.link || nested.downloadUrl || nested.download_url;
+  const type=String(m.type||m.messageType||m.message_type||m.mediaType||m.media_type||nested.type||'').toLowerCase();
+  const mime=String(m.mimeType||m.mime_type||m.mediaMimeType||m.contentType||m.content_type||nested.mimeType||nested.mime_type||'').toLowerCase();
+  const isAudioType = type==='audio' || type==='voice' || type==='ptt' || type.includes('audio') || mime.includes('audio');
+  const direct = m.audioUrl || m.voiceUrl || m.audio_url || m.mediaUrl || m.media_url || m.url || m.link || nested.url || nested.link || nested.downloadUrl || nested.download_url;
   if(direct){
     const src=String(direct);
     if(/^data:audio\//i.test(src)) return src;
-    if(/^https?:\/\//i.test(src)) return elmujibMediaProxyUrl(src);
+    if(/^https?:\/\//i.test(src) && (isAudioType || /\.(mp3|m4a|aac|wav|ogg|oga|opus|webm)(\?|#|$)/i.test(src))) return elmujibMediaProxyUrl(src);
   }
-  const b64 = m.audioBase64 || m.audio_base64 || m.mediaBase64 || m.media_base64 || m.voiceBase64 || nested.base64;
-  if(b64) return `data:${m.mimeType||m.mime_type||m.mediaMimeType||nested.mimeType||nested.mime_type||'audio/webm'};base64,${String(b64).replace(/^data:audio\/[^;]+;base64,/i,'')}`;
+  const b64 = m.audioBase64 || m.audio_base64 || m.voiceBase64 || (isAudioType ? (m.mediaBase64 || m.media_base64 || nested.base64) : '');
+  if(b64 && isAudioType) return `data:${mime||'audio/webm'};base64,${String(b64).replace(/^data:audio\/[^;]+;base64,/i,'')}`;
   return '';
 }
 function isVoiceMessage(m){
-  const type=String(m?.type||m?.messageType||m?.message_type||m?.mediaType||'').toLowerCase();
-  return type==='audio' || type==='voice' || type==='ptt' || !!messageAudioSrc(m);
+  const nested=m?.media||m?.audio||m?.voice||{};
+  const type=String(m?.type||m?.messageType||m?.message_type||m?.mediaType||m?.media_type||nested?.type||'').toLowerCase();
+  const mime=String(m?.mimeType||m?.mime_type||m?.mediaMimeType||nested?.mimeType||nested?.mime_type||'').toLowerCase();
+  return type==='audio' || type==='voice' || type==='ptt' || type.includes('audio') || mime.includes('audio');
 }
 function messageImageSrc(m){
   if(!m) return '';
@@ -3957,18 +3962,19 @@ function loadElMujibThread(phone){
         ? `<div class="elmujib-sender-tag">${escapeHtml(senderLabel)}</div>`
         : '';
       let bodyHtml;
-      if(isVoiceMessage(m)){
+      // الصور لها الأولوية حتى لا يتم تفسير mediaUrl الخاص بها كرسالة صوتية.
+      if(isImageMessage(m)){
+        const src=messageImageSrc(m);
+        const caption=messageBody(m);
+        bodyHtml = src
+          ? `<div class="elmujib-image-bubble"><img class="elmujib-chat-image" src="${escapeAttr(src)}" alt="صورة مرسلة في المحادثة" onclick="openElMujibImagePreview(this.currentSrc||this.src)">${caption?`<div class="elmujib-image-caption">${escapeHtml(caption)}</div>`:''}</div>`
+          : `<div style="white-space:pre-wrap;word-break:break-word;">🖼️ صورة (تعذر تحميل الملف)</div>`;
+      } else if(isVoiceMessage(m)){
         const src=messageAudioSrc(m);
         const aid='voice_'+Math.random().toString(36).slice(2);
         bodyHtml = src
           ? `<div class="elmujib-voice-bubble"><button type="button" class="elmujib-voice-play" onclick="toggleElMujibVoicePlayback('${aid}',this)" title="تشغيل الرسالة الصوتية">🔊</button><div class="elmujib-voice-wave"></div><audio id="${aid}" preload="metadata" src="${escapeAttr(src)}" onended="resetElMujibVoiceButton(this)"></audio></div>`
           : `<div style="white-space:pre-wrap;word-break:break-word;">🎤 رسالة صوتية (الرابط/الملف غير محفوظ في Firebase)</div>`;
-      } else if(isImageMessage(m)){
-        const src=messageImageSrc(m);
-        const caption=messageBody(m);
-        bodyHtml = src
-          ? `<div class="elmujib-image-bubble"><img src="${escapeAttr(src)}" alt="صورة مرسلة في المحادثة" onclick="window.open(this.src,'_blank','noopener')">${caption?`<div class="elmujib-image-caption">${escapeHtml(caption)}</div>`:''}</div>`
-          : `<div style="white-space:pre-wrap;word-break:break-word;">🖼️ صورة (تعذر تحميل الملف)</div>`;
       } else {
         bodyHtml = `<div style="white-space:pre-wrap;word-break:break-word;">${escapeHtml(messageBody(m))}</div>`;
       }
