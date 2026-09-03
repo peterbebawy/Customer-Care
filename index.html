@@ -374,6 +374,13 @@ table th{background:#f8fafc!important;color:#475467!important;font-weight:700!im
 .elmujib-contacts-panel{border-left:1px solid #e2e8f0;padding:16px;background:#f8fafc;display:flex;flex-direction:column;min-height:0;overflow:hidden}
 .elmujib-panel-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;color:#1e293b;flex:0 0 auto}
 .elmujib-panel-head span{background:#e2e8f0;border-radius:999px;padding:3px 9px;font-size:12px}
+.elmujib-search-wrap{position:relative;flex:0 0 auto;margin:0 0 8px}
+.elmujib-search-input{width:100%;height:40px;border:1px solid #dbe3ec;border-radius:12px;background:#fff;padding:0 38px 0 36px;font:inherit;font-size:13px;color:#0f172a;outline:none;transition:.18s ease}
+.elmujib-search-input:focus{border-color:#94a3b8;box-shadow:0 0 0 3px rgba(148,163,184,.13)}
+.elmujib-search-icon{position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:14px;color:#64748b;pointer-events:none}
+.elmujib-search-clear{position:absolute;left:8px;top:50%;transform:translateY(-50%);border:0;background:transparent;color:#94a3b8;font-size:17px;line-height:1;cursor:pointer;padding:4px 6px;border-radius:7px;display:none}
+.elmujib-search-clear.show{display:block}
+.elmujib-search-clear:hover{background:#f1f5f9;color:#475569}
 .elmujib-filter-tabs{display:flex;gap:6px;flex:0 0 auto;margin-bottom:2px}
 .elmujib-filter-tab{flex:1;border:1px solid #e2e8f0;background:#fff;color:#64748b;font-weight:700;font-size:12.5px;padding:8px 6px;border-radius:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:.15s}
 .elmujib-filter-tab:hover{background:#f1f5f9}
@@ -883,6 +890,11 @@ table tbody tr:hover{
           <div class="elmujib-panel-head">
             <strong>المحادثات</strong>
             <span id="elmujibContactCount">0</span>
+          </div>
+          <div class="elmujib-search-wrap">
+            <span class="elmujib-search-icon">⌕</span>
+            <input id="elmujibSearchInput" class="elmujib-search-input" type="search" inputmode="search" autocomplete="off" placeholder="بحث بالاسم أو رقم الهاتف" aria-label="بحث في المحادثات بالاسم أو رقم الهاتف" oninput="setElmujibSearch(this.value)">
+            <button type="button" id="elmujibSearchClear" class="elmujib-search-clear" onclick="clearElmujibSearch()" aria-label="مسح البحث">×</button>
           </div>
           <div class="elmujib-filter-tabs">
             <button type="button" id="elmujibFilterActiveBtn" class="elmujib-filter-tab active" onclick="setElmujibListFilter('active')">الرسائل الحديثة <span id="elmujibActiveCount" class="elmujib-filter-count">0</span></button>
@@ -3688,6 +3700,29 @@ function autoReviveDoneOnNewMessage(data){
 }
 
 let elmujibListFilter='active'; // 'active' = الرسائل الحديثة | 'done' = تم
+let elmujibSearchQuery='';
+function setElmujibSearch(value){
+  elmujibSearchQuery=String(value||'').trim();
+  document.getElementById('elmujibSearchClear')?.classList.toggle('show', !!elmujibSearchQuery);
+  renderElMujibInbox(elmujibInboxDataCache);
+}
+function clearElmujibSearch(){
+  elmujibSearchQuery='';
+  const input=document.getElementById('elmujibSearchInput');
+  if(input){ input.value=''; input.focus(); }
+  document.getElementById('elmujibSearchClear')?.classList.remove('show');
+  renderElMujibInbox(elmujibInboxDataCache);
+}
+function elmujibMatchesSearch(phone,info){
+  const q=String(elmujibSearchQuery||'').trim().toLowerCase();
+  if(!q) return true;
+  const rawPhone=String(phone||'');
+  const normalizedQuery=String(q).replace(/[^0-9+]/g,'');
+  const normalizedStored=normalizePhone(rawPhone);
+  const name=String(info?.contactName||info?.name||'').toLowerCase();
+  const phoneHit=normalizedQuery ? normalizedStored.includes(normalizedQuery.replace(/\+/g,'')) || normalizedStored.replace(/\+/g,'').includes(normalizedQuery.replace(/\+/g,'')) : false;
+  return name.includes(q) || rawPhone.toLowerCase().includes(q) || phoneHit;
+}
 function setElmujibListFilter(filter){
   elmujibListFilter=filter;
   document.getElementById('elmujibFilterActiveBtn')?.classList.toggle('active', filter==='active');
@@ -3748,10 +3783,12 @@ function renderElMujibInbox(data){
   if(activeCountEl) activeCountEl.textContent=String(activeEntries.length);
   if(doneCountEl) doneCountEl.textContent=String(doneEntries.length);
 
-  const entries = elmujibListFilter==='done' ? doneEntries : activeEntries;
+  const baseEntries = elmujibListFilter==='done' ? doneEntries : activeEntries;
+  const entries = baseEntries.filter(x=>elmujibMatchesSearch(x.phone,x.info));
   if(count) count.textContent=entries.length;
   if(!entries.length){
-    list.innerHTML=`<div class="elmujib-empty">${elmujibListFilter==='done'?'لا توجد محادثات منتهية.':'لا توجد رسائل واردة حاليًا.'}</div>`;
+    const emptyText=elmujibSearchQuery ? 'لا توجد نتائج مطابقة للبحث.' : (elmujibListFilter==='done'?'لا توجد محادثات منتهية.':'لا توجد رسائل واردة حاليًا.');
+    list.innerHTML=`<div class="elmujib-empty">${emptyText}</div>`;
     updateElmujibTotalCount();
     renderElmujibAdminAgents();
     return;
