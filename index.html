@@ -404,6 +404,19 @@ table th{background:#f8fafc!important;color:#475467!important;font-weight:700!im
 .elmujib-rec-indicator{font-size:12.5px;color:#dc2626;font-weight:700;display:flex;align-items:center;gap:6px}
 .elmujib-voice-bubble{display:flex;align-items:center;gap:8px;min-width:200px}
 .elmujib-voice-bubble audio{height:34px;max-width:220px}
+
+.elmujib-availability-switch{display:inline-flex;align-items:center;gap:9px;border:1px solid #dbe3ef;background:#fff;border-radius:999px;padding:5px 10px 5px 7px;font-weight:800;color:#475569;cursor:pointer;user-select:none}
+.elmujib-availability-switch .track{width:46px;height:26px;border-radius:999px;background:#cbd5e1;position:relative;transition:.18s;box-shadow:inset 0 0 0 1px rgba(15,23,42,.05)}
+.elmujib-availability-switch .thumb{position:absolute;top:3px;right:3px;width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 2px 7px rgba(15,23,42,.25);transition:.18s}
+.elmujib-availability-switch.is-online{color:#047857;border-color:#a7f3d0;background:#ecfdf5}
+.elmujib-availability-switch.is-online .track{background:#22c55e}
+.elmujib-availability-switch.is-online .thumb{transform:translateX(-20px)}
+.elmujib-admin-agents{display:none;align-items:center;gap:8px;flex-wrap:wrap;padding:10px 16px;border-bottom:1px solid #e2e8f0;background:#fbfdff}
+.elmujib-admin-agents.show{display:flex}
+.elmujib-agent-chip{display:inline-flex;align-items:center;gap:6px;padding:5px 9px;border-radius:999px;background:#ecfdf5;color:#047857;border:1px solid #a7f3d0;font-size:12px;font-weight:800}
+.elmujib-transfer-wrap{display:none;align-items:center;gap:6px}
+.elmujib-transfer-wrap.show{display:flex}
+.elmujib-transfer-wrap select{min-width:150px;padding:7px 9px;margin:0;font-size:12px}
 @media(max-width:800px){.elmujib-messages-grid{grid-template-columns:1fr}.elmujib-contacts-panel{border-left:0;border-bottom:1px solid #e2e8f0;max-height:38vh}}
 
 </style>
@@ -495,6 +508,8 @@ body{
 }
 .messages-panel{
   height:100%;
+  max-width:none!important;
+  width:100%!important;
   display:flex;
   flex-direction:column;
   padding:0!important;
@@ -767,20 +782,6 @@ table tbody tr:hover{
       <div class="home-date" id="homeDate">اليوم</div>
     </div>
     <div class="kpi-grid" id="homeKpis"></div>
-    <div id="branchDashboardPanel" class="hidden" style="margin-top:18px;">
-      <div class="home-panel" style="margin-bottom:16px;">
-        <div class="home-panel-head"><h3>📊 متابعة الفرع من Excel</h3><span>Branch Excel Dashboard</span></div>
-        <div style="display:flex;gap:10px;align-items:end;flex-wrap:wrap;margin-bottom:16px;">
-          <div><label class="label">من تاريخ</label><input type="date" id="branchDashFrom" class="input" style="margin:0;"></div>
-          <div><label class="label">إلى تاريخ</label><input type="date" id="branchDashTo" class="input" style="margin:0;"></div>
-          <button class="btn btn-primary" type="button" onclick="refreshBranchDashboard()">🔄 تحديث</button>
-          <button class="btn btn-success" type="button" onclick="showLastBranchOrders()">🕛 آخر أوردرات اليوم</button>
-        </div>
-        <div id="branchDashMeta" style="color:#64748b;font-size:13px;margin-bottom:12px;"></div>
-        <div class="kpi-grid" id="branchDashKpis"></div>
-        <div id="branchDashLastOrders" class="hidden" style="margin-top:16px;"></div>
-      </div>
-    </div>
     <div class="home-grid">
       <div class="home-panel"><div class="home-panel-head"><h3>إجراءات سريعة</h3><span>Quick actions</span></div><div class="quick-grid" id="homeQuickActions"></div></div>
       <div class="home-panel"><div class="home-panel-head"><h3>حالة التشغيل</h3><span>Live status</span></div><div class="status-list" id="homeStatusList"></div></div>
@@ -798,7 +799,7 @@ table tbody tr:hover{
           </div>
         </div>
         <div class="messages-toolbar-actions">
-          <button type="button" id="elmujibMyOnlineBtn" class="btn btn-secondary" onclick="toggleElmujibMyOnline()">⚪ أوفلاين</button>
+          <button type="button" id="elmujibMyOnlineBtn" class="elmujib-availability-switch" onclick="toggleElmujibMyOnline()" aria-pressed="false"><span id="elmujibMyOnlineText">أوفلاين</span><span class="track"><span class="thumb"></span></span></button>
           <button type="button" class="btn btn-secondary" onclick="initWhatsAppInbox(true)">🔄 تحديث</button>
           <button type="button" class="btn btn-secondary" onclick="openElMujibConsole()">↗ فتح المجيب</button>
         </div>
@@ -806,6 +807,10 @@ table tbody tr:hover{
 
       <div id="elmujibApiStatus" style="margin:14px 18px 0;padding:10px 12px;border-radius:12px;background:#f1f5f9;color:#475569;font-size:13px;">
         في انتظار رسالة واردة من المجيب…
+      </div>
+      <div id="elmujibAdminAgents" class="elmujib-admin-agents">
+        <strong style="font-size:12px;color:#475569;">المستخدمون الأونلاين:</strong>
+        <div id="elmujibAdminAgentsList" style="display:flex;gap:6px;flex-wrap:wrap;"></div>
       </div>
 
       <div class="elmujib-messages-grid">
@@ -830,6 +835,10 @@ table tbody tr:hover{
               <span id="elmujibSelectedPhone"></span>
             </div>
             <div id="elmujibChatHeadActions" style="margin-right:auto;display:none;gap:8px;align-items:center;">
+              <div id="elmujibTransferWrap" class="elmujib-transfer-wrap">
+                <select id="elmujibTransferUser" class="input" aria-label="تحويل المحادثة"></select>
+                <button type="button" class="btn btn-primary btn-sm" onclick="transferElmujibChat()">تحويل</button>
+              </div>
               <span id="elmujibDoneStatusBadge" class="badge badge-green hidden">✅ منتهية</span>
               <button type="button" id="elmujibMarkDoneBtn" class="btn btn-success btn-sm" onclick="markElmujibDone()">✅ تم</button>
               <button type="button" id="elmujibMarkUndoneBtn" class="btn btn-secondary btn-sm hidden" onclick="markElmujibUndone()">↩️ رجوع للحديثة</button>
@@ -1574,6 +1583,7 @@ function initApp() {
     snapshot.forEach(child => { usersData.push({ id: child.key, ...child.val() }); });
     computeElmujibOnlineIds();
     updateElmujibMyOnlineToggleUI();
+    renderElmujibAdminAgents();
     runElmujibAssignmentEngine();
     const loading = document.getElementById('loginLoading');
     const form = document.getElementById('loginForm');
@@ -1818,6 +1828,9 @@ function enterDashboard(user, silent) {
   userRoleEl.classList.remove('hidden');
   document.getElementById('userAvatar').textContent = user.name.charAt(0);
   setupNavByRole();
+  computeElmujibOnlineIds();
+  updateElmujibMyOnlineToggleUI();
+  renderElmujibAdminAgents();
   populateBranchSelect(); populateShortageBranch(); populateCCBranch(); populateShortageApp(); populateAppOrderBranch(); populateAppOrderAppSelect();
   const todayISO = new Date().toISOString().split('T')[0];
   const deliveryDateEl = document.getElementById('deliveryDate');
@@ -3256,15 +3269,7 @@ function renderDashboardHome(){
   const dateEl=document.getElementById('homeDate');
   if(dateEl) dateEl.textContent=`${pad(today.getDate())}/${pad(today.getMonth()+1)}/${today.getFullYear()}`;
 
-  const branchPanel=document.getElementById('branchDashboardPanel');
-  if(currentUser?.role==='branch'){
-    document.getElementById('homeKpis').innerHTML='';
-    document.querySelector('.home-grid')?.classList.add('hidden');
-    setBranchDashboardDatesDefault(true);
-    refreshBranchDashboard();
-    return;
-  }
-  if(branchPanel) branchPanel.classList.add('hidden');
+  // تم إلغاء لوحة "متابعة الفرع من Excel" من الصفحة الرئيسية.
   document.querySelector('.home-grid')?.classList.remove('hidden');
 
   const all=[...(ordersData||[]),...(appOrdersData||[])];
@@ -3360,9 +3365,11 @@ let elmujibInboxDataCache = {}; // آخر نسخة من صندوق الرسائ�
 // ===== حضور اليوزرز (أونلاين/أوفلاين) وتوزيع الشاتات عليهم =====
 let elmujibOnlineUserIds = new Set();
 
-// يوزر عنده صلاحية استقبال شاتات لو أدمن أو مفعّل له قسم الرسائل
+// الأدمن يشرف على كل الشاتات ولا يدخل ضمن طابور التوزيع. الاستقبال للموظفين المفعّل لهم قسم الرسائل فقط.
 function elmujibUserCanReceiveChats(u){
-  return !!u && (u.role==='admin' || (u.sections && u.sections.messages===true));
+  if(!u || u.role==='admin') return false;
+  const sections=u.sections || getDefaultSectionsForRole(u.role);
+  return sections.messages===true;
 }
 
 function computeElmujibOnlineIds(){
@@ -3372,7 +3379,7 @@ function computeElmujibOnlineIds(){
 }
 
 function toggleElmujibMyOnline(){
-  if(!currentUser?.id || typeof rtdb==='undefined' || !rtdb) return;
+  if(!currentUser?.id || currentUser.role==='admin' || typeof rtdb==='undefined' || !rtdb) return;
   const me = usersData.find(u => u.id === currentUser.id) || currentUser;
   const newState = !me.isOnline;
   rtdb.ref('users/'+currentUser.id).update({isOnline:newState, onlineChangedAt: firebase.database.ServerValue.TIMESTAMP})
@@ -3384,16 +3391,47 @@ function toggleElmujibMyOnline(){
 
 function updateElmujibMyOnlineToggleUI(){
   const btn=document.getElementById('elmujibMyOnlineBtn');
-  if(!currentUser || typeof rtdb==='undefined' || !rtdb) return;
+  if(!currentUser) return;
+  // الأدمن لا يحتاج حالة أونلاين/أوفلاين لأنه يرى كل المحادثات ولا يستقبل توزيعاً تلقائياً.
+  if(btn) btn.style.display=currentUser.role==='admin'?'none':'inline-flex';
+  if(currentUser.role==='admin'){ renderElmujibAdminAgents(); return; }
   const me = usersData.find(u => u.id === currentUser.id) || currentUser;
   const isOnline = !!me.isOnline;
-  // نتأكد إن onDisconnect متظبط دايماً حسب آخر حالة معروفة (يغطي حالة الريفريش وهو أونلاين من قبل)
-  if(isOnline) rtdb.ref('users/'+currentUser.id).onDisconnect().update({isOnline:false});
-  else rtdb.ref('users/'+currentUser.id).onDisconnect().cancel();
   if(!btn) return;
-  btn.textContent = isOnline ? '🟢 أونلاين' : '⚪ أوفلاين';
-  btn.classList.toggle('btn-success', isOnline);
-  btn.classList.toggle('btn-secondary', !isOnline);
+  btn.classList.toggle('is-online', isOnline);
+  btn.setAttribute('aria-pressed', isOnline?'true':'false');
+  const text=document.getElementById('elmujibMyOnlineText');
+  if(text) text.textContent=isOnline?'أونلاين':'أوفلاين';
+}
+
+function renderElmujibAdminAgents(){
+  const box=document.getElementById('elmujibAdminAgents');
+  const list=document.getElementById('elmujibAdminAgentsList');
+  const transfer=document.getElementById('elmujibTransferWrap');
+  const sel=document.getElementById('elmujibTransferUser');
+  const isAdmin=currentUser?.role==='admin';
+  box?.classList.toggle('show',isAdmin);
+  transfer?.classList.toggle('show',isAdmin && !!elmujibSelectedContact?.phone);
+  if(!isAdmin) return;
+  const agents=(usersData||[]).filter(elmujibUserCanReceiveChats);
+  const online=agents.filter(u=>u.isOnline);
+  if(list) list.innerHTML=online.length?online.map(u=>`<span class="elmujib-agent-chip">🟢 ${escapeHtml(u.name||'مستخدم')}</span>`).join(''):'<span style="font-size:12px;color:#94a3b8;">لا يوجد مستخدمون أونلاين الآن</span>';
+  if(sel){
+    const selectedPhone=elmujibSelectedContact?.phone;
+    const assigned=selectedPhone ? (elmujibInboxDataCache[selectedPhone]?.assignedTo||'') : '';
+    sel.innerHTML='<option value="">اختر المستخدم</option>'+agents.map(u=>`<option value="${escapeAttr(u.id)}" ${u.id===assigned?'selected':''} ${u.isOnline?'':'disabled'}>${u.isOnline?'🟢':'⚪'} ${escapeHtml(u.name||'مستخدم')}</option>`).join('');
+  }
+}
+
+function transferElmujibChat(){
+  if(currentUser?.role!=='admin' || !elmujibSelectedContact?.phone) return;
+  const userId=document.getElementById('elmujibTransferUser')?.value;
+  const u=(usersData||[]).find(x=>x.id===userId);
+  if(!u || !elmujibUserCanReceiveChats(u)){ showToast('❌ اختر مستخدم صالح للتحويل',true); return; }
+  const phone=elmujibSelectedContact.phone;
+  rtdb.ref('whatsapp_inbox_index/'+safeId(phone)).update({assignedTo:u.id,assignedToName:u.name||'',assignedAt:firebase.database.ServerValue.TIMESTAMP,assignedBy:currentUser?.name||'Admin'})
+    .then(()=>{ showToast('✅ تم تحويل المحادثة إلى '+(u.name||'المستخدم')); })
+    .catch(err=>{ console.error('Transfer chat error:',err); showToast('❌ تعذر تحويل المحادثة',true); });
 }
 
 // بيدور على أي محادثة نشطة (مش تم) مش متعينة لحد أونلاين، وبيوزعها راندم على واحد من الأونلاين حالياً.
@@ -3525,6 +3563,7 @@ function renderElMujibInbox(data){
   if(!entries.length){
     list.innerHTML=`<div class="elmujib-empty">${elmujibListFilter==='done'?'لا توجد محادثات منتهية.':'لا توجد رسائل واردة حاليًا.'}</div>`;
     updateElmujibTotalCount();
+    renderElmujibAdminAgents();
     return;
   }
   list.innerHTML=entries.map((x,i)=>{
@@ -3546,6 +3585,7 @@ function renderElMujibInbox(data){
       `</button>`;
   }).join('');
   updateElmujibTotalCount();
+  renderElmujibAdminAgents();
 }
 
 function selectElMujibInbox(phone){
@@ -3564,6 +3604,7 @@ function selectElMujibInbox(phone){
     document.getElementById('elmujibChatEmpty')?.classList.add('hidden');
     document.getElementById('elmujibComposer')?.classList.remove('hidden');
     updateElmujibDoneActionsUI(!!info.done);
+    renderElmujibAdminAgents();
     loadElMujibThread(phone);
     renderElMujibInbox(s.val()||{});
     document.getElementById('elmujibMessageText')?.focus();
