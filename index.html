@@ -4058,11 +4058,35 @@ function blobToBase64(blob){
   });
 }
 
+function newElmujibClientMessageId(kind='msg'){
+  return `web_${kind}_${Date.now()}_${Math.random().toString(36).slice(2,8)}`;
+}
+
+async function ensureElmujibOutboundSaved(phone, data, fallback){
+  if(!phone || typeof rtdb==='undefined' || !rtdb) return;
+  try{
+    const key=String(data?.firebaseKey||fallback?.clientMessageId||'').replace(/[.#$\[\]\/]/g,'_');
+    if(!key) return;
+    const msg={...(data?.savedMessage||{}),...(fallback||{})};
+    delete msg.clientMessageId;
+    // خلي بيانات الـWorker (خصوصًا mediaUrl) هي المرجع لو موجودة.
+    if(data?.mediaUrl) msg.mediaUrl=data.mediaUrl;
+    msg.direction='outbound';
+    msg.sentBy=msg.sentBy||currentUser?.id||null;
+    msg.sentByName=msg.sentByName||currentUser?.name||null;
+    msg.sentAt=Number(msg.sentAt||Date.now());
+    msg.receivedAt=Number(msg.receivedAt||msg.sentAt);
+    msg.createdAt=Number(msg.createdAt||msg.sentAt);
+    await rtdb.ref('whatsapp_messages/'+safeId(phone)+'/'+key).update(msg);
+  }catch(err){ console.warn('Could not ensure outbound media in Firebase',err); }
+}
+
 async function sendElMujibVoice(blob){
   if(!elmujibSelectedContact?.phone) return;
   setElMujibStatus('جاري إرسال رسالة صوتية إلى '+elmujibSelectedContact.phone+'…');
   try{
     const base64 = await blobToBase64(blob);
+    const clientMessageId=newElmujibClientMessageId('audio');
     const res = await fetch(ELMUJIB_SEND_URL,{
       method:'POST',
       headers:{'Content-Type':'application/json'},
@@ -4073,12 +4097,14 @@ async function sendElMujibVoice(blob){
         audioBase64: base64,
         mimeType: blob.type || 'audio/webm',
         sentBy: currentUser?.id || '',
-        sentByName: currentUser?.name || ''
+        sentByName: currentUser?.name || '',
+        clientMessageId
       })
     });
     const text=await res.text();
     let data={}; try{data=text?JSON.parse(text):{};}catch(_){ }
     if(!res.ok) throw new Error((data&&(data.error||data.message))||text||('HTTP '+res.status));
+    await ensureElmujibOutboundSaved(elmujibSelectedContact.phone,data,{clientMessageId,type:'audio',mediaType:'audio',body:'🎤 رسالة صوتية',mediaUrl:data?.mediaUrl||'',mediaMimeType:blob.type||'audio/webm',sentBy:currentUser?.id||null,sentByName:currentUser?.name||null});
     await stampLatestOutboundSender(elmujibSelectedContact.phone,'🎤 رسالة صوتية','audio');
     setElMujibStatus('تم إرسال الرسالة الصوتية للعميل '+elmujibSelectedContact.phone+' ✓',true);
     showToast('✅ تم إرسال الرسالة الصوتية');
@@ -4132,12 +4158,14 @@ async function sendElMujibImage(blob){
   try{
     setElMujibStatus('جاري إرسال الصورة إلى '+elmujibSelectedContact.phone+'…');
     const base64=await blobToBase64(blob);
+    const clientMessageId=newElmujibClientMessageId('image');
     const caption=(document.getElementById('elmujibMessageText')?.value||'').trim();
     const res=await fetch(ELMUJIB_SEND_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
-      phone:elmujibSelectedContact.phone,type:'image',message:caption||'🖼️ صورة',imageBase64:base64,mimeType:blob.type||'image/png',sentBy:currentUser?.id||'',sentByName:currentUser?.name||''
+      phone:elmujibSelectedContact.phone,type:'image',message:caption||'🖼️ صورة',imageBase64:base64,mimeType:blob.type||'image/png',sentBy:currentUser?.id||'',sentByName:currentUser?.name||'',clientMessageId
     })});
     const text=await res.text(); let data={}; try{data=text?JSON.parse(text):{};}catch(_){}
     if(!res.ok) throw new Error((data&&(data.error||data.message))||text||('HTTP '+res.status));
+    await ensureElmujibOutboundSaved(elmujibSelectedContact.phone,data,{clientMessageId,type:'image',mediaType:'image',body:caption||'🖼️ صورة',mediaUrl:data?.mediaUrl||'',mediaMimeType:blob.type||'image/png',mediaCaption:caption||null,sentBy:currentUser?.id||null,sentByName:currentUser?.name||null});
     await stampLatestOutboundSender(elmujibSelectedContact.phone,caption||'🖼️ صورة','image');
     const input=document.getElementById('elmujibMessageText'); if(input)input.value='';
     clearPendingElMujibImage();
