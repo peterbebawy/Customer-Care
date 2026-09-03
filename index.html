@@ -394,8 +394,13 @@ table th{background:#f8fafc!important;color:#475467!important;font-weight:700!im
 .elmujib-chat-head span{display:block;font-size:12px;color:#64748b;margin-top:4px;direction:ltr}
 .elmujib-chat-empty{flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;color:#64748b;text-align:center;padding:40px}
 .elmujib-chat-empty h3{color:#334155;margin:12px 0 4px}
-.elmujib-composer{margin-top:auto;flex:0 0 auto;padding:16px;border-top:1px solid #e2e8f0;background:#f8fafc}
-.elmujib-composer textarea{resize:vertical;min-height:150px}
+.elmujib-composer{margin-top:auto;flex:0 0 auto;padding:10px 14px;border-top:1px solid #e2e8f0;background:#f8fafc}
+.elmujib-composer-row{display:flex;align-items:center;gap:8px;width:100%}
+.elmujib-composer textarea{resize:none;min-height:46px!important;height:46px!important;max-height:46px!important;margin:0!important;padding:11px 14px!important;line-height:22px;overflow-y:auto;border-radius:14px;flex:1 1 auto}
+.elmujib-composer .elmujib-composer-hint{display:none}
+.elmujib-chat-thread{flex:1 1 auto;overflow-y:auto!important;min-height:0!important;padding:16px 20px}
+.elmujib-contacts-list{overscroll-behavior:contain;scrollbar-gutter:stable}
+#messages:not(.hidden) ~ #branchExcelSections{display:none!important}
 .elmujib-empty{text-align:center;color:#94a3b8;padding:25px 10px;font-size:13px}
 .elmujib-mic-btn{width:44px;height:44px;border-radius:12px;border:none;background:#e5e7eb;color:#374151;font-size:18px;cursor:pointer;flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;transition:.15s}
 .elmujib-mic-btn:hover{background:#d1d5db}
@@ -502,8 +507,8 @@ body{
 /* Messages - embedded vendor console */
 .messages-wrap{
   padding:0!important;
-  height:calc(100vh - 170px);
-  min-height:620px;
+  height:calc(100vh - 138px);
+  min-height:560px;
   overflow:hidden;
 }
 .messages-panel{
@@ -844,7 +849,7 @@ table tbody tr:hover{
               <button type="button" id="elmujibMarkUndoneBtn" class="btn btn-secondary btn-sm hidden" onclick="markElmujibUndone()">↩️ رجوع للحديثة</button>
             </div>
           </div>
-          <div id="elmujibChatThread" style="flex:1;overflow:auto;padding:16px 20px;min-height:360px;">
+          <div id="elmujibChatThread" class="elmujib-chat-thread">
             <div id="elmujibChatEmpty" class="elmujib-chat-empty">
               <div style="font-size:42px;">💬</div>
               <h3>لا توجد محادثة محددة</h3>
@@ -852,14 +857,12 @@ table tbody tr:hover{
             </div>
           </div>
           <div id="elmujibComposer" class="elmujib-composer hidden">
-            <textarea id="elmujibMessageText" class="input" rows="7" placeholder="اكتب الرد للعميل…" onkeydown="handleElMujibMessageKey(event)"></textarea>
-            <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:10px;">
-              <small id="elmujibComposerHint" style="color:#64748b;">Enter للإرسال — Shift+Enter لسطر جديد</small>
-              <div style="display:flex;align-items:center;gap:8px;">
-                <button type="button" id="elmujibMicBtn" class="elmujib-mic-btn" onclick="toggleElMujibRecording()" title="تسجيل رسالة صوتية">🎤</button>
-                <button type="button" class="btn btn-primary" onclick="sendElMujibMessage()">📤 إرسال</button>
-              </div>
+            <div class="elmujib-composer-row">
+              <textarea id="elmujibMessageText" class="input" rows="1" placeholder="اكتب رسالة…" onkeydown="handleElMujibMessageKey(event)"></textarea>
+              <button type="button" id="elmujibMicBtn" class="elmujib-mic-btn" onclick="toggleElMujibRecording()" title="تسجيل رسالة صوتية">🎤</button>
+              <button type="button" class="btn btn-primary" onclick="sendElMujibMessage()">📤 إرسال</button>
             </div>
+            <small id="elmujibComposerHint" class="elmujib-composer-hint">Enter للإرسال — Shift+Enter لسطر جديد</small>
           </div>
         </main>
       </div>
@@ -2387,11 +2390,16 @@ function renderBranchExcelSections(){
       return;
     }
   }
-  if(activeId){
+  // لا تُظهر متابعة الفروع إلا إذا كان المستخدم واقف فعلاً على تبويب Excel.
+  // سابقاً كان تحديث بيانات الفروع يعيد إظهار القسم تحت شاشة الرسائل.
+  if(activeId && (currentTab==='branchExcelSections' || String(currentTab||'').startsWith('branchExcel_'))){
     const wrapEl=document.getElementById('branchExcelSections');
     if(wrapEl) wrapEl.classList.remove('hidden');
     const el=document.getElementById('branchExcel_'+activeId);
     if(el){ el.classList.remove('hidden'); renderBranchExcelSection(activeId); }
+  } else {
+    const wrapEl=document.getElementById('branchExcelSections');
+    if(wrapEl) wrapEl.classList.add('hidden');
   }
 }
 function selectBranchExcelBranch(branchId){
