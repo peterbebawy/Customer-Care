@@ -3724,6 +3724,7 @@ function initWhatsAppInbox(force=false){
   elmujibInboxRef.on('value', snap=>{
     const data=snap.val()||{};
     autoReviveDoneOnNewMessage(data);
+    cleanupExpiredElmujibDoneChats(data);
     elmujibInboxDataCache=data;
     renderElMujibInbox(data);
     runElmujibAssignmentEngine();
@@ -3732,6 +3733,77 @@ function initWhatsAppInbox(force=false){
     console.error('Firebase inbox error:',err);
     setElMujibStatus('❌ تعذر قراءة صندوق الرسائل: '+(err.message||err));
   });
+  startElmujibDoneAutoCleanup();
+}
+
+
+// ============================================================
+// تنظيف تبويب "تم" تلقائياً بعد 24 ساعة من وقت إغلاق المحادثة.
+// يتم حذف سجل المحادثة من whatsapp_inbox_index فقط حتى تختفي من القائمة,
+// بينما تاريخ الرسائل في whatsapp_messages يظل محفوظاً.
+// ============================================================
+const ELMUJIB_DONE_RETENTION_MS = 24 * 60 * 60 * 1000;
+const ELMUJIB_FULL_RETENTION_MS = 7 * 24 * 60 * 60 * 1000;
+let elmujibDoneCleanupRunning = false;
+let elmujibDoneCleanupTimer = null;
+
+async function cleanupExpiredElmujibDoneChats(dataOverride=null){
+  if(typeof rtdb==='undefined' || !rtdb || elmujibDoneCleanupRunning) return;
+  elmujibDoneCleanupRunning=true;
+  try{
+    let data=dataOverride;
+    if(!data){
+      const snap=await rtdb.ref('whatsapp_inbox_index').once('value');
+      data=snap.val()||{};
+    }
+    const now=Date.now();
+    const updates={};
+    const hidePhones=[];
+    const purgePhones=[];
+
+    Object.entries(data||{}).forEach(([phone,info])=>{
+      if(!info || !info.done) return;
+      const doneAt=Number(info.doneAt||0);
+      if(!doneAt) return;
+      const age=now-doneAt;
+
+      // بعد 24 ساعة: إزالة المحادثة من قائمة "تم".
+      if(age>=ELMUJIB_DONE_RETENTION_MS){
+        updates['whatsapp_inbox_index/'+safeId(phone)]=null;
+        hidePhones.push(normalizePhone(phone));
+      }
+
+      // بعد 7 أيام: حذف سجل الرسائل المحلي بالكامل من Firebase.
+      if(age>=ELMUJIB_FULL_RETENTION_MS){
+        updates['whatsapp_messages/'+safeId(phone)]=null;
+        purgePhones.push(normalizePhone(phone));
+      }
+    });
+
+    if(Object.keys(updates).length){
+      await rtdb.ref().update(updates);
+      if(elmujibSelectedContact?.phone && hidePhones.includes(normalizePhone(elmujibSelectedContact.phone))){
+        elmujibSelectedContact=null;
+        const thread=document.getElementById('elmujibChatThread');
+        if(thread) thread.innerHTML='<div class="elmujib-empty">تم تنظيف المحادثة من القائمة.</div>';
+        const wrap=document.getElementById('elmujibChatHeadActions');
+        if(wrap) wrap.style.display='none';
+      }
+      if(hidePhones.length) console.log(`Done cleanup: removed ${hidePhones.length} chat(s) from inbox index.`);
+      if(purgePhones.length) console.log(`7-day cleanup: purged ${purgePhones.length} Firebase message history item(s).`);
+    }
+  }catch(err){
+    console.error('Done/data cleanup error:',err);
+  }finally{
+    elmujibDoneCleanupRunning=false;
+  }
+}
+
+function startElmujibDoneAutoCleanup(){
+  if(elmujibDoneCleanupTimer) clearInterval(elmujibDoneCleanupTimer);
+  cleanupExpiredElmujibDoneChats();
+  // مراجعة كل 15 دقيقة، والحذف لا يتم إلا بعد اكتمال 24 ساعة.
+  elmujibDoneCleanupTimer=setInterval(()=>cleanupExpiredElmujibDoneChats(), 15 * 60 * 1000);
 }
 
 // لو محادثة اتحطلها "تم" وبعدين العميل بعت رسالة جديدة (وصلت بعد وقت التم)، نرجعها تلقائي للرسائل الحديثة
