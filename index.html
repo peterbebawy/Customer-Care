@@ -3439,6 +3439,8 @@ function elmujibMediaProxyUrl(src){
   const raw=String(src||'').trim();
   if(!raw || !/^https?:\/\//i.test(raw)) return raw;
   const workerBase=String(ELMUJIB_SEND_URL||'').replace(/\/send\/?(?:\?.*)?$/i,'');
+  // الملفات المخزنة في R2 والمقدمة من نفس الـWorker عامة بالفعل، فلا نمررها عبر proxy مرة ثانية.
+  if(workerBase && raw.startsWith(workerBase+'/public-media/')) return raw;
   return `${workerBase}/media-proxy?url=${encodeURIComponent(raw)}`;
 }
 function messageAudioSrc(m){
