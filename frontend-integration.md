@@ -118,7 +118,7 @@ function toggleMessagesFrame() {
 
 الإرسال بيتم عن طريق El Mujib API مباشرة من الفرونت إند أو من Worker تاني بسيط،
 باستخدام endpoint:
-
+ 
 ```
 POST {{apiBaseUrl}}/{{vendorUid}}/contact/send-message
 ```
