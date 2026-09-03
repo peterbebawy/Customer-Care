@@ -412,6 +412,9 @@ table th{background:#f8fafc!important;color:#475467!important;font-weight:700!im
 .elmujib-voice-play.playing{background:#2563eb;color:#fff}
 .elmujib-voice-wave{height:4px;flex:1;min-width:110px;border-radius:999px;background:linear-gradient(90deg,#94a3b8 0 55%,#cbd5e1 55% 100%);opacity:.9}
 .elmujib-sender-tag{font-size:10.5px;font-weight:850;margin-bottom:4px;opacity:.88}
+.elmujib-image-bubble img{display:block;max-width:min(360px,68vw);max-height:360px;border-radius:12px;object-fit:contain;background:#fff;cursor:zoom-in}
+.elmujib-image-caption{margin-top:7px;white-space:pre-wrap;word-break:break-word}
+.elmujib-image-input{display:none}
 .elmujib-composer-tools{display:flex;align-items:center;gap:6px;position:relative}
 .elmujib-tool-btn{width:40px;height:40px;border:1px solid #e2e8f0;border-radius:11px;background:#fff;display:inline-grid;place-items:center;cursor:pointer;font-size:18px;color:#334155}
 .elmujib-tool-btn:hover{background:#f8fafc}
@@ -912,6 +915,8 @@ table tbody tr:hover{
               <div class="elmujib-composer-tools">
                 <button type="button" class="elmujib-tool-btn" onclick="toggleElMujibEmojiPicker(event)" title="إيموجي">😊</button>
                 <button type="button" class="elmujib-tool-btn" onclick="toggleElMujibSlashMenu(event)" title="ردود سريعة /">/</button>
+                <button type="button" class="elmujib-tool-btn" onclick="document.getElementById('elmujibImageInput').click()" title="إرسال صورة">🖼️</button>
+                <input id="elmujibImageInput" class="elmujib-image-input" type="file" accept="image/*" onchange="handleElMujibImageFile(this.files?.[0])">
                 <div id="elmujibEmojiPopover" class="elmujib-popover hidden"></div>
                 <div id="elmujibSlashPopover" class="elmujib-popover hidden"></div>
               </div>
@@ -3414,15 +3419,30 @@ function messageBody(m){ return String(m?.body ?? m?.message ?? m?.text ?? m?.me
 // بيرجع رابط/سورس الصوت لو الرسالة صوتية (بيقبل أكتر من شكل ممكن يوصل بيه من المجيب)
 function messageAudioSrc(m){
   if(!m) return '';
-  const direct = m.audioUrl || m.voiceUrl || m.mediaUrl || m.audio_url || m.url;
-  if(direct && /^https?:\/\//i.test(String(direct))) return direct;
-  const b64 = m.audioBase64 || m.audio_base64 || m.media_base64 || m.voiceBase64;
-  if(b64) return `data:${m.mimeType||m.mime_type||'audio/webm'};base64,${b64}`;
+  const nested=m.media||m.audio||m.voice||{};
+  const direct = m.audioUrl || m.voiceUrl || m.mediaUrl || m.audio_url || m.url || nested.url || nested.link || nested.downloadUrl;
+  if(direct && (/^https?:\/\//i.test(String(direct)) || /^data:audio\//i.test(String(direct)))) return String(direct);
+  const b64 = m.audioBase64 || m.audio_base64 || m.media_base64 || m.voiceBase64 || nested.base64;
+  if(b64) return `data:${m.mimeType||m.mime_type||nested.mimeType||'audio/webm'};base64,${b64}`;
   return '';
 }
 function isVoiceMessage(m){
-  const type=String(m?.type||m?.messageType||m?.message_type||'').toLowerCase();
+  const type=String(m?.type||m?.messageType||m?.message_type||m?.mediaType||'').toLowerCase();
   return type==='audio' || type==='voice' || type==='ptt' || !!messageAudioSrc(m);
+}
+function messageImageSrc(m){
+  if(!m) return '';
+  const nested=m.media||m.image||{};
+  const direct=m.imageUrl||m.image_url||m.mediaUrl||m.media_url||nested.url||nested.link||nested.downloadUrl;
+  const type=String(m?.type||m?.messageType||m?.message_type||m?.mediaType||nested.type||'').toLowerCase();
+  if(direct && (/^https?:\/\//i.test(String(direct)) || /^data:image\//i.test(String(direct))) && (type.includes('image') || /image/i.test(String(m?.mimeType||m?.mime_type||nested.mimeType||'')))) return String(direct);
+  const b64=m.imageBase64||m.image_base64||((type.includes('image'))?m.media_base64:'')||nested.base64;
+  if(b64) return `data:${m.mimeType||m.mime_type||nested.mimeType||'image/jpeg'};base64,${b64}`;
+  return '';
+}
+function isImageMessage(m){
+  const type=String(m?.type||m?.messageType||m?.message_type||m?.mediaType||'').toLowerCase();
+  return type==='image' || type==='photo' || !!messageImageSrc(m);
 }
 
 let elmujibInboxDataCache = {}; // آخر نسخة من صندوق الرسائل، بنستخدمها لإعادة الترتيب عند تبديل الفلتر من غير ما نستنى Firebase
@@ -3797,16 +3817,23 @@ function loadElMujibThread(phone){
       const isBot=!inbound && /bot|auto|elmujib|مجيب/i.test(String(m.direction||m.sender||''));
       const t=messageTime(m);
       const bubbleColor=inbound?'background:#f1f5f9;color:#1e293b;':(isBot?'background:#dbeafe;color:#1e3a8a;':'background:#dcfce7;color:#14532d;');
-      const employeeName = String(m.sentByName||m.senderName||m.userName||m.agentName||m.sentBy||m.sender||'').trim();
-      const senderLabel = inbound ? '👤 العميل' : (isBot ? '🤖 رد آلي (المجيب)' : ('👨‍💼 '+(employeeName || elmujibInboxDataCache[phone]?.assignedToName || currentUser?.name || 'موظف')));
+      // اسم المرسل لازم يفضل Snapshot محفوظ على الرسالة نفسها، وممنوع نستنتجه من المسؤول الحالي عن الشات.
+      const employeeName = String(m.sentByName||m.senderName||m.userName||m.agentName||'').trim();
+      const senderLabel = inbound ? '👤 العميل' : (isBot ? '🤖 رد آلي (المجيب)' : ('👨‍💼 '+(employeeName || 'موظف')));
       const senderTag=`<div class="elmujib-sender-tag">${escapeHtml(senderLabel)}</div>`;
       let bodyHtml;
       if(isVoiceMessage(m)){
         const src=messageAudioSrc(m);
         const aid='voice_'+Math.random().toString(36).slice(2);
         bodyHtml = src
-          ? `<div class="elmujib-voice-bubble"><button type="button" class="elmujib-voice-play" onclick="toggleElMujibVoicePlayback('${aid}',this)" title="تشغيل الرسالة الصوتية">🔊</button><div class="elmujib-voice-wave"></div><audio id="${aid}" preload="none" src="${escapeAttr(src)}" onended="resetElMujibVoiceButton(this)"></audio></div>`
-          : `<div style="white-space:pre-wrap;word-break:break-word;">🎤 رسالة صوتية (تعذر تحميل الملف)</div>`;
+          ? `<div class="elmujib-voice-bubble"><button type="button" class="elmujib-voice-play" onclick="toggleElMujibVoicePlayback('${aid}',this)" title="تشغيل الرسالة الصوتية">🔊</button><div class="elmujib-voice-wave"></div><audio id="${aid}" preload="metadata" src="${escapeAttr(src)}" onended="resetElMujibVoiceButton(this)"></audio></div>`
+          : `<div style="white-space:pre-wrap;word-break:break-word;">🎤 رسالة صوتية (الرابط/الملف غير محفوظ في Firebase)</div>`;
+      } else if(isImageMessage(m)){
+        const src=messageImageSrc(m);
+        const caption=messageBody(m);
+        bodyHtml = src
+          ? `<div class="elmujib-image-bubble"><img src="${escapeAttr(src)}" alt="صورة مرسلة في المحادثة" onclick="window.open(this.src,'_blank','noopener')">${caption?`<div class="elmujib-image-caption">${escapeHtml(caption)}</div>`:''}</div>`
+          : `<div style="white-space:pre-wrap;word-break:break-word;">🖼️ صورة (تعذر تحميل الملف)</div>`;
       } else {
         bodyHtml = `<div style="white-space:pre-wrap;word-break:break-word;">${escapeHtml(messageBody(m))}</div>`;
       }
@@ -3873,6 +3900,28 @@ function handleElMujibMessageKey(e){
   if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendElMujibMessage();}
 }
 
+// بعد نجاح الإرسال نثبت اسم اليوزر على نفس سجل الرسالة في Firebase،
+// عشان الاسم مايتغيرش لو الشات اتحول ليوزر تاني أو الصفحة اتعملها Refresh.
+async function stampLatestOutboundSender(phone, expectedBody='', expectedType=''){
+  if(!phone || !currentUser?.id || typeof rtdb==='undefined' || !rtdb) return;
+  try{
+    const ref=rtdb.ref('whatsapp_messages/'+safeId(phone));
+    const snap=await ref.limitToLast(12).once('value');
+    const rows=[]; snap.forEach(ch=>rows.push({key:ch.key,val:ch.val()||{}}));
+    rows.sort((a,b)=>messageTime(b.val)-messageTime(a.val));
+    const expType=String(expectedType||'').toLowerCase();
+    const hit=rows.find(({val:m})=>{
+      const inbound=String(m.direction||'').toLowerCase()==='inbound';
+      if(inbound || m.sentByName || m.senderName || m.userName || m.agentName) return false;
+      const mt=String(m.type||m.messageType||m.message_type||'').toLowerCase();
+      if(expType && mt && mt!==expType && !(expType==='audio'&&['voice','ptt'].includes(mt))) return false;
+      if(expectedBody && messageBody(m) && messageBody(m)!==expectedBody) return false;
+      return true;
+    });
+    if(hit) await ref.child(hit.key).update({sentBy:currentUser.id,sentByName:currentUser.name||'موظف'});
+  }catch(err){ console.warn('Could not stamp sender snapshot',err); }
+}
+
 async function sendElMujibMessage(){
   if(!elmujibSelectedContact?.phone){showToast('❌ اختر رسالة واردة أولاً',true);return;}
   const input=document.getElementById('elmujibMessageText');
@@ -3892,6 +3941,7 @@ async function sendElMujibMessage(){
     const text=await res.text();
     let data={}; try{data=text?JSON.parse(text):{};}catch(_){ }
     if(!res.ok) throw new Error((data&&(data.error||data.message))||text||('HTTP '+res.status));
+    await stampLatestOutboundSender(elmujibSelectedContact.phone,message,'text');
     if(input) input.value='';
     setElMujibStatus('تم إرسال الرد للعميل '+elmujibSelectedContact.phone+' ✓',true);
     showToast('✅ تم إرسال الرد');
@@ -3975,6 +4025,7 @@ async function sendElMujibVoice(blob){
     const text=await res.text();
     let data={}; try{data=text?JSON.parse(text):{};}catch(_){ }
     if(!res.ok) throw new Error((data&&(data.error||data.message))||text||('HTTP '+res.status));
+    await stampLatestOutboundSender(elmujibSelectedContact.phone,'🎤 رسالة صوتية','audio');
     setElMujibStatus('تم إرسال الرسالة الصوتية للعميل '+elmujibSelectedContact.phone+' ✓',true);
     showToast('✅ تم إرسال الرسالة الصوتية');
   }catch(err){
@@ -3983,6 +4034,40 @@ async function sendElMujibVoice(blob){
     showToast('❌ فشل إرسال الرسالة الصوتية: '+(err.message||err),true);
   }
 }
+
+// ===== إرسال/لصق الصور =====
+function handleElMujibImageFile(file){
+  const input=document.getElementById('elmujibImageInput');
+  if(!file){ if(input)input.value=''; return; }
+  if(!String(file.type||'').startsWith('image/')){ showToast('❌ اختر ملف صورة فقط',true); if(input)input.value=''; return; }
+  if(file.size>8*1024*1024){ showToast('❌ حجم الصورة أكبر من 8 MB',true); if(input)input.value=''; return; }
+  sendElMujibImage(file).finally(()=>{if(input)input.value='';});
+}
+async function sendElMujibImage(blob){
+  if(!elmujibSelectedContact?.phone){showToast('❌ اختر محادثة أولاً',true);return;}
+  try{
+    setElMujibStatus('جاري إرسال الصورة إلى '+elmujibSelectedContact.phone+'…');
+    const base64=await blobToBase64(blob);
+    const caption=(document.getElementById('elmujibMessageText')?.value||'').trim();
+    const res=await fetch(ELMUJIB_SEND_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+      phone:elmujibSelectedContact.phone,type:'image',message:caption||'🖼️ صورة',imageBase64:base64,mimeType:blob.type||'image/png',sentBy:currentUser?.id||'',sentByName:currentUser?.name||''
+    })});
+    const text=await res.text(); let data={}; try{data=text?JSON.parse(text):{};}catch(_){}
+    if(!res.ok) throw new Error((data&&(data.error||data.message))||text||('HTTP '+res.status));
+    await stampLatestOutboundSender(elmujibSelectedContact.phone,caption||'🖼️ صورة','image');
+    const input=document.getElementById('elmujibMessageText'); if(input)input.value='';
+    setElMujibStatus('تم إرسال الصورة للعميل '+elmujibSelectedContact.phone+' ✓',true); showToast('✅ تم إرسال الصورة');
+  }catch(err){console.error('El Mujib image send error:',err);setElMujibStatus('❌ فشل إرسال الصورة: '+(err.message||err));showToast('❌ فشل إرسال الصورة',true);}
+}
+document.addEventListener('paste',e=>{
+  if(currentTab!=='messages' || !elmujibSelectedContact?.phone) return;
+  const items=Array.from(e.clipboardData?.items||[]);
+  const imageItem=items.find(i=>String(i.type||'').startsWith('image/'));
+  if(!imageItem) return;
+  const file=imageItem.getAsFile(); if(!file)return;
+  e.preventDefault(); handleElMujibImageFile(file);
+});
+
 function escapeHtml(v){return String(v??'').replace(/[&<>'"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));}
 function escapeAttr(v){return escapeHtml(v).replace(/`/g,'&#96;');}
 
