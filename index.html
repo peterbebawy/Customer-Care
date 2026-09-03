@@ -3743,7 +3743,6 @@ function initWhatsAppInbox(force=false){
 // بينما تاريخ الرسائل في whatsapp_messages يظل محفوظاً.
 // ============================================================
 const ELMUJIB_DONE_RETENTION_MS = 24 * 60 * 60 * 1000;
-const ELMUJIB_FULL_RETENTION_MS = 7 * 24 * 60 * 60 * 1000;
 let elmujibDoneCleanupRunning = false;
 let elmujibDoneCleanupTimer = null;
 
@@ -3758,42 +3757,31 @@ async function cleanupExpiredElmujibDoneChats(dataOverride=null){
     }
     const now=Date.now();
     const updates={};
-    const hidePhones=[];
-    const purgePhones=[];
-
+    const removedPhones=[];
     Object.entries(data||{}).forEach(([phone,info])=>{
       if(!info || !info.done) return;
       const doneAt=Number(info.doneAt||0);
       if(!doneAt) return;
-      const age=now-doneAt;
-
-      // بعد 24 ساعة: إزالة المحادثة من قائمة "تم".
-      if(age>=ELMUJIB_DONE_RETENTION_MS){
-        updates['whatsapp_inbox_index/'+safeId(phone)]=null;
-        hidePhones.push(normalizePhone(phone));
-      }
-
-      // بعد 7 أيام: حذف سجل الرسائل المحلي بالكامل من Firebase.
-      if(age>=ELMUJIB_FULL_RETENTION_MS){
-        updates['whatsapp_messages/'+safeId(phone)]=null;
-        purgePhones.push(normalizePhone(phone));
+      const safePhone=safeId(phone);
+      // Migration/queue: يضمن إن المحادثات القديمة الموجودة في "تم" تدخل تنظيف الـWorker.
+      updates['whatsapp_cleanup_queue/'+safePhone]={phone:normalizePhone(phone),doneAt};
+      if((now-doneAt)>=ELMUJIB_DONE_RETENTION_MS){
+        updates['whatsapp_inbox_index/'+safePhone]=null;
+        removedPhones.push(normalizePhone(phone));
       }
     });
-
     if(Object.keys(updates).length){
       await rtdb.ref().update(updates);
-      if(elmujibSelectedContact?.phone && hidePhones.includes(normalizePhone(elmujibSelectedContact.phone))){
+      if(elmujibSelectedContact?.phone && removedPhones.includes(normalizePhone(elmujibSelectedContact.phone))){
         elmujibSelectedContact=null;
         const thread=document.getElementById('elmujibChatThread');
-        if(thread) thread.innerHTML='<div class="elmujib-empty">تم تنظيف المحادثة من القائمة.</div>';
+        if(thread) thread.innerHTML='<div class="elmujib-empty">تم حذف المحادثة من قائمة «تم» بعد مرور 24 ساعة.</div>';
         const wrap=document.getElementById('elmujibChatHeadActions');
         if(wrap) wrap.style.display='none';
       }
-      if(hidePhones.length) console.log(`Done cleanup: removed ${hidePhones.length} chat(s) from inbox index.`);
-      if(purgePhones.length) console.log(`7-day cleanup: purged ${purgePhones.length} Firebase message history item(s).`);
     }
   }catch(err){
-    console.error('Done/data cleanup error:',err);
+    console.error('Done cleanup error:',err);
   }finally{
     elmujibDoneCleanupRunning=false;
   }
@@ -3816,6 +3804,9 @@ function autoReviveDoneOnNewMessage(data){
     const lastAt=Number(info.lastMessageAt||0);
     if(info.done && doneAt && lastAt>doneAt){
       updates['whatsapp_inbox_index/'+safeId(phone)+'/done']=false;
+      updates['whatsapp_inbox_index/'+safeId(phone)+'/doneAt']=null;
+      updates['whatsapp_inbox_index/'+safeId(phone)+'/doneBy']=null;
+      updates['whatsapp_cleanup_queue/'+safeId(phone)]=null;
     }
   });
   if(Object.keys(updates).length) rtdb.ref().update(updates).catch(err=>console.error('Auto-revive error:',err));
@@ -3977,22 +3968,31 @@ function updateElmujibDoneActionsUI(isDone){
 function markElmujibDone(){
   if(!elmujibSelectedContact?.phone) return;
   const phone=elmujibSelectedContact.phone;
-  rtdb.ref('whatsapp_inbox_index/'+safeId(phone)).update({
-    done:true,
-    doneAt: firebase.database.ServerValue.TIMESTAMP,
-    doneBy: currentUser?.name || ''
-  }).then(()=>{
+  const safePhone=safeId(phone);
+  const doneAt=Date.now();
+  const updates={};
+  updates['whatsapp_inbox_index/'+safePhone+'/done']=true;
+  updates['whatsapp_inbox_index/'+safePhone+'/doneAt']=doneAt;
+  updates['whatsapp_inbox_index/'+safePhone+'/doneBy']=currentUser?.name || '';
+  updates['whatsapp_cleanup_queue/'+safePhone]={phone:normalizePhone(phone),doneAt};
+  rtdb.ref().update(updates).then(()=>{
     updateElmujibDoneActionsUI(true);
-    showToast('✅ تم إغلاق المحادثة، وهترجع تلقائي لو العميل بعت رسالة جديدة');
+    showToast('✅ تم إغلاق المحادثة: تختفي بعد 24 ساعة وتتحذف بياناتها بعد 7 أيام');
   }).catch(err=>{ console.error('Mark done error:',err); showToast('❌ حصل خطأ أثناء تحديد المحادثة كـ "تم"',true); });
 }
 
 function markElmujibUndone(){
   if(!elmujibSelectedContact?.phone) return;
   const phone=elmujibSelectedContact.phone;
-  rtdb.ref('whatsapp_inbox_index/'+safeId(phone)).update({done:false}).then(()=>{
+  const safePhone=safeId(phone);
+  const updates={};
+  updates['whatsapp_inbox_index/'+safePhone+'/done']=false;
+  updates['whatsapp_inbox_index/'+safePhone+'/doneAt']=null;
+  updates['whatsapp_inbox_index/'+safePhone+'/doneBy']=null;
+  updates['whatsapp_cleanup_queue/'+safePhone]=null;
+  rtdb.ref().update(updates).then(()=>{
     updateElmujibDoneActionsUI(false);
-    showToast('↩️ تم إرجاع المحادثة للرسائل الحديثة');
+    showToast('↩️ تم إرجاع المحادثة للرسائل الحديثة وإلغاء الحذف التلقائي');
   }).catch(err=>{ console.error('Mark undone error:',err); showToast('❌ حصل خطأ أثناء إرجاع المحادثة',true); });
 }
 
