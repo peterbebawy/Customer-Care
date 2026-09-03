@@ -424,6 +424,34 @@ table th{background:#f8fafc!important;color:#475467!important;font-weight:700!im
 .elmujib-transfer-wrap select{min-width:150px;padding:7px 9px;margin:0;font-size:12px}
 @media(max-width:800px){.elmujib-messages-grid{grid-template-columns:1fr}.elmujib-contacts-panel{border-left:0;border-bottom:1px solid #e2e8f0;max-height:38vh}}
 
+
+/* ===== Messages workspace v3: compact profile + wide professional layout ===== */
+body.messages-mode{padding:10px 12px;overflow:hidden}
+body.messages-mode .prof-user-bar{display:none!important}
+body.messages-mode .brand-bar{max-width:none!important;margin:0 0 8px!important;padding:10px 18px!important;border-radius:16px!important}
+body.messages-mode .brand-logo-img{height:34px!important}
+body.messages-mode .topbar{max-width:none!important;margin:0 0 8px!important;min-height:48px;padding:7px 10px!important;border-radius:14px!important}
+body.messages-mode #messages{width:100%;max-width:none;margin:0!important}
+body.messages-mode .messages-wrap{height:calc(100vh - 130px);min-height:540px}
+body.messages-mode .messages-panel{border-radius:16px!important;box-shadow:0 12px 34px rgba(15,23,42,.08)!important}
+.messages-toolbar{padding:10px 14px!important;min-height:58px!important;background:linear-gradient(180deg,#fff,#fbfcfe)!important}
+.messages-toolbar-title{gap:9px!important}
+.messages-toolbar-title .messages-icon{width:36px!important;height:36px!important;border:1px solid #e8edf3;background:#f7f9fc!important}
+.messages-toolbar-actions{gap:7px!important;flex-wrap:wrap;justify-content:flex-end}
+.elmujib-messages-user{display:flex;align-items:center;gap:9px;padding:5px 9px 5px 7px;border:1px solid #e2e8f0;border-radius:12px;background:#fff;box-shadow:0 3px 10px rgba(15,23,42,.035);min-width:150px}
+.elmujib-messages-user-avatar{width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,#2563eb,#1d4ed8);color:#fff;display:grid;place-items:center;font-size:13px;font-weight:900;overflow:hidden;flex:none}
+.elmujib-messages-user-avatar img{width:100%;height:100%;object-fit:cover;display:block}
+.elmujib-messages-user-meta{min-width:0;line-height:1.2;text-align:right}
+.elmujib-messages-user-name{font-size:12.5px;font-weight:850;color:#172033;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:130px}
+.elmujib-messages-user-role{font-size:10.5px;color:#7b8798;margin-top:3px;white-space:nowrap}
+body.messages-mode #elmujibApiStatus{margin:8px 14px 0!important;padding:8px 11px!important}
+body.messages-mode .elmujib-admin-agents{margin-top:6px!important;padding:7px 14px!important}
+body.messages-mode .elmujib-messages-grid{margin-top:8px!important;grid-template-columns:360px minmax(0,1fr)}
+body.messages-mode .elmujib-contacts-panel{padding:12px!important}
+body.messages-mode .elmujib-chat-head{padding:10px 16px!important;min-height:58px!important}
+body.messages-mode .elmujib-chat-body{padding:12px 16px!important}
+@media(max-width:1000px){body.messages-mode .elmujib-messages-grid{grid-template-columns:320px minmax(0,1fr)}.elmujib-messages-user{min-width:auto}.elmujib-messages-user-role{display:none}}
+@media(max-width:800px){body.messages-mode{overflow:auto}.elmujib-messages-user{display:none}body.messages-mode .messages-wrap{height:auto;min-height:calc(100vh - 130px)}}
 </style>
 <base target="_blank">
 <style>
@@ -804,6 +832,13 @@ table tbody tr:hover{
           </div>
         </div>
         <div class="messages-toolbar-actions">
+          <div class="elmujib-messages-user" title="المستخدم الحالي">
+            <div class="elmujib-messages-user-avatar" id="elmujibMessagesUserAvatar">U</div>
+            <div class="elmujib-messages-user-meta">
+              <div class="elmujib-messages-user-name" id="elmujibMessagesUserName">User</div>
+              <div class="elmujib-messages-user-role" id="elmujibMessagesUserRole">Call Center</div>
+            </div>
+          </div>
           <button type="button" id="elmujibMyOnlineBtn" class="elmujib-availability-switch" onclick="toggleElmujibMyOnline()" aria-pressed="false"><span id="elmujibMyOnlineText">أوفلاين</span><span class="track"><span class="thumb"></span></span></button>
           <button type="button" class="btn btn-secondary" onclick="initWhatsAppInbox(true)">🔄 تحديث</button>
           <button type="button" class="btn btn-secondary" onclick="openElMujibConsole()">↗ فتح المجيب</button>
@@ -3380,10 +3415,18 @@ function elmujibUserCanReceiveChats(u){
   return sections.messages===true;
 }
 
+function getElmujibOnlineAgentsOrdered(){
+  return (usersData||[])
+    .filter(u => u.isOnline && elmujibUserCanReceiveChats(u))
+    .slice()
+    .sort((a,b)=>{
+      const ta=Number(a.onlineChangedAt||0), tb=Number(b.onlineChangedAt||0);
+      if(ta!==tb) return ta-tb; // الأقدم في فتح Online أولاً
+      return String(a.id||'').localeCompare(String(b.id||''));
+    });
+}
 function computeElmujibOnlineIds(){
-  elmujibOnlineUserIds = new Set(
-    (usersData||[]).filter(u => u.isOnline && elmujibUserCanReceiveChats(u)).map(u => u.id)
-  );
+  elmujibOnlineUserIds = new Set(getElmujibOnlineAgentsOrdered().map(u => u.id));
 }
 
 function toggleElmujibMyOnline(){
@@ -3397,7 +3440,25 @@ function toggleElmujibMyOnline(){
     .catch(err=>{ console.error('Toggle online error:',err); showToast('❌ حصل خطأ في تحديث الحالة',true); });
 }
 
+function updateElmujibMessagesUserProfile(){
+  if(!currentUser) return;
+  const nameEl=document.getElementById('elmujibMessagesUserName');
+  const roleEl=document.getElementById('elmujibMessagesUserRole');
+  const avatarEl=document.getElementById('elmujibMessagesUserAvatar');
+  if(nameEl) nameEl.textContent=currentUser.name||'مستخدم';
+  if(roleEl){
+    const roleLabel=currentUser.role==='admin'?'Call Center (Admin)':(currentUser.role==='manager'?'Manager':'Call Center');
+    roleEl.textContent=roleLabel;
+  }
+  if(avatarEl){
+    const source=document.getElementById('userAvatar');
+    if(source && source.querySelector('img')) avatarEl.innerHTML=source.innerHTML;
+    else avatarEl.textContent=(currentUser.name||'?').charAt(0).toUpperCase();
+  }
+}
+
 function updateElmujibMyOnlineToggleUI(){
+  updateElmujibMessagesUserProfile();
   const btn=document.getElementById('elmujibMyOnlineBtn');
   if(!currentUser) return;
   // الأدمن لا يحتاج حالة أونلاين/أوفلاين لأنه يرى كل المحادثات ولا يستقبل توزيعاً تلقائياً.
@@ -3442,30 +3503,72 @@ function transferElmujibChat(){
     .catch(err=>{ console.error('Transfer chat error:',err); showToast('❌ تعذر تحويل المحادثة',true); });
 }
 
-// بيدور على أي محادثة نشطة (مش تم) مش متعينة لحد أونلاين، وبيوزعها راندم على واحد من الأونلاين حالياً.
-// بيشتغل بـ transaction عشان لو أكتر من متصفح مفتوح في نفس اللحظة ما يحصلش تعيين مزدوج لنفس الشات.
-function runElmujibAssignmentEngine(){
-  if(typeof rtdb==='undefined' || !rtdb) return;
-  if(!elmujibOnlineUserIds.size) return; // محدش أونلاين دلوقتي، منقدرش نوزع
-  Object.entries(elmujibInboxDataCache||{}).forEach(([phone, info])=>{
-    if(!info || info.done) return;
-    const assignedTo = info.assignedTo;
-    if(assignedTo && elmujibOnlineUserIds.has(assignedTo)) return; // متعينة لحد أونلاين، مفيش داعي نغير
-    const ref = rtdb.ref('whatsapp_inbox_index/'+safeId(phone)+'/assignedTo');
-    ref.transaction(current=>{
-      if(current && elmujibOnlineUserIds.has(current)) return current; // حصل تعيين قبلنا في نفس اللحظة
-      const pool = Array.from(elmujibOnlineUserIds);
-      if(!pool.length) return current;
-      return pool[Math.floor(Math.random()*pool.length)];
-    }, (error, committed, snap)=>{
-      if(error){ console.error('Assignment transaction error:',error); return; }
-      if(committed && snap){
-        const newId = snap.val();
-        const u = (usersData||[]).find(x=>x.id===newId);
-        rtdb.ref('whatsapp_inbox_index/'+safeId(phone)+'/assignedToName').set(u?.name||'').catch(()=>{});
-      }
+// توزيع Round-Robin عادل: الأونلاين يترتبوا حسب وقت فتح Online، وكل شات جديد يروح للي بعده في الدور.
+// المؤشر محفوظ في Firebase حتى يفضل الدور مستمر بين الأجهزة والـ Refresh.
+let elmujibAssignmentRunning = false;
+async function claimNextElmujibRoundRobinAgent(){
+  const pool=getElmujibOnlineAgentsOrdered();
+  if(!pool.length) return null;
+  const stateRef=rtdb.ref('whatsapp_assignment_state/round_robin');
+  let chosen=null;
+  try{
+    const result=await stateRef.transaction(state=>{
+      state=state||{};
+      const currentIds=pool.map(u=>u.id);
+      const lastId=String(state.lastAssignedUserId||'');
+      let idx=currentIds.indexOf(lastId);
+      idx=(idx<0)?0:((idx+1)%currentIds.length);
+      chosen=pool[idx];
+      return {
+        lastAssignedUserId:chosen.id,
+        lastAssignedUserName:chosen.name||'',
+        updatedAt:Date.now(),
+        onlineOrder:currentIds
+      };
     });
-  });
+    if(!result.committed) return null;
+    const lastId=result.snapshot.val()?.lastAssignedUserId;
+    return pool.find(u=>u.id===lastId)||chosen;
+  }catch(err){
+    console.error('Round-robin cursor error:',err);
+    return null;
+  }
+}
+
+async function runElmujibAssignmentEngine(){
+  if(typeof rtdb==='undefined' || !rtdb || elmujibAssignmentRunning) return;
+  computeElmujibOnlineIds();
+  if(!elmujibOnlineUserIds.size) return;
+  elmujibAssignmentRunning=true;
+  try{
+    // الأقدم وصولاً يتوزع أولاً، لضمان ترتيب منطقي لو دخل أكثر من شات معاً.
+    const pending=Object.entries(elmujibInboxDataCache||{})
+      .filter(([phone,info])=>info && !info.done && !(info.assignedTo && elmujibOnlineUserIds.has(info.assignedTo)))
+      .sort((a,b)=>Number(a[1]?.lastAt||a[1]?.timestamp||a[1]?.createdAt||0)-Number(b[1]?.lastAt||b[1]?.timestamp||b[1]?.createdAt||0));
+
+    for(const [phone,info] of pending){
+      const ref=rtdb.ref('whatsapp_inbox_index/'+safeId(phone));
+      const latestSnap=await ref.once('value');
+      const latest=latestSnap.val()||{};
+      if(latest.done) continue;
+      if(latest.assignedTo && elmujibOnlineUserIds.has(latest.assignedTo)) continue;
+
+      const agent=await claimNextElmujibRoundRobinAgent();
+      if(!agent) break;
+
+      // نكتب التعيين مرة واحدة بعد التأكد أن الشات ما زال محتاج توزيع.
+      await ref.update({
+        assignedTo:agent.id,
+        assignedToName:agent.name||'',
+        assignedAt:firebase.database.ServerValue.TIMESTAMP,
+        assignedBy:'Round Robin'
+      });
+    }
+  }catch(err){
+    console.error('Assignment engine error:',err);
+  }finally{
+    elmujibAssignmentRunning=false;
+  }
 }
 
 function initWhatsAppInbox(force=false){
@@ -3824,6 +3927,7 @@ function showTab(tab) {
       // نحتفظ بالصفحة المطلوبة ونكمل فتحها فور وصول بيانات الفروع.
       pendingRestoreTab = tab;
       currentTab = tab;
+      document.body.classList.toggle('messages-mode', currentTab==='messages');
       try {
         localStorage.setItem('cc_current_tab', tab);
         history.replaceState(null, '', '#' + encodeURIComponent(tab));
@@ -3850,6 +3954,7 @@ function showTab(tab) {
     tab = 'dashboardHome';
   }
   currentTab = tab;
+  document.body.classList.toggle('messages-mode', currentTab==='messages');
   localStorage.setItem('cc_current_tab', currentTab);
   // حفظ الصفحة الحالية أيضاً في الرابط لضمان الرجوع لنفس القسم بعد الـ Refresh.
   if (window.location.hash !== '#' + encodeURIComponent(currentTab)) {
