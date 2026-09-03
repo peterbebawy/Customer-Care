@@ -3435,13 +3435,23 @@ function safeId(v){ return encodeURIComponent(String(v||'').replace(/[.#$\[\]/]/
 function messageTime(m){ return Number(m?.receivedAt || m?.sentAt || m?.createdAt || m?.timestamp || 0); }
 function messageBody(m){ return String(m?.body ?? m?.message ?? m?.text ?? m?.message_body ?? ''); }
 // بيرجع رابط/سورس الصوت لو الرسالة صوتية (بيقبل أكتر من شكل ممكن يوصل بيه من المجيب)
+function elmujibMediaProxyUrl(src){
+  const raw=String(src||'').trim();
+  if(!raw || !/^https?:\/\//i.test(raw)) return raw;
+  const workerBase=String(ELMUJIB_SEND_URL||'').replace(/\/send\/?(?:\?.*)?$/i,'');
+  return `${workerBase}/media-proxy?url=${encodeURIComponent(raw)}`;
+}
 function messageAudioSrc(m){
   if(!m) return '';
   const nested=m.media||m.audio||m.voice||{};
-  const direct = m.audioUrl || m.voiceUrl || m.mediaUrl || m.audio_url || m.url || nested.url || nested.link || nested.downloadUrl;
-  if(direct && (/^https?:\/\//i.test(String(direct)) || /^data:audio\//i.test(String(direct)))) return String(direct);
-  const b64 = m.audioBase64 || m.audio_base64 || m.media_base64 || m.voiceBase64 || nested.base64;
-  if(b64) return `data:${m.mimeType||m.mime_type||nested.mimeType||'audio/webm'};base64,${b64}`;
+  const direct = m.audioUrl || m.voiceUrl || m.mediaUrl || m.media_url || m.audio_url || m.url || m.link || nested.url || nested.link || nested.downloadUrl || nested.download_url;
+  if(direct){
+    const src=String(direct);
+    if(/^data:audio\//i.test(src)) return src;
+    if(/^https?:\/\//i.test(src)) return elmujibMediaProxyUrl(src);
+  }
+  const b64 = m.audioBase64 || m.audio_base64 || m.mediaBase64 || m.media_base64 || m.voiceBase64 || nested.base64;
+  if(b64) return `data:${m.mimeType||m.mime_type||m.mediaMimeType||nested.mimeType||nested.mime_type||'audio/webm'};base64,${String(b64).replace(/^data:audio\/[^;]+;base64,/i,'')}`;
   return '';
 }
 function isVoiceMessage(m){
@@ -3460,7 +3470,7 @@ function messageImageSrc(m){
   const type=String(m.type||m.messageType||m.message_type||m.mediaType||m.media_type||nested.type||'').toLowerCase();
   for(const direct of candidates){
     if(/^data:image\//i.test(direct)) return direct;
-    if(/^https?:\/\//i.test(direct) && (type.includes('image')||type==='photo'||mime.includes('image')||/\.(png|jpe?g|gif|webp|bmp|heic)(\?|#|$)/i.test(direct))) return direct;
+    if(/^https?:\/\//i.test(direct) && (type.includes('image')||type==='photo'||mime.includes('image')||/\.(png|jpe?g|gif|webp|bmp|heic)(\?|#|$)/i.test(direct))) return elmujibMediaProxyUrl(direct);
   }
   const b64=m.imageBase64||m.image_base64||m.mediaBase64||m.media_base64||m.fileBase64||m.file_base64||nested.base64||nested.data;
   if(b64 && (type.includes('image')||type==='photo'||mime.includes('image'))) return `data:${mime||'image/jpeg'};base64,${String(b64).replace(/^data:image\/[^;]+;base64,/i,'')}`;
@@ -3858,7 +3868,10 @@ function loadElMujibThread(phone){
       // اسم المرسل لازم يفضل Snapshot محفوظ على الرسالة نفسها، وممنوع نستنتجه من المسؤول الحالي عن الشات.
       const employeeName = resolveElMujibSenderName(m);
       const senderLabel = inbound ? '👤 العميل' : (isBot ? '🤖 رد آلي (المجيب)' : ('👨‍💼 '+(employeeName || 'موظف')));
-      const senderTag=`<div class="elmujib-sender-tag">${escapeHtml(senderLabel)}</div>`;
+      // أسماء مرسلي الرسائل تظهر للأدمن فقط. المستخدم العادي لا يرى اسم أي موظف آخر داخل الشات.
+      const senderTag = currentUser?.role === 'admin'
+        ? `<div class="elmujib-sender-tag">${escapeHtml(senderLabel)}</div>`
+        : '';
       let bodyHtml;
       if(isVoiceMessage(m)){
         const src=messageAudioSrc(m);
