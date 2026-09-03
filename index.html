@@ -415,6 +415,13 @@ table th{background:#f8fafc!important;color:#475467!important;font-weight:700!im
 .elmujib-image-bubble img{display:block;max-width:min(360px,68vw);max-height:360px;border-radius:12px;object-fit:contain;background:#fff;cursor:zoom-in}
 .elmujib-image-caption{margin-top:7px;white-space:pre-wrap;word-break:break-word}
 .elmujib-image-input{display:none}
+.elmujib-image-preview{display:none;align-items:center;gap:10px;margin-bottom:9px;padding:9px 10px;border:1px solid #dbe3ef;border-radius:14px;background:#fff}
+.elmujib-image-preview.show{display:flex}
+.elmujib-image-preview img{width:76px;height:76px;object-fit:cover;border-radius:10px;border:1px solid #e2e8f0;background:#f8fafc}
+.elmujib-image-preview-meta{flex:1;min-width:0}
+.elmujib-image-preview-meta strong{display:block;color:#0f172a;font-size:13px;margin-bottom:3px}
+.elmujib-image-preview-meta span{display:block;color:#64748b;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.elmujib-image-preview-actions{display:flex;gap:7px;align-items:center;flex-wrap:wrap}
 .elmujib-composer-tools{display:flex;align-items:center;gap:6px;position:relative}
 .elmujib-tool-btn{width:40px;height:40px;border:1px solid #e2e8f0;border-radius:11px;background:#fff;display:inline-grid;place-items:center;cursor:pointer;font-size:18px;color:#334155}
 .elmujib-tool-btn:hover{background:#f8fafc}
@@ -910,6 +917,17 @@ table tbody tr:hover{
             </div>
           </div>
           <div id="elmujibComposer" class="elmujib-composer hidden">
+            <div id="elmujibImagePreview" class="elmujib-image-preview">
+              <img id="elmujibImagePreviewImg" alt="معاينة الصورة قبل الإرسال">
+              <div class="elmujib-image-preview-meta">
+                <strong>معاينة الصورة قبل الإرسال</strong>
+                <span id="elmujibImagePreviewName">صورة من الحافظة</span>
+              </div>
+              <div class="elmujib-image-preview-actions">
+                <button type="button" class="btn btn-primary btn-sm" onclick="sendPendingElMujibImage()">📤 إرسال الصورة</button>
+                <button type="button" class="btn btn-secondary btn-sm" onclick="clearPendingElMujibImage()">✕ إلغاء</button>
+              </div>
+            </div>
             <div class="elmujib-composer-row">
               <textarea id="elmujibMessageText" class="input" rows="1" placeholder="اكتب رسالة… أو / للردود السريعة" oninput="handleElMujibComposerInput()" onkeydown="handleElMujibMessageKey(event)"></textarea>
               <div class="elmujib-composer-tools">
@@ -3432,12 +3450,20 @@ function isVoiceMessage(m){
 }
 function messageImageSrc(m){
   if(!m) return '';
-  const nested=m.media||m.image||{};
-  const direct=m.imageUrl||m.image_url||m.mediaUrl||m.media_url||nested.url||nested.link||nested.downloadUrl;
-  const type=String(m?.type||m?.messageType||m?.message_type||m?.mediaType||nested.type||'').toLowerCase();
-  if(direct && (/^https?:\/\//i.test(String(direct)) || /^data:image\//i.test(String(direct))) && (type.includes('image') || /image/i.test(String(m?.mimeType||m?.mime_type||nested.mimeType||'')))) return String(direct);
-  const b64=m.imageBase64||m.image_base64||((type.includes('image'))?m.media_base64:'')||nested.base64;
-  if(b64) return `data:${m.mimeType||m.mime_type||nested.mimeType||'image/jpeg'};base64,${b64}`;
+  const nested=m.media||m.image||m.photo||m.attachment||m.file||{};
+  const candidates=[
+    m.imageUrl,m.image_url,m.mediaUrl,m.media_url,m.fileUrl,m.file_url,m.attachmentUrl,m.attachment_url,
+    m.downloadUrl,m.download_url,m.url,m.link,m.src,
+    nested.url,nested.link,nested.src,nested.downloadUrl,nested.download_url,nested.fileUrl,nested.file_url
+  ].filter(Boolean).map(String);
+  const mime=String(m.mimeType||m.mime_type||m.contentType||m.content_type||nested.mimeType||nested.mime_type||nested.contentType||'').toLowerCase();
+  const type=String(m.type||m.messageType||m.message_type||m.mediaType||m.media_type||nested.type||'').toLowerCase();
+  for(const direct of candidates){
+    if(/^data:image\//i.test(direct)) return direct;
+    if(/^https?:\/\//i.test(direct) && (type.includes('image')||type==='photo'||mime.includes('image')||/\.(png|jpe?g|gif|webp|bmp|heic)(\?|#|$)/i.test(direct))) return direct;
+  }
+  const b64=m.imageBase64||m.image_base64||m.mediaBase64||m.media_base64||m.fileBase64||m.file_base64||nested.base64||nested.data;
+  if(b64 && (type.includes('image')||type==='photo'||mime.includes('image'))) return `data:${mime||'image/jpeg'};base64,${String(b64).replace(/^data:image\/[^;]+;base64,/i,'')}`;
   return '';
 }
 function isImageMessage(m){
@@ -3799,6 +3825,18 @@ function markElmujibUndone(){
   }).catch(err=>{ console.error('Mark undone error:',err); showToast('❌ حصل خطأ أثناء إرجاع المحادثة',true); });
 }
 
+function resolveElMujibSenderName(m){
+  const stored=String(m?.sentByName||m?.senderName||m?.userName||m?.agentName||'').trim();
+  const generic=/^(موظف|employee|agent)$/i.test(stored);
+  const senderId=String(m?.sentBy||m?.senderId||m?.userId||m?.agentId||'').trim();
+  if(senderId){
+    const u=(usersData||[]).find(x=>String(x?.id||'')===senderId);
+    if(u?.name) return String(u.name).trim();
+  }
+  if(stored && !generic) return stored;
+  return stored || 'موظف';
+}
+
 function loadElMujibThread(phone){
   if(elmujibThreadRef) elmujibThreadRef.off();
   elmujibThreadRef=rtdb.ref('whatsapp_messages/'+safeId(phone));
@@ -3818,7 +3856,7 @@ function loadElMujibThread(phone){
       const t=messageTime(m);
       const bubbleColor=inbound?'background:#f1f5f9;color:#1e293b;':(isBot?'background:#dbeafe;color:#1e3a8a;':'background:#dcfce7;color:#14532d;');
       // اسم المرسل لازم يفضل Snapshot محفوظ على الرسالة نفسها، وممنوع نستنتجه من المسؤول الحالي عن الشات.
-      const employeeName = String(m.sentByName||m.senderName||m.userName||m.agentName||'').trim();
+      const employeeName = resolveElMujibSenderName(m);
       const senderLabel = inbound ? '👤 العميل' : (isBot ? '🤖 رد آلي (المجيب)' : ('👨‍💼 '+(employeeName || 'موظف')));
       const senderTag=`<div class="elmujib-sender-tag">${escapeHtml(senderLabel)}</div>`;
       let bodyHtml;
@@ -3926,6 +3964,7 @@ async function sendElMujibMessage(){
   if(!elmujibSelectedContact?.phone){showToast('❌ اختر رسالة واردة أولاً',true);return;}
   const input=document.getElementById('elmujibMessageText');
   const message=(input?.value||'').trim();
+  if(elmujibPendingImageBlob){ await sendPendingElMujibImage(); return; }
   if(!message){showToast('❌ اكتب الرد أولاً',true);return;}
   const btn=document.querySelector('#elmujibComposer button');
   if(btn) btn.disabled=true;
@@ -4035,13 +4074,43 @@ async function sendElMujibVoice(blob){
   }
 }
 
-// ===== إرسال/لصق الصور =====
+// ===== إرسال/لصق الصور مع Preview قبل الإرسال =====
+let elmujibPendingImageBlob=null;
+let elmujibPendingImageUrl='';
+let elmujibPendingImageName='';
+
+function clearPendingElMujibImage(){
+  elmujibPendingImageBlob=null;
+  elmujibPendingImageName='';
+  if(elmujibPendingImageUrl && elmujibPendingImageUrl.startsWith('blob:')){ try{URL.revokeObjectURL(elmujibPendingImageUrl);}catch(_){} }
+  elmujibPendingImageUrl='';
+  document.getElementById('elmujibImagePreview')?.classList.remove('show');
+  const img=document.getElementById('elmujibImagePreviewImg'); if(img) img.removeAttribute('src');
+  const input=document.getElementById('elmujibImageInput'); if(input) input.value='';
+}
+function previewElMujibImage(file,sourceLabel=''){
+  if(!file) return;
+  if(!String(file.type||'').startsWith('image/')){ showToast('❌ اختر ملف صورة فقط',true); return; }
+  if(file.size>8*1024*1024){ showToast('❌ حجم الصورة أكبر من 8 MB',true); return; }
+  clearPendingElMujibImage();
+  elmujibPendingImageBlob=file;
+  elmujibPendingImageName=file.name||sourceLabel||'صورة من الحافظة';
+  elmujibPendingImageUrl=URL.createObjectURL(file);
+  const box=document.getElementById('elmujibImagePreview');
+  const img=document.getElementById('elmujibImagePreviewImg');
+  const name=document.getElementById('elmujibImagePreviewName');
+  if(img) img.src=elmujibPendingImageUrl;
+  if(name) name.textContent=elmujibPendingImageName;
+  box?.classList.add('show');
+  document.getElementById('elmujibMessageText')?.focus();
+}
 function handleElMujibImageFile(file){
-  const input=document.getElementById('elmujibImageInput');
-  if(!file){ if(input)input.value=''; return; }
-  if(!String(file.type||'').startsWith('image/')){ showToast('❌ اختر ملف صورة فقط',true); if(input)input.value=''; return; }
-  if(file.size>8*1024*1024){ showToast('❌ حجم الصورة أكبر من 8 MB',true); if(input)input.value=''; return; }
-  sendElMujibImage(file).finally(()=>{if(input)input.value='';});
+  previewElMujibImage(file,file?.name||'صورة مختارة');
+}
+async function sendPendingElMujibImage(){
+  if(!elmujibPendingImageBlob){showToast('❌ لا توجد صورة جاهزة للإرسال',true);return;}
+  const blob=elmujibPendingImageBlob;
+  await sendElMujibImage(blob);
 }
 async function sendElMujibImage(blob){
   if(!elmujibSelectedContact?.phone){showToast('❌ اختر محادثة أولاً',true);return;}
@@ -4056,6 +4125,7 @@ async function sendElMujibImage(blob){
     if(!res.ok) throw new Error((data&&(data.error||data.message))||text||('HTTP '+res.status));
     await stampLatestOutboundSender(elmujibSelectedContact.phone,caption||'🖼️ صورة','image');
     const input=document.getElementById('elmujibMessageText'); if(input)input.value='';
+    clearPendingElMujibImage();
     setElMujibStatus('تم إرسال الصورة للعميل '+elmujibSelectedContact.phone+' ✓',true); showToast('✅ تم إرسال الصورة');
   }catch(err){console.error('El Mujib image send error:',err);setElMujibStatus('❌ فشل إرسال الصورة: '+(err.message||err));showToast('❌ فشل إرسال الصورة',true);}
 }
@@ -4065,7 +4135,7 @@ document.addEventListener('paste',e=>{
   const imageItem=items.find(i=>String(i.type||'').startsWith('image/'));
   if(!imageItem) return;
   const file=imageItem.getAsFile(); if(!file)return;
-  e.preventDefault(); handleElMujibImageFile(file);
+  e.preventDefault(); previewElMujibImage(file,'صورة من الحافظة');
 });
 
 function escapeHtml(v){return String(v??'').replace(/[&<>'"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));}
