@@ -882,6 +882,14 @@ tr.ac-nosheet td{background-color:#f5f8ff!important}
 .xl-issue-tiles{grid-template-columns:repeat(auto-fit,minmax(110px,1fr))!important}
 @media(max-width:900px){.ac-apps{grid-template-columns:repeat(3,1fr)}.ac-grid{grid-template-columns:repeat(2,1fr)}.ac-miss-grid{grid-template-columns:1fr}}
 @media(max-width:520px){.ac-grid{grid-template-columns:1fr}}
+.xl-kpi-total{display:block;font-size:13px;color:var(--st-ink);margin-bottom:3px}
+.xl-kpi-pay{display:block;font-size:12px;color:#475467;padding:2px 4px;border-radius:5px;margin:0 -4px}
+.xl-kpi-pay:hover{background:var(--st-primary-l);color:var(--st-primary-d)}
+.xl-kpi-pay b{color:var(--st-ink)}
+.xl-btn.xl-danger{color:#b91c1c;border-color:#f3c1c1}
+.xl-btn.xl-danger:hover{background:#fef2f2;border-color:#dc2626}
+.xl-sync-pill{display:inline-block;border-radius:999px;padding:3px 10px;font-size:12px;font-weight:700;white-space:nowrap}
+.xl-sync-pill.on{background:#dcfce7;color:#166534}.xl-sync-pill.off{background:#fee2e2;color:#991b1b}.xl-sync-pill.warn{background:#ffedd5;color:#9a3412}
 </style>
 </head>
 <body>
@@ -2379,12 +2387,31 @@ function xlMonthKeyOfData(data){
 function xlMonthLabel(k){ const m=/^(\d{4})-(\d{2})/.exec(k||''); return m?`${XL_MONTHS_AR[Number(m[2])-1]} ${m[1]}`:String(k||''); }
 
 // ---------- تصنيف الصفوف ----------
+// الأعمدة بتتحدد من أسماء صف العناوين في كل شيت — لأن بعض الأيام فيها عمود "الصيدلى" وبعضها لأ فالأعمدة بتزحف
+const xlColsCache=new WeakMap();
 function xlFindCols(header){
+  if(Array.isArray(header) && xlColsCache.has(header)) return xlColsCache.get(header);
   const h=(header||[]).map(x=>normalizeExcelText(x));
-  let value=h.findIndex(x=>x.includes('صافي')&&x.includes('فاتور'));
-  if(value<0) value=3; // D
-  return {type:1,value,status:5}; // B نوع الأوردر — F الحالة/المشكلة
+  const hasHeader=h.some(Boolean);
+  const find=(...preds)=>h.findIndex(x=>!!x && preds.some(p=>p(x)));
+  let type=find(x=>x.includes('اسم العميل'),x=>x==='العميل',x=>x.includes('نوع الاوردر'));
+  let value=find(x=>x.includes('اجمال'),x=>x.includes('صافي')&&x.includes('فاتور'),x=>x.includes('قيمه'),x=>x==='total'||x.includes('net'));
+  let status=find(x=>(x.includes('حال')||x.includes('حاه'))&&(x.includes('اوردر')||x.includes('طلب')),x=>x==='الحاله'||x==='حاله'||x.includes('status'));
+  if(type<0) type=1;                         // B
+  if(value<0) value=hasHeader?-1:3;          // D
+  if(status<0) status=hasHeader?-1:5;        // F (لو الشيت ملوش عمود حالة → مفيش حالة)
+  const cols={type,value,status,order:acOrderColOf(header)};
+  if(Array.isArray(header)) xlColsCache.set(header,cols);
+  return cols;
 }
+// صف العناوين: أول صف (في أول 6 صفوف) فيه اسم العميل / الإجمالي / حالة الأوردر
+function xlHeaderIndex(rows){
+  for(let i=0;i<Math.min(6,rows.length);i++){ const t=normalizeExcelText((rows[i]||[]).join(' ')); if(t.includes('اسم العميل')||t.includes('اجمال')||(t.includes('حال')&&t.includes('اوردر'))) return i; }
+  return 0;
+}
+// قيمة الأوردر: أي رقم فوق 100 ألف أكيد مش قيمة أوردر (تليفون/رقم) فبيتجاهل
+const XL_MAX_ORDER_VALUE=100000;
+function xlOrderValue(r,cols){ if(cols.value<0) return 0; const n=xlNum(r[cols.value]); return (n>0 && n<=XL_MAX_ORDER_VALUE)?n:0; }
 function xlStatusOf(v){
   const x=normalizeExcelText(v);
   const r={cancel:false,cc:false,br:false,late:false,otherErr:false,text:String(v??'').trim()};
@@ -2414,10 +2441,11 @@ function xlTypeOf(v){
 }
 function xlIsOrderRow(row,header){
   if(!Array.isArray(row)) return false;
-  const b=normalizeExcelText(row[1]);
+  const tc=xlFindCols(header).type;
+  const b=normalizeExcelText(row[tc]);
   if(!b) return false;
   if(b.includes('اجمالي')||b.includes('total')||b.includes('مجموع')) return false;
-  if(header && normalizeExcelText(header[1])===b) return false;
+  if(header && normalizeExcelText(header[tc])===b) return false;
   return true;
 }
 
@@ -2425,12 +2453,28 @@ function xlIsOrderRow(row,header){
 function listenBranchExcelArchiveIndex(){
   if(branchExcelArchiveIndexListening || typeof rtdb==='undefined') return;
   branchExcelArchiveIndexListening=true;
+  // حالة برنامج مزامنة فولدر الشير
+  rtdb.ref('excel_sync_status').on('value',snap=>{ xlSyncStatus=snap.val()||null; xlRefreshSyncPills(); },()=>{});
+  if(!window.__xlSyncTimer) window.__xlSyncTimer=setInterval(xlRefreshSyncPills,60000);
   rtdb.ref('branch_excel_archive_index').on('value',snap=>{
     branchExcelArchiveIndex=snap.val()||{};
     if(currentTab && currentTab.indexOf('branchExcel_')===0) renderBranchExcelSection(currentTab.substring('branchExcel_'.length));
     if(currentTab==='dashboardHome') xlScheduleReport();
   },err=>console.warn('Branch Excel archive index:',err));
 }
+let xlSyncStatus=null;
+function xlSyncPillHtml(){
+  const s=xlSyncStatus; if(!s||!s.lastRunAt) return '';
+  const mins=Math.floor((Date.now()-s.lastRunAt)/60000);
+  const limit=Math.max(3,Math.ceil((Number(s.intervalSeconds)||60)*3/60));
+  const alive=mins<=limit;
+  const ago=mins<1?'دلوقتي':mins<60?`من ${mins} دقيقة`:`من ${Math.floor(mins/60)} ساعة`;
+  const tip=`الجهاز: ${s.host||'-'} | الفولدر: ${s.folder||'-'}${s.message?' | '+s.message:''}`;
+  if(!alive) return `<span class="xl-sync-pill off" title="${escapeHtml(tip)}">🔴 مزامنة الفولدر واقفة — آخر فحص ${ago}</span>`;
+  if(s.ok===false) return `<span class="xl-sync-pill warn" title="${escapeHtml(tip)}">🟠 مزامنة الفولدر فيها مشكلة — ${escapeHtml(s.message||('أخطاء: '+(s.errors||0)))}</span>`;
+  return `<span class="xl-sync-pill on" title="${escapeHtml(tip)}">🟢 مزامنة الفولدر شغالة — آخر فحص ${ago}</span>`;
+}
+function xlRefreshSyncPills(){ document.querySelectorAll('[data-xl-sync]').forEach(el=>el.innerHTML=xlSyncPillHtml()); }
 function xlArchiveList(branchId){
   return Object.entries(branchExcelArchiveIndex[branchId]||{}).map(([key,meta])=>({key,meta:meta||{}}))
     .sort((a,b)=>String(b.meta.month||'').localeCompare(String(a.meta.month||''))||(b.meta.archivedAt||0)-(a.meta.archivedAt||0));
@@ -2487,9 +2531,9 @@ function xlSelectSheet(branchId,name){
 
 // ---------- شكل Excel ----------
 function xlSheetStats(rows){
-  const header=rows[0]||[]; const cols=xlFindCols(header);
+  const hi=xlHeaderIndex(rows); const header=rows[hi]||[]; const cols=xlFindCols(header);
   const s={orders:0,value:0,cancel:0,cc:0,br:0,late:0};
-  rows.forEach((r,ri)=>{ if(ri===0||!xlIsOrderRow(r,header)) return; s.orders++; s.value+=xlNum(r[cols.value]); const st=xlStatusOf(r[cols.status]); if(st.cancel)s.cancel++; if(st.cc)s.cc++; if(st.br)s.br++; if(st.late)s.late++; });
+  rows.forEach((r,ri)=>{ if(ri<=hi||!xlIsOrderRow(r,header)) return; s.orders++; s.value+=xlOrderValue(r,cols); const st=xlStatusOf(r[cols.status]); if(st.cancel)s.cancel++; if(st.cc)s.cc++; if(st.br)s.br++; if(st.late)s.late++; });
   return s;
 }
 function xlStatsHtml(s){
@@ -2550,11 +2594,14 @@ function renderBranchExcelSection(branchId){
     <div class="xl-ribbon">
       ${uploadBtns}
       <button class="xl-btn" type="button" onclick="xlDownload(${bidJs})">⬇️ تنزيل Excel</button>
+      ${isAdmin?`<button class="xl-btn xl-danger" type="button" onclick="xlDeleteDaySheet(${bidJs})" title="حذف شيت اليوم المفتوح نهائياً">🗑️ حذف شيت ${escapeHtml(act.name)}</button>
+      <button class="xl-btn xl-danger" type="button" onclick="xlDeleteMonth(${bidJs})" title="حذف الشهر بالكامل للفرع ده نهائياً">🗑️ حذف ${src.archived?'شهر الأرشيف ده':'الشهر الحالي'}</button>`:''}
       <span class="xl-sep"></span>
       <input id="xlSearch_${branchId}" class="xl-search" placeholder="🔍 بحث في كل شيتات الشهر..." value="${escapeHtml(ui.search||'')}" oninput="xlSearchDebounced(${bidJs},this.value)">
       <div class="branch-excel-column-filter"><button type="button" class="xl-btn" onclick="toggleBranchExcelColumnFilter(${bidJs})">⚙️ الأعمدة</button><div id="branchExcelColumnMenu_${branchId}" class="branch-excel-column-menu hidden"><div style="display:flex;gap:8px;margin-bottom:8px"><button type="button" class="btn btn-sm btn-secondary" onclick="setBranchExcelColumns(${bidJs},'all')">إظهار الكل</button><button type="button" class="btn btn-sm btn-secondary" onclick="setBranchExcelColumns(${bidJs},'priority')">الأعمدة المهمة فقط</button></div>${Array.from({length:maxCols},(_,i)=>`<label class="branch-excel-column-option"><input type="checkbox" data-branch-excel-col="${i}" data-prio="${priorityCols.includes(i)?1:0}" checked onchange="applyBranchExcelColumnFilter(${bidJs})"> <span>${colLabel(i)}</span></label>`).join('')}</div></div>
       <button type="button" id="xlClearF_${branchId}" class="xl-btn hidden" onclick="xlClearAllFilters(${bidJs})">🧹 مسح كل الفلاتر</button>
-      <span class="xl-meta">${meta}</span>
+      <span class="xl-meta">${meta}${!src.archived&&data.lastSyncAt?` · 🔄 آخر تحديث من الفولدر ${new Date(data.lastSyncAt).toLocaleString('ar-EG')}`:''}</span>
+      <span class="xl-sync" data-xl-sync>${xlSyncPillHtml()}</span>
     </div>
     ${src.archived?'':`<div class="xl-under-ribbon">${renderBranchPhoneReviewBox(branchId)}</div>`}
     <div class="xl-formula"><div class="xl-namebox" id="xlName_${branchId}"></div><div class="xl-fx">fx</div><div class="xl-fxval" id="xlFx_${branchId}"></div></div>
@@ -2596,14 +2643,16 @@ function xlBodyItems(branchId,q){
   const term=normalizeExcelText(q||'');
   const act=xlActiveSheet(branchId,src);
   const activeRows=xlRows(act.sheet);
-  const head=activeRows[0]?{r:activeRows[0],ri:0,sheetName:act.name,header:activeRows[0]}:null;
+  const ahi=xlHeaderIndex(activeRows);
+  const head=activeRows[0]?{r:activeRows[0],ri:0,sheetName:act.name,header:activeRows[ahi]||activeRows[0]}:null;
   let data2=[];
   if(!term){
-    data2=activeRows.slice(1).map((r,i)=>({r,ri:i+1,sheetName:act.name,header:activeRows[0]||[]}));
+    data2=activeRows.slice(1).map((r,i)=>({r,ri:i+1,sheetName:act.name,header:activeRows[ahi]||[],preHeader:i+1<=ahi}));
   } else {
     sortBranchExcelSheetKeys(data).forEach(k=>{
       const sh=data.sheets[k]||{}; const rows=xlRows(sh);
-      rows.forEach((r,ri)=>{ if(ri===0) return; if(normalizeExcelText(r.join(' ')).includes(term)) data2.push({r,ri,sheetName:sh.name||k,header:rows[0]||[],multi:true}); });
+      const shi=xlHeaderIndex(rows);
+      rows.forEach((r,ri)=>{ if(ri<=shi) return; if(normalizeExcelText(r.join(' ')).includes(term)) data2.push({r,ri,sheetName:sh.name||k,header:rows[shi]||[],multi:true}); });
     });
   }
   return {src,term,head,all:data2};
@@ -2726,7 +2775,8 @@ function xlRowHtml(branchId,src,it,maxCols,filtered){
   const cls=[];
   if(ri===0 && !it.multi) cls.push('xl-hdr-row');
   else if(ri>0){
-    const st=xlStatusOf(r[5]);
+    const scol=xlFindCols(header).status;
+    const st=it.preHeader?xlStatusOf(''):xlStatusOf(scol>=0?r[scol]:'');
     if(st.cancel) cls.push('xl-st-cancel'); else if(st.cc) cls.push('xl-st-cc'); else if(st.br) cls.push('xl-st-br'); else if(st.late) cls.push('xl-st-late'); else if(st.otherErr) cls.push('xl-st-cc');
     if(!src.archived && rowHasBranchPhoneMatch(branchId,r,header)) cls.push('branch-phone-match');
   }
@@ -2742,7 +2792,7 @@ function xlRowHtml(branchId,src,it,maxCols,filtered){
     const sv=String(v).trim();
     const isNotes=ri>0 && h.includes('ملاحظ');
     const isNum=ri>0 && (typeof v==='number' || (sv!=='' && sv.length<10 && /^-?[\d,]+(\.\d+)?$/.test(sv)));
-    const c=['xl-c',isNotes?'xl-wrap':'',isNum?'xl-num':'',ci===5&&ri>0&&sv?'xl-fcol':''].filter(Boolean).join(' ');
+    const c=['xl-c',isNotes?'xl-wrap':'',isNum?'xl-num':'',ci===xlFindCols(header).status&&ri>0&&sv?'xl-fcol':''].filter(Boolean).join(' ');
     const canEdit=editableCol!==null && editableCol!==undefined && (editableCol===-1 || editableCol===ci);
     const on=isHdr && (fst.cols[ci] || (fst.sort && fst.sort.c===ci));
     const fb=isHdr?`<button type="button" class="xl-fbtn ${on?'on':''}" title="فلتر / ترتيب" onclick="event.stopPropagation();xlOpenSheetFilter(${bidJs},${ci},this)">${fst.cols[ci]?'⏷':fst.sort&&fst.sort.c===ci?(fst.sort.dir>0?'↑':'↓'):'▾'}</button>`:'';
@@ -2826,6 +2876,53 @@ function xlToggleFull(branchId){
   const btn=book?.querySelector('.xl-title-right .xl-ghost'); if(btn) btn.textContent=ui.full?'🗗 تصغير':'⛶ ملء الشاشة';
   document.getElementById('xlWrap_'+branchId)?.focus();
 }
+// ---------- حذف (أدمن فقط) ----------
+function xlAuditDelete(branchId,action,info){
+  try{ rtdb.ref(`branch_excel_audit/${branchId}`).push({userId:currentUser?.id||'',userName:currentUser?.name||'',role:currentUser?.role||'',action,...info,at:Date.now()}).catch?.(()=>{}); }catch(e){}
+}
+function xlDeleteDaySheet(branchId){
+  if(currentUser?.role!=='admin'){ showToast('⛔ الحذف للأدمن فقط',true); return; }
+  const src=xlGetSource(branchId); const d=src.data; if(!d) return;
+  const act=xlActiveSheet(branchId,src); if(!act.key){ showToast('❌ مفيش شيت مفتوح',true); return; }
+  const branch=getExcelBranches().find(b=>b.id===branchId);
+  const count=Object.keys(d.sheets||{}).length;
+  if(count<=1){ showToast('⚠️ ده آخر شيت في الشهر — استخدم "حذف الشهر" بدل كده',true); return; }
+  if(!confirm(`حذف شيت يوم ${act.name} من ${branch?.name||'الفرع'}${src.archived?' (أرشيف '+xlMonthLabel(d.archiveMeta?.month)+')':''}؟\n\nعدد الصفوف: ${Math.max(0,xlRows(act.sheet).length-1)}\nالحذف نهائي ومينفعش يرجع — لو محتاجه نزّل Excel الأول.`)) return;
+  const nextKey=act.keys.find(k=>k!==act.key); const nextName=nextKey?((d.sheets[nextKey]||{}).name||nextKey):'';
+  let p;
+  if(src.archived){
+    p=rtdb.ref(`branch_excel_archive/${branchId}/${src.mode}/sheets/${act.key}`).remove().then(()=>{
+      delete d.sheets[act.key];
+      branchExcelArchiveSheet[branchId+'/'+src.mode]=nextName;
+      const rowCount=Object.values(d.sheets).reduce((s,sh)=>s+Math.max(0,xlRows(sh).length-1),0);
+      return rtdb.ref(`branch_excel_archive_index/${branchId}/${src.mode}`).update({sheetCount:Object.keys(d.sheets).length,rowCount}).catch(()=>{});
+    });
+  } else {
+    const upd={}; upd[`sheets/${act.key}`]=null; if(d.activeSheet===act.name) upd.activeSheet=nextName;
+    p=rtdb.ref(`branch_excel/${branchId}`).update(upd);
+  }
+  p.then(()=>{ xlAuditDelete(branchId,'delete_sheet',{sheet:act.name,month:src.archived?src.mode:'current'}); showToast(`🗑️ تم حذف شيت ${act.name}`); renderBranchExcelSection(branchId); if(typeof xlScheduleReport==='function') xlScheduleReport(); })
+   .catch(err=>{ console.error(err); showToast('❌ لم يتم الحذف — راجع صلاحيات Firebase',true); });
+}
+function xlDeleteMonth(branchId){
+  if(currentUser?.role!=='admin'){ showToast('⛔ الحذف للأدمن فقط',true); return; }
+  const src=xlGetSource(branchId); const d=src.data; if(!d) return;
+  const branch=getExcelBranches().find(b=>b.id===branchId);
+  const month=src.archived?(d.archiveMeta?.month||src.mode):xlMonthKeyOfData(d);
+  const sheets=Object.keys(d.sheets||{}).length;
+  const typed=prompt(`⚠️ حذف ${src.archived?'شهر الأرشيف':'الشهر الحالي'} (${xlMonthLabel(month)}) لفرع ${branch?.name||''} بالكامل.\n${sheets} شيت هيتحذفوا نهائياً ومينفعش يرجعوا — لو محتاجهم نزّل Excel الأول.\n${src.archived?'':'(الشهر الحالي مش هيتنقل للأرشيف)\n'}\nللتأكيد اكتب كلمة: حذف`);
+  if(typed===null) return;
+  if(String(typed).trim()!=='حذف'){ showToast('❌ لم يتم الحذف — لازم تكتب كلمة "حذف"',true); return; }
+  let p;
+  if(src.archived){
+    p=rtdb.ref(`branch_excel_archive/${branchId}/${src.mode}`).remove().then(()=>rtdb.ref(`branch_excel_archive_index/${branchId}/${src.mode}`).remove())
+      .then(()=>{ delete branchExcelArchiveCache[branchId+'/'+src.mode]; delete branchExcelArchiveSheet[branchId+'/'+src.mode]; branchExcelViewMode[branchId]='current'; });
+  } else {
+    p=rtdb.ref(`branch_excel/${branchId}`).remove().then(()=>{ branchExcelData[branchId]=null; });
+  }
+  p.then(()=>{ xlAuditDelete(branchId,'delete_month',{month,archived:!!src.archived,sheets}); showToast(`🗑️ تم حذف ${xlMonthLabel(month)} لفرع ${branch?.name||''}`); renderBranchExcelSection(branchId); if(typeof xlScheduleReport==='function') xlScheduleReport(); })
+   .catch(err=>{ console.error(err); showToast('❌ لم يتم الحذف — راجع صلاحيات Firebase',true); });
+}
 function xlSafeSheetName(n,used){
   let base=String(n||'Sheet').replace(/[\\\/\?\*\[\]:]/g,'-').slice(0,31)||'Sheet', name=base, i=2;
   while(used.has(name)){ const suf=` (${i++})`; name=base.slice(0,31-suf.length)+suf; }
@@ -2889,15 +2986,15 @@ function xlCollectRows(branchIds,month,fromD,toD){
     if(!data) return;
     const bname=((branchesData||[]).find(b=>b.id===bid)||{}).name||bid;
     Object.values(data.sheets||{}).forEach(sh=>{
-      const rows=xlRows(sh); const header=rows[0]||[];
+      const rows=xlRows(sh); const hi=xlHeaderIndex(rows); const header=rows[hi]||[];
       const sd=getBranchExcelSheetDate(sh?.name);
       if(fromD||toD){ if(!sd) return; if(fromD&&sd<fromD) return; if(toD&&sd>toD) return; }
       const cols=xlFindCols(header);
       const oc=acOrderColOf(header);
       rows.forEach((r,ri)=>{
-        if(ri===0||!xlIsOrderRow(r,header)) return;
+        if(ri<=hi||!xlIsOrderRow(r,header)) return;
         const t=xlTypeOf(r[cols.type]);
-        out.push({branchId:bid,branch:bname,sheet:String(sh?.name||''),date:sd,ri,row:r,header,platform:t.platform,pay:t.pay,val:xlNum(r[cols.value]),st:xlStatusOf(r[cols.status]),orderNo:acNormOrder(r[oc])});
+        out.push({branchId:bid,branch:bname,sheet:String(sh?.name||''),date:sd,ri,row:r,header,platform:t.platform,pay:t.pay,val:xlOrderValue(r,cols),st:xlStatusOf(cols.status>=0?r[cols.status]:''),orderNo:acNormOrder(r[oc])});
       });
     });
   });
@@ -2953,6 +3050,12 @@ function renderBranchExcelReportPanel(){
   }
   xlRenderReport();
 }
+// كارت الأبلكيشن: القيمة + كاش واون لاين (عدد وقيمة) — كل سطر بيفتح التفاصيل بتاعته
+function xlPlatNote(rows,p){
+  const g=xlAgg(rows.filter(x=>x.platform===p));
+  const line=(pay,icon,n,v)=>`<span class="xl-kpi-pay" onclick="event.stopPropagation();xlRepFilterGo(${escapeHtml(JSON.stringify('pp:'+p+'|'+pay))})">${icon} ${pay}: <b>${xlInt(n)}</b> — ${xlMoney(v)}</span>`;
+  return `<b class="xl-kpi-total">${xlMoney(g.v)}</b>${line('كاش','💵',g.cash,g.cashV)}${line('اون لاين','💳',g.online,g.onlineV)}${g.unk?`<span class="xl-kpi-pay">❔ غير محدد: ${g.unk}</span>`:''}`;
+}
 function xlKpiHtml(key,icon,title,count,note,color){
   return `<div class="xl-kpi" data-f="${escapeHtml(key)}" style="--c:${color}" role="button" tabindex="0" onclick="xlRepFilterGo(${escapeHtml(JSON.stringify(key))})"><div class="t"><span>${title}</span><span>${icon}</span></div><div class="v">${xlInt(count)}</div><div class="n">${note}</div></div>`;
 }
@@ -2980,9 +3083,9 @@ function xlRenderReport(){
     xlKpiHtml('appc','🚫','إلغاء أبلكيشن (أجينت)',a.appc,`${xlMoney(a.appcV)} · ${a.appcOnly} مش في الشيت`,'#be123c'),
     xlKpiHtml('cash','💵','كاش',a.cash,xlMoney(a.cashV),'#0f766e'),
     xlKpiHtml('online','💳','اون لاين',a.online,xlMoney(a.onlineV),'#2563eb'),
-    xlKpiHtml('p:انستاشوب','🛍️','انستاشوب',a.plat['انستاشوب'].n,xlMoney(a.plat['انستاشوب'].v),'#e11d48'),
-    xlKpiHtml('p:طلبات','🛵','طلبات',a.plat['طلبات'].n,xlMoney(a.plat['طلبات'].v),'#ea580c'),
-    xlKpiHtml('p:فيزيتا','🩺','فيزيتا',a.plat['فيزيتا'].n,xlMoney(a.plat['فيزيتا'].v),'#0284c7'),
+    xlKpiHtml('p:انستاشوب','🛍️','انستاشوب',a.plat['انستاشوب'].n,xlPlatNote(rows,'انستاشوب'),'#e11d48'),
+    xlKpiHtml('p:طلبات','🛵','طلبات',a.plat['طلبات'].n,xlPlatNote(rows,'طلبات'),'#ea580c'),
+    xlKpiHtml('p:فيزيتا','🩺','فيزيتا',a.plat['فيزيتا'].n,xlPlatNote(rows,'فيزيتا'),'#0284c7'),
     xlKpiHtml('p:أخرى','📋','أخرى',a.plat['أخرى'].n,xlMoney(a.plat['أخرى'].v),'#64748b')
   ].join('');
 
@@ -3375,11 +3478,7 @@ function renderDashboardHome(){
   if(dateEl) dateEl.textContent=`${pad(today.getDate())}/${pad(today.getMonth()+1)}/${today.getFullYear()}`;
   try{ renderBranchExcelReportPanel(); }catch(e){ console.error('Branch Excel report:',e); }
   const branchPanel=document.getElementById('branchDashboardPanel');
-  if(currentUser?.role==='branch'){
-    setBranchDashboardDatesDefault(true);
-    refreshBranchDashboard();
-    return;
-  }
+  // اللوحة القديمة للفرع اتشالت — التقرير الجديد بيعرض للفرع بياناته هو بس
   if(branchPanel) branchPanel.classList.add('hidden');
 }
 function hasSectionPermission(section) {
@@ -4041,7 +4140,7 @@ function acNormOrder(v){
 }
 function acOrderColOf(header){
   const h=(header||[]).map(x=>normalizeExcelText(x));
-  const i=h.findIndex(x=>(x.includes('رقم')&&(x.includes('اوردر')||x.includes('طلب')))||x==='order'||x.includes('order no')||x.includes('order id'));
+  const i=h.findIndex(x=>(x.includes('رقم')&&(x.includes('اوردر')||x.includes('طلب')||x.includes('تطبيق')||x.includes('ابلكيشن')))||x==='order'||x.includes('order no')||x.includes('order id'));
   return i>=0?i:XL_ORDER_COL;
 }
 function acSplitItems(s){ return String(s||'').split(/[،,\n]+/).map(x=>x.trim()).filter(Boolean); }
@@ -4072,7 +4171,7 @@ function acIndexByOrder(){
 // فهرس أرقام الأوردرات اللي في الشيتات (الشهر الحالي + أي أرشيف اتحمّل)
 function acSheetIndex(){
   const m=new Map();
-  const add=(bid,data,where)=>{ if(!data) return; Object.values(data.sheets||{}).forEach(sh=>{ const rows=xlRows(sh); const oc=acOrderColOf(rows[0]||[]); rows.forEach((r,ri)=>{ if(ri===0) return; const k=acNormOrder(r[oc]); if(!k) return; if(!m.has(k)) m.set(k,[]); m.get(k).push({branchId:bid,sheet:String(sh.name||''),ri,where}); }); }); };
+  const add=(bid,data,where)=>{ if(!data) return; Object.values(data.sheets||{}).forEach(sh=>{ const rows=xlRows(sh); const hi=xlHeaderIndex(rows); const oc=acOrderColOf(rows[hi]||[]); rows.forEach((r,ri)=>{ if(ri<=hi) return; const k=acNormOrder(r[oc]); if(!k) return; if(!m.has(k)) m.set(k,[]); m.get(k).push({branchId:bid,sheet:String(sh.name||''),ri,where}); }); }); };
   Object.keys(branchExcelData||{}).forEach(bid=>add(bid,branchExcelData[bid],'current'));
   Object.keys(branchExcelArchiveCache||{}).forEach(ck=>{ const [bid,key]=ck.split('/'); add(bid,branchExcelArchiveCache[ck],key); });
   return m;
@@ -4297,7 +4396,8 @@ function acMergeIntoRows(out,branchIds,month,fromD,toD){
     if(fromD||toD){ if(!d) return; if(fromD&&d<fromD) return; if(toD&&d>toD) return; }
     if(sheetIdx.has(acNormOrder(e.orderNo))) return; // موجود في شيت (حتى لو برا الفترة) — مش هنكرره
     const row=Array.from({length:Math.max(13,hdr.length)},()=>'');
-    row[1]=e.appLabel||''; row[3]=Number(e.value)||0; row[5]='إلغاء أبلكيشن'; row[XL_ORDER_COL]=e.orderNo||'';
+    const hc=xlFindCols(hdr);
+    row[hc.type>=0?hc.type:1]=e.appLabel||''; row[hc.value>=0?hc.value:3]=Number(e.value)||0; if(hc.status>=0) row[hc.status]='إلغاء أبلكيشن'; row[hc.order>=0?hc.order:XL_ORDER_COL]=e.orderNo||'';
     out.push({branchId:e.branchId,branch:e.branchName||acBranchName(e.branchId),sheet:acSheetName(e),date:d,ri:-1,row,header:hdr,platform:e.platform||'أخرى',pay:e.pay||'غير محدد',val:Number(e.value)||0,
       st:{cancel:true,cc:false,br:false,late:false,otherErr:false,app:true,text:'إلغاء أبلكيشن'},agent:e,agentOnly:true,orderNo:acNormOrder(e.orderNo)});
   });
