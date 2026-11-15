@@ -894,6 +894,11 @@ tr.ac-nosheet td{background-color:#f5f8ff!important}
 .fs-big{font-size:16px;margin-bottom:6px}.fs-big .xl-sync-pill{font-size:15px;padding:7px 16px}
 .fs-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin-top:12px}.fs-grid>div{background:#f6faf7;border:1px solid var(--st-line);border-radius:10px;padding:10px 12px}.fs-grid span{display:block;font-size:12px;color:var(--st-muted)}.fs-grid b{font-size:14px;word-break:break-all}
 .fs-steps{line-height:2.1;padding-inline-start:22px}.fs-steps code{background:#f1f5f9;border-radius:5px;padding:1px 6px}
+.fs-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:10px 0}
+.xl-man{display:inline-block;font-size:12.5px;font-weight:700;color:#475467;padding:3px 8px;border-radius:7px}.xl-man.run{background:#fff7d6;color:#7a5a00}.xl-man.ok{background:#dcfce7;color:#166534}.xl-man.bad{background:#fee2e2;color:#991b1b}
+.xl-grid tr.xl-st-cust td{background-color:#fed7aa!important}
+.xl-issue.cust{background:#ffedd5;color:#c2410c}.xl-b.cust{background:#ffedd5;color:#c2410c}.xl-rep-table td.orange{color:#c2410c;font-weight:700}
+.xl-kpi-net .v{font-size:22px!important}.xl-kpi-net .n{font-size:11.5px}
 </style>
 </head>
 <body>
@@ -1074,10 +1079,11 @@ tr.ac-nosheet td{background-color:#f5f8ff!important}
       <label class="label">سبب الإلغاء <span class="ac-req">*</span></label>
       <div class="ac-reason-types">
         <label class="ac-rt"><input type="radio" name="acReasonType" value="missing" checked onchange="acToggleReason()"> <span>📦 صنف ناقص (Missing item)</span></label>
+        <label class="ac-rt"><input type="radio" name="acReasonType" value="customer" onchange="acToggleReason()"> <span>🙋 العميل لغى</span></label>
         <label class="ac-rt"><input type="radio" name="acReasonType" value="other" onchange="acToggleReason()"> <span>✍️ سبب تاني</span></label>
       </div>
       <div id="acMissingWrap"><label class="label">الصنف / الأصناف الناقصة <span class="ac-req">*</span></label><input type="text" id="acItems" class="input" placeholder="اكتب اسم الصنف — لو أكتر من صنف افصل بينهم بـ ،"></div>
-      <div id="acOtherWrap" class="hidden"><label class="label">اكتب سبب الإلغاء <span class="ac-req">*</span></label><textarea id="acReason" class="input" rows="2" placeholder="مثال: العميل لغى / التوصيل اتأخر / عنوان غلط..."></textarea></div>
+      <div id="acOtherWrap" class="hidden"><label class="label" id="acReasonLabel">اكتب سبب الإلغاء <span class="ac-req">*</span></label><textarea id="acReason" class="input" rows="2" placeholder="مثال: العميل لغى / التوصيل اتأخر / عنوان غلط..."></textarea></div>
       <div class="ac-actions">
         <button class="btn btn-primary" type="button" id="acSaveBtn" onclick="saveAppCancel()">💾 حفظ الإلغاء</button>
         <button class="btn btn-secondary" type="button" onclick="resetAppCancelForm()">🧹 مسح الخانات</button>
@@ -1090,7 +1096,7 @@ tr.ac-nosheet td{background-color:#f5f8ff!important}
         <div><label class="label">الشهر</label><select id="acfMonth" class="input" onchange="acSetF('month',this.value)"></select></div>
         <div><label class="label">الفرع</label><select id="acfBranch" class="input" onchange="acSetF('branch',this.value)"></select></div>
         <div><label class="label">الأبلكيشن</label><select id="acfApp" class="input" onchange="acSetF('app',this.value)"></select></div>
-        <div><label class="label">السبب</label><select id="acfType" class="input" onchange="acSetF('type',this.value)"><option value="">الكل</option><option value="missing">📦 صنف ناقص</option><option value="other">✍️ سبب تاني</option></select></div>
+        <div><label class="label">السبب</label><select id="acfType" class="input" onchange="acSetF('type',this.value)"><option value="">الكل</option><option value="missing">📦 صنف ناقص</option><option value="customer">🙋 العميل لغى</option><option value="other">✍️ سبب تاني</option></select></div>
         <div><label class="label">الربط بالشيت</label><select id="acfMatch" class="input" onchange="acSetF('match',this.value)"><option value="">الكل</option><option value="yes">✅ موجود في الشيت</option><option value="no">⚠️ مش موجود في الشيت</option></select></div>
         <div style="flex:1;min-width:220px"><label class="label">بحث</label><input type="text" id="acfQ" class="input" placeholder="رقم أوردر، صنف، سبب، أجينت..." oninput="acSetF('q',this.value)"></div>
       </div>
@@ -2443,6 +2449,8 @@ function xlStatusOf(v){
   const r={cancel:false,cc:false,br:false,late:false,otherErr:false,text:String(v??'').trim()};
   if(!x) return r;
   if(x.includes('الغاء')||x.includes('ملغي')||x.includes('cancel')) r.cancel=true;
+  // إلغاء عميل: العميل هو اللي لغى (بيتحسب إلغاء وبيتخصم من المبيعات)
+  if(r.cancel && (x.includes('عميل')||x.includes('customer'))) r.custCancel=true;
   if(x.includes('تاخ')||x.includes('متاخر')||x.includes('delay')||x.includes('late')) r.late=true;
   const err=x.includes('خطا')||x.includes('غلط')||x.includes('error');
   if(x.includes('كول')||x.includes('call')||x.includes('سنتر')) r.cc=true;
@@ -2500,19 +2508,62 @@ function xlSyncPillHtml(){
   if(s.ok===false) return `<span class="xl-sync-pill warn" title="${escapeHtml(tip)}">🟠 مزامنة الفولدر فيها مشكلة — ${escapeHtml(s.message||('أخطاء: '+(s.errors||0)))}</span>`;
   return `<span class="xl-sync-pill on" title="${escapeHtml(tip)}">🟢 مزامنة الفولدر شغالة — آخر فحص ${ago}</span>`;
 }
-function xlRefreshSyncPills(){ document.querySelectorAll('[data-xl-sync]').forEach(el=>el.innerHTML=xlSyncPillHtml()); if(currentTab==='folderSync') renderFolderSyncPage(); }
+function xlRefreshSyncPills(){ document.querySelectorAll('[data-xl-sync]').forEach(el=>el.innerHTML=xlSyncPillHtml()); document.querySelectorAll('[data-xl-manual]').forEach(el=>el.innerHTML=xlManualHtml()); if(currentTab==='folderSync') renderFolderSyncPage(); }
+// ---------- مزامنة يدوية / إعادة تشغيل من الموقع ----------
+let xlSyncPending=null, xlSyncPendingTimer=null;
+function xlRequestSync(type){
+  if(currentUser?.role!=='admin'){ showToast('⛔ للأدمن فقط',true); return; }
+  if(type==='restart' && !confirm('إعادة تشغيل برنامج المزامنة على الجهاز اللي عليه الشير؟')) return;
+  const id=String(Date.now());
+  xlSyncPending={id,type,at:Date.now()};
+  rtdb.ref('excel_sync_request').set({id,type,by:currentUser.name||'',at:Date.now()})
+    .then(()=>{ showToast(type==='full'?'⏳ اتبعت طلب مزامنة للبرنامج...':'⏳ اتبعت طلب إعادة تشغيل...'); xlRefreshSyncPills(); })
+    .catch(e=>{ console.error(e); xlSyncPending=null; showToast('❌ تعذر إرسال الطلب — راجع صلاحيات Firebase',true); });
+  clearInterval(xlSyncPendingTimer);
+  xlSyncPendingTimer=setInterval(()=>{ xlRefreshSyncPills(); if(!xlSyncPending) clearInterval(xlSyncPendingTimer); },5000);
+}
+function xlManualHtml(){
+  const s=xlSyncStatus||{}; const m=s.manual||null; const p=xlSyncPending;
+  const t=v=>v?new Date(v).toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit'}):'';
+  const res=m=>`ملفات ${m.files||0} · جديد ${m.added||0} · تحديث ${m.updated||0} · اتشال ${m.removed||0}${m.errors?` · أخطاء ${m.errors}`:''}${m.unmatched?` · ملفات مش متعرف فرعها ${m.unmatched}`:''}`;
+  if(p){
+    const waited=(Date.now()-p.at)/1000;
+    if(p.type==='full'){
+      if(m && String(m.id)===p.id){
+        if(m.state==='running') return `<span class="xl-man run">⏳ البرنامج بيعمل مزامنة كاملة دلوقتي...</span>`;
+        xlSyncPending=null;
+        if(m.state==='done') return `<span class="xl-man ok">✅ تمت المزامنة — ${res(m)}</span>`;
+        return `<span class="xl-man bad">❌ المزامنة فشلت: ${escapeHtml(m.message||'')}</span>`;
+      }
+      if(waited<25) return `<span class="xl-man run">⏳ مستني البرنامج يستلم الطلب...</span>`;
+      if(waited<100) return `<span class="xl-man run">⏳ لسه مستني (البرنامج بيبص على الطلبات كل 10 ثواني)...</span>`;
+      xlSyncPending=null;
+      return `<span class="xl-man bad">⚠️ البرنامج ماردش — جرّب "♻️ إعادة تشغيل البرنامج"، ولو برضو مفيش رد يبقى الجهاز مقفول</span>`;
+    }
+    if(s.restartedAt && s.restartedAt>=p.at-2000){ xlSyncPending=null; return `<span class="xl-man ok">✅ اتعمل إعادة تشغيل للبرنامج ${t(s.restartedAt)}</span>`; }
+    if(waited<80) return `<span class="xl-man run">⏳ مستني الحارس يعيد تشغيل البرنامج...</span>`;
+    xlSyncPending=null;
+    return `<span class="xl-man bad">⚠️ الحارس ماردش — الجهاز مقفول أو البرنامج متسطبش بـ install-autostart.bat</span>`;
+  }
+  if(m && m.doneAt) return `<span class="xl-man">آخر مزامنة يدوية ${t(m.doneAt)} (${escapeHtml(m.by||'')}): ${m.state==='done'?res(m):'❌ '+escapeHtml(m.message||'فشلت')}</span>`;
+  return '';
+}
 // صفحة مزامنة الفولدر (أدمن)
 function renderFolderSyncPage(){
   listenBranchExcelArchiveIndex();
   const box=document.getElementById('fsStatus'); if(!box) return;
   const s=xlSyncStatus;
   const ts=v=>v?new Date(v).toLocaleString('ar-EG'):'—';
-  box.innerHTML=`<div class="fs-big">${xlSyncPillHtml()}</div>`+(s&&s.lastRunAt?`
+  const wdAlive=s&&s.watchdogAt&&(Date.now()-s.watchdogAt)<150000;
+  box.innerHTML=`<div class="fs-big">${xlSyncPillHtml()}</div>
+    <div class="fs-actions"><button class="btn btn-primary" type="button" onclick="xlRequestSync('full')">🔄 مزامنة دلوقتي (كاملة)</button><button class="btn btn-secondary" type="button" onclick="xlRequestSync('restart')">♻️ إعادة تشغيل البرنامج</button><span data-xl-manual>${xlManualHtml()}</span></div>`+(s&&s.lastRunAt?`
     <div class="fs-grid">
       <div><span>الجهاز</span><b dir="ltr">${escapeHtml(s.host||'—')}</b></div>
       <div><span>الفولدر</span><b dir="ltr">${escapeHtml(s.folder||'—')}</b></div>
       <div><span>آخر فحص</span><b>${ts(s.lastRunAt)}</b></div>
       <div><span>بيفحص كل</span><b>${escapeHtml(String(s.intervalSeconds||60))} ثانية</b></div>
+      <div><span>نسخة البرنامج</span><b>${s.version?escapeHtml(s.version):'⚠️ نسخة قديمة — بدّلها بالجديدة'}</b></div>
+      <div><span>الحارس (بيعيد التشغيل لو علّق)</span><b>${wdAlive?'🟢 شغال':'⚪ مش شغال — شغّل install-autostart.bat'}</b></div>
       <div><span>آخر دورة</span><b>${s.message?escapeHtml(s.message):`ملفات: ${s.files||0} · تابات جديدة: ${s.added||0} · تحديثات: ${s.updated||0} · أخطاء: ${s.errors||0}`}</b></div>
     </div>`:`<div class="xl-rep-note" style="margin-top:10px">البرنامج لسه ما اتشغلش على أي جهاز — اتبع الخطوات تحت. أول ما يشتغل، الصفحة دي هتوريك حالته لحظة بلحظة.</div>`);
   const tb=document.getElementById('fsBranches'); if(!tb) return;
@@ -2576,12 +2627,12 @@ function xlSelectSheet(branchId,name){
 // ---------- شكل Excel ----------
 function xlSheetStats(rows){
   const hi=xlHeaderIndex(rows); const header=rows[hi]||[]; const cols=xlFindCols(header);
-  const s={orders:0,value:0,cancel:0,cc:0,br:0,late:0};
-  rows.forEach((r,ri)=>{ if(ri<=hi||!xlIsOrderRow(r,header)) return; s.orders++; s.value+=xlOrderValue(r,cols); const st=xlStatusOf(r[cols.status]); if(st.cancel)s.cancel++; if(st.cc)s.cc++; if(st.br)s.br++; if(st.late)s.late++; });
+  const s={orders:0,value:0,net:0,cancel:0,cust:0,cc:0,br:0,late:0};
+  rows.forEach((r,ri)=>{ if(ri<=hi||!xlIsOrderRow(r,header)) return; s.orders++; const v=xlOrderValue(r,cols); s.value+=v; const st=xlStatusOf(cols.status>=0?r[cols.status]:''); if(st.cancel){ if(st.custCancel) s.cust++; else s.cancel++; } else s.net+=v; if(st.cc)s.cc++; if(st.br)s.br++; if(st.late)s.late++; });
   return s;
 }
 function xlStatsHtml(s){
-  return `أوردرات: <b>${xlInt(s.orders)}</b> · القيمة: <b>${xlMoney(s.value)}</b> · <span class="xl-legend"><i style="background:#fde2e2"></i>إلغاء ${s.cancel}</span> · <span class="xl-legend"><i style="background:#ffedc2"></i>خطأ كول سنتر ${s.cc}</span> · <span class="xl-legend"><i style="background:#ece3ff"></i>خطأ فرع ${s.br}</span> · <span class="xl-legend"><i style="background:#dbeafe"></i>تأخير ${s.late}</span>`;
+  return `أوردرات: <b>${xlInt(s.orders)}</b> · المبيعات: <b>${xlMoney(s.value)}</b> · الصافي: <b>${xlMoney(s.net)}</b> · <span class="xl-legend"><i style="background:#fde2e2"></i>إلغاء ${s.cancel}</span> · <span class="xl-legend"><i style="background:#fed7aa"></i>إلغاء عميل ${s.cust}</span> · <span class="xl-legend"><i style="background:#ffedc2"></i>خطأ كول سنتر ${s.cc}</span> · <span class="xl-legend"><i style="background:#ece3ff"></i>خطأ فرع ${s.br}</span> · <span class="xl-legend"><i style="background:#dbeafe"></i>تأخير ${s.late}</span>`;
 }
 function renderBranchExcelSection(branchId){
   listenBranchPhoneReview(branchId);
@@ -2646,6 +2697,7 @@ function renderBranchExcelSection(branchId){
       <button type="button" id="xlClearF_${branchId}" class="xl-btn hidden" onclick="xlClearAllFilters(${bidJs})">🧹 مسح كل الفلاتر</button>
       <span class="xl-meta">${meta}${!src.archived&&data.lastSyncAt?` · 🔄 آخر تحديث من الفولدر ${new Date(data.lastSyncAt).toLocaleString('ar-EG')}`:''}</span>
       <span class="xl-sync" data-xl-sync>${xlSyncPillHtml()}</span>
+      ${isAdmin&&!src.archived?`<button class="xl-btn" type="button" onclick="xlRequestSync('full')" title="يطلب من برنامج الشير يسحب كل الملفات دلوقتي">🔄 مزامنة دلوقتي</button><span data-xl-manual>${xlManualHtml()}</span>`:''}
     </div>
     ${src.archived?'':`<div class="xl-under-ribbon">${renderBranchPhoneReviewBox(branchId)}</div>`}
     <div class="xl-formula"><div class="xl-namebox" id="xlName_${branchId}"></div><div class="xl-fx">fx</div><div class="xl-fxval" id="xlFx_${branchId}"></div></div>
@@ -2821,7 +2873,7 @@ function xlRowHtml(branchId,src,it,maxCols,filtered){
   else if(ri>0){
     const scol=xlFindCols(header).status;
     const st=it.preHeader?xlStatusOf(''):xlStatusOf(scol>=0?r[scol]:'');
-    if(st.cancel) cls.push('xl-st-cancel'); else if(st.cc) cls.push('xl-st-cc'); else if(st.br) cls.push('xl-st-br'); else if(st.late) cls.push('xl-st-late'); else if(st.otherErr) cls.push('xl-st-cc');
+    if(st.custCancel) cls.push('xl-st-cust'); else if(st.cancel) cls.push('xl-st-cancel'); else if(st.cc) cls.push('xl-st-cc'); else if(st.br) cls.push('xl-st-br'); else if(st.late) cls.push('xl-st-late'); else if(st.otherErr) cls.push('xl-st-cc');
     if(!src.archived && rowHasBranchPhoneMatch(branchId,r,header)) cls.push('branch-phone-match');
   }
   // إلغاء أبلكيشن متسجل من الأجينت على نفس رقم الأوردر (عمود M)
@@ -2989,7 +3041,8 @@ let xlRep={month:'current',branch:'all',from:'',to:'',filter:'issues',q:''};
 let xlRepRows=[], xlRepTimer=null, xlRepQTimer=null;
 const XL_FILTERS=[
   ['issues','⚠️ كل مشاكل عمود F',x=>x.st.cancel||x.st.cc||x.st.br||x.st.late||x.st.otherErr],
-  ['cancel','❌ إلغاء',x=>x.st.cancel],
+  ['cancel','❌ كل الإلغاءات',x=>x.st.cancel],
+  ['cust','🙋 إلغاء عميل',x=>!!x.st.custCancel],
   ['cc','📞 خطأ كول سنتر',x=>x.st.cc],
   ['br','🏢 خطأ فرع',x=>x.st.br],
   ['late','⏰ تأخير',x=>x.st.late],
@@ -3046,11 +3099,11 @@ function xlCollectRows(branchIds,month,fromD,toD){
   return acMergeIntoRows(out,branchIds,month,fromD,toD);
 }
 function xlAgg(rows){
-  const a={n:0,v:0,done:0,doneV:0,cancel:0,cancelV:0,cc:0,ccV:0,br:0,brV:0,late:0,lateV:0,appc:0,appcV:0,appcOnly:0,other:0,cash:0,cashV:0,online:0,onlineV:0,unk:0,unkV:0,plat:{}};
+  const a={n:0,v:0,done:0,doneV:0,cancel:0,cancelV:0,cust:0,custV:0,cc:0,ccV:0,br:0,brV:0,late:0,lateV:0,appc:0,appcV:0,appcOnly:0,other:0,cash:0,cashV:0,online:0,onlineV:0,unk:0,unkV:0,plat:{}};
   XL_PLATFORMS.forEach(p=>a.plat[p]={n:0,v:0});
   rows.forEach(x=>{
     a.n++; a.v+=x.val;
-    if(x.st.cancel){a.cancel++;a.cancelV+=x.val;} else {a.done++;a.doneV+=x.val;}
+    if(x.st.cancel){a.cancel++;a.cancelV+=x.val; if(x.st.custCancel){a.cust++;a.custV+=x.val;}} else {a.done++;a.doneV+=x.val;}
     if(x.st.cc){a.cc++;a.ccV+=x.val;} if(x.st.br){a.br++;a.brV+=x.val;} if(x.st.late){a.late++;a.lateV+=x.val;} if(x.agent){a.appc++;a.appcV+=x.val; if(x.agentOnly) a.appcOnly++;} if(x.st.otherErr) a.other++;
     if(x.pay==='كاش'){a.cash++;a.cashV+=x.val;} else if(x.pay==='اون لاين'){a.online++;a.onlineV+=x.val;} else {a.unk++;a.unkV+=x.val;}
     const p=a.plat[x.platform]||(a.plat[x.platform]={n:0,v:0}); p.n++; p.v+=x.val;
@@ -3118,9 +3171,11 @@ function xlRenderReport(){
   if(!hasAny){ body.innerHTML=`<div class="xl-rep-meta">${meta}</div><div class="xl-empty">لا توجد ملفات Excel لهذه الفترة.</div>`; return; }
 
   const kpis=[
-    xlKpiHtml('all','📦','إجمالي الأوردرات',a.n,xlMoney(a.v),'#172033'),
-    xlKpiHtml('done','✅','مكتمل',a.done,xlMoney(a.doneV),'#16a34a'),
-    xlKpiHtml('cancel','❌','ملغي',a.cancel,`${xlMoney(a.cancelV)} · ${xlPct(a.cancel,a.n)}`,'#dc2626'),
+    xlKpiHtml('all','📦','إجمالي الأوردرات',a.n,`إجمالي المبيعات ${xlMoney(a.v)}`,'#172033'),
+    `<div class="xl-kpi xl-kpi-net" data-f="done" style="--c:#15803d" role="button" tabindex="0" onclick="xlRepFilterGo('done')"><div class="t"><span>💰 صافي المبيعات</span><span>بعد الإلغاءات</span></div><div class="v">${xlMoney(a.doneV)}</div><div class="n">إجمالي ${xlMoney(a.v)} − إلغاءات ${xlMoney(a.cancelV)}<br>(التأخير مش بيتخصم)</div></div>`,
+    xlKpiHtml('done','✅','مكتمل (من غير إلغاء)',a.done,xlMoney(a.doneV),'#16a34a'),
+    xlKpiHtml('cancel','❌','كل الإلغاءات',a.cancel,`${xlMoney(a.cancelV)} · ${xlPct(a.cancel,a.n)}`,'#dc2626'),
+    xlKpiHtml('cust','🙋','إلغاء عميل',a.cust,`${xlMoney(a.custV)} · ${xlPct(a.cust,a.n)}`,'#ea580c'),
     xlKpiHtml('cc','📞','خطأ كول سنتر',a.cc,`${xlMoney(a.ccV)} · ${xlPct(a.cc,a.n)}`,'#d97706'),
     xlKpiHtml('br','🏢','خطأ فرع',a.br,`${xlMoney(a.brV)} · ${xlPct(a.br,a.n)}`,'#7c3aed'),
     xlKpiHtml('late','⏰','تأخير',a.late,`${xlMoney(a.lateV)} · ${xlPct(a.late,a.n)}`,'#1d4ed8'),
@@ -3137,15 +3192,16 @@ function xlRenderReport(){
   const typeRows=XL_PLATFORMS.map(p=>{
     const pr=rows.filter(x=>x.platform===p); const g=xlAgg(pr);
     const cell=(pay,txt)=>`<td class="xl-click" onclick="event.stopPropagation();xlRepFilterGo(${escapeHtml(JSON.stringify('pp:'+p+'|'+pay))})">${txt}</td>`;
-    return `<tr class="clickable" onclick="xlRepFilterGo(${escapeHtml(JSON.stringify('p:'+p))})"><td>${p}</td>${cell('كاش',xlInt(g.cash))}<td>${xlMoney(g.cashV)}</td>${cell('اون لاين',xlInt(g.online))}<td>${xlMoney(g.onlineV)}</td>${cell('غير محدد',xlInt(g.unk))}<td><b>${xlInt(g.n)}</b></td><td><b>${xlMoney(g.v)}</b></td><td class="ok">${xlInt(g.done)}</td><td class="bad">${xlInt(g.cancel)}</td><td class="warn">${xlInt(g.cc)}</td><td class="pur">${xlInt(g.br)}</td><td class="blue">${xlInt(g.late)}</td></tr>`;
-  }).join('')+`<tr class="total"><td>الإجمالي</td><td>${xlInt(a.cash)}</td><td>${xlMoney(a.cashV)}</td><td>${xlInt(a.online)}</td><td>${xlMoney(a.onlineV)}</td><td>${xlInt(a.unk)}</td><td>${xlInt(a.n)}</td><td>${xlMoney(a.v)}</td><td>${xlInt(a.done)}</td><td>${xlInt(a.cancel)}</td><td>${xlInt(a.cc)}</td><td>${xlInt(a.br)}</td><td>${xlInt(a.late)}</td></tr>`;
+    return `<tr class="clickable" onclick="xlRepFilterGo(${escapeHtml(JSON.stringify('p:'+p))})"><td>${p}</td>${cell('كاش',xlInt(g.cash))}<td>${xlMoney(g.cashV)}</td>${cell('اون لاين',xlInt(g.online))}<td>${xlMoney(g.onlineV)}</td>${cell('غير محدد',xlInt(g.unk))}<td><b>${xlInt(g.n)}</b></td><td><b>${xlMoney(g.v)}</b></td><td class="ok"><b>${xlMoney(g.doneV)}</b></td><td class="ok">${xlInt(g.done)}</td><td class="bad">${xlInt(g.cancel)}</td><td class="orange">${xlInt(g.cust)}</td><td class="warn">${xlInt(g.cc)}</td><td class="pur">${xlInt(g.br)}</td><td class="blue">${xlInt(g.late)}</td></tr>`;
+  }).join('')+`<tr class="total"><td>الإجمالي</td><td>${xlInt(a.cash)}</td><td>${xlMoney(a.cashV)}</td><td>${xlInt(a.online)}</td><td>${xlMoney(a.onlineV)}</td><td>${xlInt(a.unk)}</td><td>${xlInt(a.n)}</td><td>${xlMoney(a.v)}</td><td>${xlMoney(a.doneV)}</td><td>${xlInt(a.done)}</td><td>${xlInt(a.cancel)}</td><td>${xlInt(a.cust)}</td><td>${xlInt(a.cc)}</td><td>${xlInt(a.br)}</td><td>${xlInt(a.late)}</td></tr>`;
 
   // ملخص عمود F
   const issueRows=rows.filter(xlFilterFn('issues'));
   const texts={}; issueRows.forEach(x=>{ const k=x.st.text||'-'; texts[k]=(texts[k]||0)+1; });
   const textList=Object.entries(texts).sort((p,q)=>q[1]-p[1]).slice(0,20);
   const issuesHtml=`<div class="xl-issue-tiles">
-      <div class="xl-issue c" onclick="xlRepFilterGo('cancel')"><b>${xlInt(a.cancel)}</b><span>إلغاء</span><small>${xlPct(a.cancel,a.n)} من الأوردرات</small></div>
+      <div class="xl-issue c" onclick="xlRepFilterGo('cancel')"><b>${xlInt(a.cancel)}</b><span>كل الإلغاءات</span><small>${xlMoney(a.cancelV)} · اتخصمت من المبيعات</small></div>
+      <div class="xl-issue cust" onclick="xlRepFilterGo('cust')"><b>${xlInt(a.cust)}</b><span>🙋 إلغاء عميل</span><small>${xlMoney(a.custV)} · ${xlPct(a.cust,a.n)}</small></div>
       <div class="xl-issue cc" onclick="xlRepFilterGo('cc')"><b>${xlInt(a.cc)}</b><span>خطأ كول سنتر</span><small>${xlPct(a.cc,a.n)} من الأوردرات</small></div>
       <div class="xl-issue br" onclick="xlRepFilterGo('br')"><b>${xlInt(a.br)}</b><span>خطأ فرع</span><small>${xlPct(a.br,a.n)} من الأوردرات</small></div>
       <div class="xl-issue late" onclick="xlRepFilterGo('late')"><b>${xlInt(a.late)}</b><span>تأخير</span><small>${xlPct(a.late,a.n)} من الأوردرات</small></div>
@@ -3160,9 +3216,9 @@ function xlRenderReport(){
   const brRows=brAll.map(b=>{
     const g=xlAgg(rows.filter(x=>x.branchId===b.id));
     const hasData=xlRep.month==='current'?!!branchExcelData[b.id]:!!xlArchiveKeyFor(b.id,xlRep.month);
-    if(!hasData) return `<tr><td>${escapeHtml(b.name||b.id)}</td><td colspan="15" class="muted">لا يوجد ملف لهذه الفترة</td></tr>`;
-    return `<tr class="clickable" onclick="xlRepPickBranch(${escapeHtml(JSON.stringify(b.id))})" title="عرض هذا الفرع فقط"><td>${escapeHtml(b.name||b.id)}</td><td><b>${xlInt(g.n)}</b></td><td>${xlMoney(g.v)}</td><td class="ok">${xlInt(g.done)}</td><td class="bad">${xlInt(g.cancel)}</td><td>${xlPct(g.cancel,g.n)}</td><td class="warn">${xlInt(g.cc)}</td><td class="pur">${xlInt(g.br)}</td><td class="blue">${xlInt(g.late)}</td><td class="bad">${xlInt(g.appc)}</td><td>${xlInt(g.cash)}</td><td>${xlInt(g.online)}</td><td>${xlInt(g.plat['انستاشوب'].n)}</td><td>${xlInt(g.plat['طلبات'].n)}</td><td>${xlInt(g.plat['فيزيتا'].n)}</td><td>${xlInt(g.plat['أخرى'].n)}</td></tr>`;
-  }).join('')+(brAll.length>1?`<tr class="total"><td>الإجمالي</td><td>${xlInt(a.n)}</td><td>${xlMoney(a.v)}</td><td>${xlInt(a.done)}</td><td>${xlInt(a.cancel)}</td><td>${xlPct(a.cancel,a.n)}</td><td>${xlInt(a.cc)}</td><td>${xlInt(a.br)}</td><td>${xlInt(a.late)}</td><td>${xlInt(a.appc)}</td><td>${xlInt(a.cash)}</td><td>${xlInt(a.online)}</td><td>${xlInt(a.plat['انستاشوب'].n)}</td><td>${xlInt(a.plat['طلبات'].n)}</td><td>${xlInt(a.plat['فيزيتا'].n)}</td><td>${xlInt(a.plat['أخرى'].n)}</td></tr>`:'');
+    if(!hasData) return `<tr><td>${escapeHtml(b.name||b.id)}</td><td colspan="17" class="muted">لا يوجد ملف لهذه الفترة</td></tr>`;
+    return `<tr class="clickable" onclick="xlRepPickBranch(${escapeHtml(JSON.stringify(b.id))})" title="عرض هذا الفرع فقط"><td>${escapeHtml(b.name||b.id)}</td><td><b>${xlInt(g.n)}</b></td><td>${xlMoney(g.v)}</td><td class="ok"><b>${xlMoney(g.doneV)}</b></td><td class="ok">${xlInt(g.done)}</td><td class="bad">${xlInt(g.cancel)}</td><td class="orange">${xlInt(g.cust)}</td><td>${xlPct(g.cancel,g.n)}</td><td class="warn">${xlInt(g.cc)}</td><td class="pur">${xlInt(g.br)}</td><td class="blue">${xlInt(g.late)}</td><td class="bad">${xlInt(g.appc)}</td><td>${xlInt(g.cash)}</td><td>${xlInt(g.online)}</td><td>${xlInt(g.plat['انستاشوب'].n)}</td><td>${xlInt(g.plat['طلبات'].n)}</td><td>${xlInt(g.plat['فيزيتا'].n)}</td><td>${xlInt(g.plat['أخرى'].n)}</td></tr>`;
+  }).join('')+(brAll.length>1?`<tr class="total"><td>الإجمالي</td><td>${xlInt(a.n)}</td><td>${xlMoney(a.v)}</td><td>${xlMoney(a.doneV)}</td><td>${xlInt(a.done)}</td><td>${xlInt(a.cancel)}</td><td>${xlInt(a.cust)}</td><td>${xlPct(a.cancel,a.n)}</td><td>${xlInt(a.cc)}</td><td>${xlInt(a.br)}</td><td>${xlInt(a.late)}</td><td>${xlInt(a.appc)}</td><td>${xlInt(a.cash)}</td><td>${xlInt(a.online)}</td><td>${xlInt(a.plat['انستاشوب'].n)}</td><td>${xlInt(a.plat['طلبات'].n)}</td><td>${xlInt(a.plat['فيزيتا'].n)}</td><td>${xlInt(a.plat['أخرى'].n)}</td></tr>`:'');
 
   // حسب اليوم
   const days={};
@@ -3170,18 +3226,18 @@ function xlRenderReport(){
   const dayRows=Object.keys(days).sort().map(k=>{
     const g=xlAgg(days[k]); const isDate=k[0]!=='~';
     const lbl=isDate?k.split('-').reverse().join('/'):escapeHtml(k.substring(1));
-    return `<tr class="${isDate?'clickable':''}" ${isDate?`onclick="xlRepPickDay('${k}')" title="عرض هذا اليوم فقط"`:''}><td>${lbl}</td><td><b>${xlInt(g.n)}</b></td><td>${xlMoney(g.v)}</td><td>${xlInt(g.cash)}</td><td>${xlInt(g.online)}</td><td class="ok">${xlInt(g.done)}</td><td class="bad">${xlInt(g.cancel)}</td><td class="warn">${xlInt(g.cc)}</td><td class="pur">${xlInt(g.br)}</td><td class="blue">${xlInt(g.late)}</td></tr>`;
+    return `<tr class="${isDate?'clickable':''}" ${isDate?`onclick="xlRepPickDay('${k}')" title="عرض هذا اليوم فقط"`:''}><td>${lbl}</td><td><b>${xlInt(g.n)}</b></td><td>${xlMoney(g.v)}</td><td class="ok"><b>${xlMoney(g.doneV)}</b></td><td>${xlInt(g.cash)}</td><td>${xlInt(g.online)}</td><td class="ok">${xlInt(g.done)}</td><td class="bad">${xlInt(g.cancel)}</td><td class="orange">${xlInt(g.cust)}</td><td class="warn">${xlInt(g.cc)}</td><td class="pur">${xlInt(g.br)}</td><td class="blue">${xlInt(g.late)}</td></tr>`;
   }).join('');
 
   body.innerHTML=`<div class="xl-rep-meta">📌 ${meta} — ${xlInt(a.n)} أوردر</div>
     <div class="xl-rep-kpis">${kpis}</div>
     <div class="xl-rep-grid">
-      <div class="xl-rep-box"><h4>🧾 حسب نوع الأوردر وطريقة الدفع</h4><div class="xl-rep-scroll"><table class="xl-rep-table"><thead><tr><th>النوع</th><th>كاش</th><th>قيمة الكاش</th><th>اون لاين</th><th>قيمة الاون لاين</th><th>غير محدد</th><th>الإجمالي</th><th>القيمة</th><th>مكتمل</th><th>ملغي</th><th>خطأ كول سنتر</th><th>خطأ فرع</th><th>تأخير</th></tr></thead><tbody>${typeRows}</tbody></table></div></div>
+      <div class="xl-rep-box"><h4>🧾 حسب نوع الأوردر وطريقة الدفع</h4><div class="xl-rep-scroll"><table class="xl-rep-table"><thead><tr><th>النوع</th><th>كاش</th><th>قيمة الكاش</th><th>اون لاين</th><th>قيمة الاون لاين</th><th>غير محدد</th><th>الإجمالي</th><th>المبيعات</th><th>صافي المبيعات</th><th>مكتمل</th><th>كل الإلغاءات</th><th>إلغاء عميل</th><th>خطأ كول سنتر</th><th>خطأ فرع</th><th>تأخير</th></tr></thead><tbody>${typeRows}</tbody></table></div></div>
       <div class="xl-rep-box"><h4>⚠️ عمود F + إلغاءات الأبلكيشن</h4>${issuesHtml}</div>
     </div>
     <div class="xl-rep-box"><h4>📦 الأصناف العجز في كل فرع <small>(من إلغاءات الأبلكيشن اللي سببها صنف ناقص)</small></h4>${acMissingHtml([...new Map(rows.filter(x=>x.agent).map(x=>[x.agent.id,x.agent])).values()],15)}</div>
-    <div class="xl-rep-box"><h4>🏢 حصر الفروع <small>(اضغط على فرع لعرضه لوحده)</small></h4><div class="xl-rep-scroll"><table class="xl-rep-table"><thead><tr><th>الفرع</th><th>الأوردرات</th><th>القيمة</th><th>مكتمل</th><th>ملغي</th><th>% إلغاء</th><th>خطأ كول سنتر</th><th>خطأ فرع</th><th>تأخير</th><th>🚫 إلغاء أبلكيشن</th><th>كاش</th><th>اون لاين</th><th>انستاشوب</th><th>طلبات</th><th>فيزيتا</th><th>أخرى</th></tr></thead><tbody>${brRows}</tbody></table></div></div>
-    <div class="xl-rep-box"><h4>📅 حسب اليوم <small>(اضغط على يوم لعرضه لوحده)</small></h4><div class="xl-rep-scroll" style="max-height:340px"><table class="xl-rep-table"><thead><tr><th>اليوم</th><th>الأوردرات</th><th>القيمة</th><th>كاش</th><th>اون لاين</th><th>مكتمل</th><th>ملغي</th><th>خطأ كول سنتر</th><th>خطأ فرع</th><th>تأخير</th></tr></thead><tbody>${dayRows||'<tr><td colspan="10" class="muted">لا توجد بيانات</td></tr>'}</tbody></table></div></div>
+    <div class="xl-rep-box"><h4>🏢 حصر الفروع <small>(اضغط على فرع لعرضه لوحده)</small></h4><div class="xl-rep-scroll"><table class="xl-rep-table"><thead><tr><th>الفرع</th><th>الأوردرات</th><th>المبيعات</th><th>صافي المبيعات</th><th>مكتمل</th><th>كل الإلغاءات</th><th>إلغاء عميل</th><th>% إلغاء</th><th>خطأ كول سنتر</th><th>خطأ فرع</th><th>تأخير</th><th>🚫 إلغاء أبلكيشن</th><th>كاش</th><th>اون لاين</th><th>انستاشوب</th><th>طلبات</th><th>فيزيتا</th><th>أخرى</th></tr></thead><tbody>${brRows}</tbody></table></div></div>
+    <div class="xl-rep-box"><h4>📅 حسب اليوم <small>(اضغط على يوم لعرضه لوحده)</small></h4><div class="xl-rep-scroll" style="max-height:340px"><table class="xl-rep-table"><thead><tr><th>اليوم</th><th>الأوردرات</th><th>المبيعات</th><th>صافي المبيعات</th><th>كاش</th><th>اون لاين</th><th>مكتمل</th><th>كل الإلغاءات</th><th>إلغاء عميل</th><th>خطأ كول سنتر</th><th>خطأ فرع</th><th>تأخير</th></tr></thead><tbody>${dayRows||'<tr><td colspan="12" class="muted">لا توجد بيانات</td></tr>'}</tbody></table></div></div>
     <div class="xl-rep-box" id="xlRepDetailBox"><h4>🔎 تفاصيل الأوردرات</h4>
       <div class="xl-chips" id="xlRepChips"></div>
       <input class="xl-search" style="width:100%;max-width:520px;margin:0 0 10px" placeholder="🔍 ابحث في التفاصيل (رقم أوردر، عميل، ملاحظة...)" value="${escapeHtml(xlRep.q)}" oninput="clearTimeout(xlRepQTimer);const v=this.value;xlRepQTimer=setTimeout(()=>{xlRep.q=v;xlRenderDetail();},220)">
@@ -3197,7 +3253,7 @@ function xlRenderChips(){
 }
 function xlStBadges(x){
   const b=[];
-  if(x.st.cancel) b.push('<span class="xl-b c">إلغاء</span>');
+  if(x.st.custCancel) b.push('<span class="xl-b cust">إلغاء عميل</span>'); else if(x.st.cancel) b.push('<span class="xl-b c">إلغاء</span>');
   if(x.st.cc) b.push('<span class="xl-b cc">خطأ كول سنتر</span>');
   if(x.st.br) b.push('<span class="xl-b br">خطأ فرع</span>');
   if(x.st.late) b.push('<span class="xl-b late">تأخير</span>');
@@ -3207,7 +3263,7 @@ function xlStBadges(x){
   if(!b.length) b.push('<span class="xl-b ok">مكتمل</span>');
   return b.join(' ');
 }
-function xlStText(x){ return [x.st.cancel?'إلغاء':'',x.st.cc?'خطأ كول سنتر':'',x.st.br?'خطأ فرع':'',x.st.late?'تأخير':'',x.st.otherErr?'خطأ':'',x.agent?'إلغاء أبلكيشن':'',x.agentOnly?'مش في الشيت':''].filter(Boolean).join(' + ')||'مكتمل'; }
+function xlStText(x){ return [x.st.custCancel?'إلغاء عميل':(x.st.cancel?'إلغاء':''),x.st.cc?'خطأ كول سنتر':'',x.st.br?'خطأ فرع':'',x.st.late?'تأخير':'',x.st.otherErr?'خطأ':'',x.agent?'إلغاء أبلكيشن':'',x.agentOnly?'مش في الشيت':''].filter(Boolean).join(' + ')||'مكتمل'; }
 // أعمدة جدول التفاصيل وكل عمود ليه فلتر Excel
 function xlDetailCols(maxCols,hdr){
   const cols=[
@@ -3268,13 +3324,13 @@ function exportBranchExcelReport(){
   if(!rows.length){ showToast('⚠️ لا توجد بيانات للتصدير',true); return; }
   const wb=XLSX.utils.book_new(); const used=new Set();
   const branches=xlReportBranches().filter(b=>xlRep.branch==='all'||b.id===xlRep.branch);
-  const sumRow=(name,g)=>[name,g.n,g.v,g.done,g.cancel,g.cc,g.br,g.late,g.cash,g.cashV,g.online,g.onlineV,g.plat['انستاشوب'].n,g.plat['طلبات'].n,g.plat['فيزيتا'].n,g.plat['أخرى'].n];
-  const s1=[['الفرع','الأوردرات','القيمة','مكتمل','ملغي','خطأ كول سنتر','خطأ فرع','تأخير','كاش','قيمة الكاش','اون لاين','قيمة الاون لاين','انستاشوب','طلبات','فيزيتا','أخرى']];
+  const sumRow=(name,g)=>[name,g.n,g.v,g.doneV,g.done,g.cancel,g.cust,g.cc,g.br,g.late,g.cash,g.cashV,g.online,g.onlineV,g.plat['انستاشوب'].n,g.plat['طلبات'].n,g.plat['فيزيتا'].n,g.plat['أخرى'].n];
+  const s1=[['الفرع','الأوردرات','المبيعات','صافي المبيعات','مكتمل','كل الإلغاءات','إلغاء عميل','خطأ كول سنتر','خطأ فرع','تأخير','كاش','قيمة الكاش','اون لاين','قيمة الاون لاين','انستاشوب','طلبات','فيزيتا','أخرى']];
   branches.forEach(b=>s1.push(sumRow(b.name||b.id,xlAgg(rows.filter(x=>x.branchId===b.id)))));
   s1.push(sumRow('الإجمالي',xlAgg(rows)));
   XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(s1),xlSafeSheetName('حصر الفروع',used));
-  const s2=[['النوع','كاش','قيمة الكاش','اون لاين','قيمة الاون لاين','غير محدد','الإجمالي','القيمة','مكتمل','ملغي','خطأ كول سنتر','خطأ فرع','تأخير']];
-  XL_PLATFORMS.forEach(p=>{ const g=xlAgg(rows.filter(x=>x.platform===p)); s2.push([p,g.cash,g.cashV,g.online,g.onlineV,g.unk,g.n,g.v,g.done,g.cancel,g.cc,g.br,g.late]); });
+  const s2=[['النوع','كاش','قيمة الكاش','اون لاين','قيمة الاون لاين','غير محدد','الإجمالي','المبيعات','صافي المبيعات','مكتمل','كل الإلغاءات','إلغاء عميل','خطأ كول سنتر','خطأ فرع','تأخير']];
+  XL_PLATFORMS.forEach(p=>{ const g=xlAgg(rows.filter(x=>x.platform===p)); s2.push([p,g.cash,g.cashV,g.online,g.onlineV,g.unk,g.n,g.v,g.doneV,g.done,g.cancel,g.cust,g.cc,g.br,g.late]); });
   XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(s2),xlSafeSheetName('حسب النوع',used));
   const maxCols=Math.max(6,...rows.map(x=>x.row.length));
   const hdr=(rows.find(x=>x.header&&x.header.length)||{}).header||[];
@@ -4190,7 +4246,12 @@ function acOrderColOf(header){
   return i>=0?i:XL_ORDER_COL;
 }
 function acSplitItems(s){ return String(s||'').split(/[،,\n]+/).map(x=>x.trim()).filter(Boolean); }
-function acReasonText(e){ return e.reasonType==='missing' ? ('📦 صنف ناقص: '+acSplitItems(e.items).join('، ')) : ('✍️ '+(e.reason||'')); }
+function acReasonText(e){
+  if(e.reasonType==='customer') return '🙋 العميل لغى'+(e.reason?': '+e.reason:'');
+  if(e.reasonType==='other') return '✍️ '+(e.reason||'');
+  return '📦 صنف ناقص: '+acSplitItems(e.items).join('، ');
+}
+function acType(e){ return e.reasonType==='customer'||e.reasonType==='other'?e.reasonType:'missing'; }
 function acDateObj(e){ const d=branchExcelParseDateInput(e.date); return d||null; }
 function acSheetName(e){ const d=acDateObj(e); return d?`${d.getDate()}-${d.getMonth()+1}-${d.getFullYear()}`:(e.date||''); }
 
@@ -4252,7 +4313,10 @@ function acPickApp(code){ acSelectedApp=code; document.querySelectorAll('#acApps
 function acToggleReason(){
   const t=document.querySelector('input[name="acReasonType"]:checked')?.value||'missing';
   document.getElementById('acMissingWrap').classList.toggle('hidden',t!=='missing');
-  document.getElementById('acOtherWrap').classList.toggle('hidden',t!=='other');
+  document.getElementById('acOtherWrap').classList.toggle('hidden',t==='missing');
+  const lb=document.getElementById('acReasonLabel');
+  if(lb) lb.innerHTML=t==='customer'?'ملاحظة على إلغاء العميل (اختياري)':'اكتب سبب الإلغاء <span class="ac-req">*</span>';
+  const ta=document.getElementById('acReason'); if(ta) ta.placeholder=t==='customer'?'مثال: العميل غيّر رأيه / مابيردش / طلب أوردر تاني...':'مثال: التوصيل اتأخر / عنوان غلط...';
 }
 function acCheckOrderNo(){
   clearTimeout(acHintTimer);
@@ -4298,7 +4362,7 @@ function saveAppCancel(){
   const editId=document.getElementById('acEditId').value;
   const dup=(acIndexByOrder().get(acNormOrder(orderNo))||[]).filter(e=>e.id!==editId);
   if(dup.length && !confirm(`رقم الأوردر ${orderNo} متسجل قبل كده. تسجله تاني؟`)) return;
-  const rec={orderNo,code:app.code,appLabel:app.label,platform:app.platform,pay:app.pay,branchId,branchName:acBranchName(branchId),value:Math.round(value*100)/100,reasonType,items:reasonType==='missing'?items:'',reason:reasonType==='other'?reason:'',date,month:date.slice(0,7)};
+  const rec={orderNo,code:app.code,appLabel:app.label,platform:app.platform,pay:app.pay,branchId,branchName:acBranchName(branchId),value:Math.round(value*100)/100,reasonType,items:reasonType==='missing'?items:'',reason:reasonType!=='missing'?reason:'',date,month:date.slice(0,7)};
   let p;
   if(editId){
     const old=appCancelsData.find(e=>e.id===editId); if(!old||!acCanEdit(old)){ showToast('⛔ مش مسموح تعدّل التسجيل ده',true); return; }
@@ -4317,7 +4381,7 @@ function editAppCancel(id){
   document.getElementById('acBranch').value=e.branchId||'';
   document.getElementById('acValue').value=e.value??'';
   document.getElementById('acDate').value=e.date||'';
-  const r=document.querySelector(`input[name="acReasonType"][value="${e.reasonType==='other'?'other':'missing'}"]`); if(r) r.checked=true; acToggleReason();
+  const r=document.querySelector(`input[name="acReasonType"][value="${acType(e)}"]`); if(r) r.checked=true; acToggleReason();
   document.getElementById('acItems').value=e.items||''; document.getElementById('acReason').value=e.reason||'';
   acPickApp(e.code); acSelectedApp=e.code;
   const btn=document.getElementById('acSaveBtn'); if(btn) btn.textContent='💾 حفظ التعديل';
@@ -4361,7 +4425,7 @@ function acFiltered(idx){
 // الأصناف العجز في كل فرع (من إلغاءات "صنف ناقص")
 function acMissingByBranch(list){
   const out={};
-  list.filter(e=>e.reasonType!=='other').forEach(e=>{
+  list.filter(e=>acType(e)==='missing').forEach(e=>{
     const b=e.branchName||acBranchName(e.branchId);
     acSplitItems(e.items).forEach(it=>{ const key=normalizeExcelText(it); out[b]=out[b]||{}; const o=out[b][key]=out[b][key]||{name:it,n:0,v:0,orders:[]}; o.n++; o.v+=Number(e.value)||0; o.orders.push(e.orderNo); });
   });
@@ -4387,12 +4451,12 @@ function acRenderReport(){
   const idx=acSheetIndex();
   const list=acFiltered(idx);
   const total=list.reduce((s,e)=>s+(Number(e.value)||0),0);
-  const miss=list.filter(e=>e.reasonType!=='other'), other=list.filter(e=>e.reasonType==='other');
+  const miss=list.filter(e=>acType(e)==='missing'), other=list.filter(e=>acType(e)==='other'), cust=list.filter(e=>acType(e)==='customer');
   const inSheet=list.filter(e=>acLookupSheet(e,idx)), notIn=list.length-inSheet.length;
   const k=(icon,t,v,n,c)=>`<div class="xl-kpi" style="--c:${c};cursor:default"><div class="t"><span>${t}</span><span>${icon}</span></div><div class="v">${v}</div><div class="n">${n}</div></div>`;
-  const byApp=AC_APPS.map(a=>{ const l=list.filter(e=>e.code===a.code); return `<tr><td>${escapeHtml(a.label)}</td><td><b>${l.length}</b></td><td>${xlMoney(l.reduce((s,e)=>s+(Number(e.value)||0),0))}</td><td>${l.filter(e=>e.reasonType!=='other').length}</td><td>${l.filter(e=>e.reasonType==='other').length}</td></tr>`; }).join('');
-  const brMap={}; list.forEach(e=>{ const b=e.branchName||acBranchName(e.branchId); const o=brMap[b]=brMap[b]||{n:0,v:0,m:0,o:0,no:0}; o.n++; o.v+=Number(e.value)||0; if(e.reasonType==='other') o.o++; else o.m++; if(!acLookupSheet(e,idx)) o.no++; });
-  const byBranch=Object.entries(brMap).sort((a,b)=>b[1].n-a[1].n).map(([b,o])=>`<tr><td>${escapeHtml(b)}</td><td><b>${o.n}</b></td><td>${xlMoney(o.v)}</td><td>${o.m}</td><td>${o.o}</td><td class="warn">${o.no}</td></tr>`).join('');
+  const byApp=AC_APPS.map(a=>{ const l=list.filter(e=>e.code===a.code); return `<tr><td>${escapeHtml(a.label)}</td><td><b>${l.length}</b></td><td>${xlMoney(l.reduce((s,e)=>s+(Number(e.value)||0),0))}</td><td>${l.filter(e=>acType(e)==='missing').length}</td><td>${l.filter(e=>acType(e)==='customer').length}</td><td>${l.filter(e=>acType(e)==='other').length}</td></tr>`; }).join('');
+  const brMap={}; list.forEach(e=>{ const b=e.branchName||acBranchName(e.branchId); const o=brMap[b]=brMap[b]||{n:0,v:0,m:0,o:0,c:0,no:0}; o.n++; o.v+=Number(e.value)||0; const ty=acType(e); if(ty==='other') o.o++; else if(ty==='customer') o.c++; else o.m++; if(!acLookupSheet(e,idx)) o.no++; });
+  const byBranch=Object.entries(brMap).sort((a,b)=>b[1].n-a[1].n).map(([b,o])=>`<tr><td>${escapeHtml(b)}</td><td><b>${o.n}</b></td><td>${xlMoney(o.v)}</td><td>${o.m}</td><td>${o.c}</td><td>${o.o}</td><td class="warn">${o.no}</td></tr>`).join('');
   const agMap={}; list.forEach(e=>{ const a=e.createdBy||'-'; agMap[a]=(agMap[a]||0)+1; });
   const byAgent=Object.entries(agMap).sort((a,b)=>b[1]-a[1]).map(([a,n])=>`<tr><td>${escapeHtml(a)}</td><td><b>${n}</b></td></tr>`).join('');
   const LIM=1000;
@@ -4400,13 +4464,14 @@ function acRenderReport(){
   box.innerHTML=`<div class="xl-rep-kpis">
       ${k('🚫','إجمالي الإلغاءات',xlInt(list.length),xlMoney(total),'#dc2626')}
       ${k('📦','صنف ناقص',xlInt(miss.length),xlMoney(miss.reduce((s,e)=>s+(Number(e.value)||0),0)),'#d97706')}
+      ${k('🙋','العميل لغى',xlInt(cust.length),xlMoney(cust.reduce((s,e)=>s+(Number(e.value)||0),0)),'#ea580c')}
       ${k('✍️','أسباب تانية',xlInt(other.length),xlMoney(other.reduce((s,e)=>s+(Number(e.value)||0),0)),'#7c3aed')}
       ${k('✅','موجودة في الشيتات',xlInt(inSheet.length),'اتربطت برقم الأوردر','#16a34a')}
       ${k('⚠️','مش في الشيتات',xlInt(notIn),'اتضافت للإحصائيات لوحدها','#1d4ed8')}
     </div>
     <div class="xl-rep-grid">
-      <div class="xl-rep-box"><h4>📱 حسب كود الأبلكيشن</h4><div class="xl-rep-scroll"><table class="xl-rep-table"><thead><tr><th>الأبلكيشن</th><th>العدد</th><th>قيمة الأصناف</th><th>صنف ناقص</th><th>سبب تاني</th></tr></thead><tbody>${byApp}</tbody></table></div></div>
-      <div class="xl-rep-box"><h4>🏢 حسب الفرع</h4><div class="xl-rep-scroll"><table class="xl-rep-table"><thead><tr><th>الفرع</th><th>العدد</th><th>القيمة</th><th>صنف ناقص</th><th>سبب تاني</th><th>مش في الشيت</th></tr></thead><tbody>${byBranch||'<tr><td colspan="6" class="muted">لا توجد بيانات</td></tr>'}</tbody></table></div>
+      <div class="xl-rep-box"><h4>📱 حسب كود الأبلكيشن</h4><div class="xl-rep-scroll"><table class="xl-rep-table"><thead><tr><th>الأبلكيشن</th><th>العدد</th><th>قيمة الأصناف</th><th>صنف ناقص</th><th>العميل لغى</th><th>سبب تاني</th></tr></thead><tbody>${byApp}</tbody></table></div></div>
+      <div class="xl-rep-box"><h4>🏢 حسب الفرع</h4><div class="xl-rep-scroll"><table class="xl-rep-table"><thead><tr><th>الفرع</th><th>العدد</th><th>القيمة</th><th>صنف ناقص</th><th>العميل لغى</th><th>سبب تاني</th><th>مش في الشيت</th></tr></thead><tbody>${byBranch||'<tr><td colspan="7" class="muted">لا توجد بيانات</td></tr>'}</tbody></table></div>
         <div class="xl-rep-sub" style="margin-top:10px">👤 حسب الأجينت</div><div class="xl-rep-scroll" style="max-height:200px"><table class="xl-rep-table"><thead><tr><th>الأجينت</th><th>عدد الإلغاءات</th></tr></thead><tbody>${byAgent||'<tr><td colspan="2" class="muted">—</td></tr>'}</tbody></table></div></div>
     </div>
     <div class="xl-rep-box"><h4>📦 الأصناف العجز</h4>${acMissingHtml(list)}</div>
@@ -4419,7 +4484,7 @@ function exportAppCancels(){
   if(!list.length){ showToast('⚠️ لا توجد بيانات للتصدير',true); return; }
   const wb=XLSX.utils.book_new(); const used=new Set();
   const a1=[['التاريخ','رقم الأوردر','الأبلكيشن','الفرع','قيمة الأصناف','نوع السبب','الأصناف الناقصة','السبب','موجود في الشيت','يوم الشيت','صف الشيت','الأجينت']];
-  list.forEach(e=>{ const h=acLookupSheet(e,idx); a1.push([e.date,e.orderNo,e.appLabel,e.branchName||acBranchName(e.branchId),Number(e.value)||0,e.reasonType==='other'?'سبب تاني':'صنف ناقص',e.items||'',e.reason||'',h?'نعم':'لا',h?h.sheet:'',h?h.ri+1:'',e.createdBy||'']); });
+  list.forEach(e=>{ const h=acLookupSheet(e,idx); a1.push([e.date,e.orderNo,e.appLabel,e.branchName||acBranchName(e.branchId),Number(e.value)||0,({missing:'صنف ناقص',customer:'العميل لغى',other:'سبب تاني'})[acType(e)],e.items||'',e.reason||'',h?'نعم':'لا',h?h.sheet:'',h?h.ri+1:'',e.createdBy||'']); });
   XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(a1),xlSafeSheetName('الإلغاءات',used));
   const mb=acMissingByBranch(list); const a2=[['الفرع','الصنف','عدد المرات','قيمة الأوردرات','أرقام الأوردرات']];
   Object.keys(mb).forEach(b=>Object.values(mb[b]).sort((x,y)=>y.n-x.n).forEach(o=>a2.push([b,o.name,o.n,o.v,o.orders.join(', ')])));
@@ -4431,7 +4496,7 @@ function exportAppCancels(){
 // بيتنادي من xlCollectRows: يعلّم صفوف الشيت اللي ليها إلغاء أجينت، ويضيف الإلغاءات اللي ملهاش رقم في الشيتات كصفوف لوحدها
 function acMergeIntoRows(out,branchIds,month,fromD,toD){
   const byNo=acIndexByOrder(); const sheetIdx=acSheetIndex();
-  out.forEach(x=>{ if(!x.orderNo) return; const list=byNo.get(x.orderNo); if(!list||!list.length) return; const e=list.find(y=>y.branchId===x.branchId)||list[0]; x.agent=e; x.st.app=true; x.st.cancel=true; if(!x.st.text) x.st.text='إلغاء أبلكيشن'; });
+  out.forEach(x=>{ if(!x.orderNo) return; const list=byNo.get(x.orderNo); if(!list||!list.length) return; const e=list.find(y=>y.branchId===x.branchId)||list[0]; x.agent=e; x.st.app=true; x.st.cancel=true; if(acType(e)==='customer') x.st.custCancel=true; if(!x.st.text) x.st.text='إلغاء أبلكيشن'; });
   const hdr=(out.find(x=>x.header&&x.header.length)||{}).header||[];
   const bset=new Set(branchIds);
   appCancelsData.forEach(e=>{
@@ -4445,7 +4510,7 @@ function acMergeIntoRows(out,branchIds,month,fromD,toD){
     const hc=xlFindCols(hdr);
     row[hc.type>=0?hc.type:1]=e.appLabel||''; row[hc.value>=0?hc.value:3]=Number(e.value)||0; if(hc.status>=0) row[hc.status]='إلغاء أبلكيشن'; row[hc.order>=0?hc.order:XL_ORDER_COL]=e.orderNo||'';
     out.push({branchId:e.branchId,branch:e.branchName||acBranchName(e.branchId),sheet:acSheetName(e),date:d,ri:-1,row,header:hdr,platform:e.platform||'أخرى',pay:e.pay||'غير محدد',val:Number(e.value)||0,
-      st:{cancel:true,cc:false,br:false,late:false,otherErr:false,app:true,text:'إلغاء أبلكيشن'},agent:e,agentOnly:true,orderNo:acNormOrder(e.orderNo)});
+      st:{cancel:true,custCancel:acType(e)==='customer',cc:false,br:false,late:false,otherErr:false,app:true,text:acType(e)==='customer'?'إلغاء عميل (أبلكيشن)':'إلغاء أبلكيشن'},agent:e,agentOnly:true,orderNo:acNormOrder(e.orderNo)});
   });
   return out;
 }
